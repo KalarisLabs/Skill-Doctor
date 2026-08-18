@@ -1,0 +1,20 @@
+Skill Doctor
+Copyright (C) 2026 Kalaris Labs (sayan@kalarislabs.com)
+
+This software is licensed under the GNU Affero General Public License v3.
+All forks and derivatives must include this notice and be released under AGPL v3.
+
+If you are using Skill Doctor in a commercial product or managed service
+without open-sourcing your code, you need a commercial license.
+Contact: sayan@kalarislabs.com
+
+---
+
+YARA Rules Attribution:
+- Portions of YARA rules adapted from Cisco AI Defense Skill Scanner (Apache 2.0)
+  Source: https://github.com/cisco-ai-defense/skill-scanner
+- Portions of YARA rules adapted from NVIDIA SkillSpector (MIT)
+  Source: https://github.com/nvidia/skillspector
+
+Both source projects are open-source with permissive licenses.
+Adaptations for Skill Doctor are released under AGPL v3.

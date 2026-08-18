@@ -2,6 +2,7 @@
 Intake and normalization module for skill bundles.
 """
 
+import os
 from pathlib import Path
 from typing import Union
 import hashlib
@@ -56,17 +57,41 @@ def normalize_bundle(source: Union[str, Path]) -> tuple[Path, str]:
 
 
 def _normalize_zip(zip_path: Path) -> tuple[Path, str]:
-    """Extract and normalize a ZIP archive."""
+    """Extract and normalize a ZIP archive (with zip-slip protection)."""
     temp_dir = Path(tempfile.mkdtemp(prefix="skill_doctor_"))
     with zipfile.ZipFile(zip_path, "r") as zf:
+        for member in zf.namelist():
+            # Resolve the target path and verify it stays within temp_dir
+            target_path = (temp_dir / member).resolve()
+            if not str(target_path).startswith(str(temp_dir.resolve())):
+                raise ValueError(
+                    f"Zip-slip detected: '{member}' would extract outside the target directory. "
+                    "This archive may be malicious."
+                )
         zf.extractall(temp_dir)
     return temp_dir, _compute_hash(temp_dir)
 
 
 def _normalize_tar(tar_path: Path) -> tuple[Path, str]:
-    """Extract and normalize a tar.gz archive."""
+    """Extract and normalize a tar.gz archive (with tar-slip protection)."""
     temp_dir = Path(tempfile.mkdtemp(prefix="skill_doctor_"))
     with tarfile.open(tar_path, "r:gz") as tf:
+        for member in tf.getmembers():
+            # Resolve the target path and verify it stays within temp_dir
+            target_path = (temp_dir / member.name).resolve()
+            if not str(target_path).startswith(str(temp_dir.resolve())):
+                raise ValueError(
+                    f"Tar-slip detected: '{member.name}' would extract outside the target directory. "
+                    "This archive may be malicious."
+                )
+            # Block symlinks pointing outside temp_dir
+            if member.issym() or member.islnk():
+                link_target = (temp_dir / member.linkname).resolve()
+                if not str(link_target).startswith(str(temp_dir.resolve())):
+                    raise ValueError(
+                        f"Tar-slip via symlink detected: '{member.name}' -> '{member.linkname}'. "
+                        "This archive may be malicious."
+                    )
         tf.extractall(temp_dir)
     return temp_dir, _compute_hash(temp_dir)
 
@@ -95,11 +120,13 @@ def _normalize_from_url(url: str) -> tuple[Path, str]:
     filename = Path(urlparse(url).path).name
     if not filename:
         filename = "downloaded_skill.txt"
-        
-    temp_file = Path(tempfile.mkstemp(prefix="skill_doctor_", suffix="_" + filename)[1])
-    temp_file.write_bytes(response.content)
-    
-    return _normalize_single_file(temp_file)
+
+    # Write directly into the bundle temp directory (no leaked temp file)
+    temp_dir = Path(tempfile.mkdtemp(prefix="skill_doctor_"))
+    dest = temp_dir / filename
+    dest.write_bytes(response.content)
+
+    return temp_dir, _compute_hash(temp_dir)
 
 
 def _compute_hash(directory: Path) -> str:

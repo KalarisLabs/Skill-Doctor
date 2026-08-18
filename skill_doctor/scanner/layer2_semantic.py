@@ -68,7 +68,7 @@ If no findings, return []."""
 {static_context if static_context else "None"}
 
 Skill bundle content:
-{skill_content[:10000]}  # Limit content length"""
+{skill_content[:10000]}"""
 
         # Call Groq API
         response = client.chat.completions.create(
@@ -86,9 +86,16 @@ Skill bundle content:
 
         result = json.loads(response.choices[0].message.content)
 
-        # Convert to Finding objects
+        # Convert to Finding objects — handle both list and dict shapes
+        if isinstance(result, dict):
+            items = result.get("findings", result.get("results", []))
+        elif isinstance(result, list):
+            items = result
+        else:
+            items = []
+
         findings = []
-        for item in result if isinstance(result, list) else []:
+        for item in items if isinstance(items, list) else []:
             findings.append(
                 Finding(
                     severity=item.get("severity", "MEDIUM"),

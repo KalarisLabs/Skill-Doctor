@@ -41,7 +41,11 @@ def normalize_bundle(source: Union[str, Path]) -> tuple[Path, str]:
             return _normalize_zip(source_path)
         elif source_path.suffix in (".tar.gz", ".tgz"):
             return _normalize_tar(source_path)
-        elif source_path.suffix in (".md", ".txt"):
+        elif source_path.suffix in (
+            ".md", ".txt", ".py", ".js", ".ts", ".json",
+            ".yaml", ".yml", ".toml", ".cfg", ".ini",
+            ".sh", ".bash", ".zsh", ".clauderules",
+        ):
             return _normalize_single_file(source_path)
         else:
             raise ValueError(f"Unsupported file type: {source_path.suffix}")

@@ -39,16 +39,183 @@ def scan_static(bundle_dir: Path) -> List[Finding]:
 
 def _scan_yara(bundle_dir: Path) -> List[Finding]:
     """Scan with YARA-X rules."""
-    # TODO: Implement YARA-X rule loading and scanning
-    # For now, return empty list
-    return []
+    findings = []
+
+    # Locate rules directory relative to this package
+    rules_dir = Path(__file__).parent.parent / "rules" / "core"
+    if not rules_dir.exists():
+        return findings
+
+    try:
+        import yara_x
+
+        # Compile all YARA rule files
+        compiler = yara_x.Compiler()
+        rule_files = sorted(rules_dir.glob("*.yar"))
+        if not rule_files:
+            return findings
+
+        for rule_file in rule_files:
+            try:
+                compiler.add_source(rule_file.read_text(encoding="utf-8"))
+            except Exception:
+                continue
+
+        rules = compiler.build()
+
+        # Scan each text file in the bundle
+        for file_path in bundle_dir.rglob("*"):
+            if file_path.is_file() and _is_text_file(file_path):
+                try:
+                    data = file_path.read_bytes()
+                    scan_results = rules.scan(data)
+
+                    for matching_rule in scan_results.matching_rules:
+                        # Extract metadata from rule — yara_x returns tuples (key, value)
+                        metadata = {k: v for k, v in matching_rule.metadata}
+                        severity = metadata.get("severity", "MEDIUM")
+                        category = metadata.get("category", matching_rule.identifier)
+                        description = metadata.get("description", f"YARA rule matched: {matching_rule.identifier}")
+
+                        findings.append(
+                            Finding(
+                                severity=severity,
+                                category=category,
+                                file=str(file_path.relative_to(bundle_dir)),
+                                line=None,
+                                description=description,
+                                remediation=f"Review content flagged by rule '{matching_rule.identifier}'",
+                                engine="yara",
+                                confidence=0.85,
+                            )
+                        )
+                except Exception:
+                    continue
+
+    except ImportError:
+        # yara_x not available — skip silently
+        pass
+
+    return findings
 
 
 def _scan_python_ast(bundle_dir: Path) -> List[Finding]:
-    """Scan Python files with tree-sitter AST analysis."""
-    # TODO: Implement tree-sitter Python grammar and taint analysis
-    # For now, return empty list
-    return []
+    """Scan Python files with AST analysis for dangerous patterns."""
+    import ast as python_ast
+
+    findings = []
+
+    # Dangerous function patterns to detect
+    dangerous_calls = {
+        "subprocess.run": ("HIGH", "SD-02 · Command Injection", "Command execution via subprocess.run"),
+        "subprocess.call": ("HIGH", "SD-02 · Command Injection", "Command execution via subprocess.call"),
+        "subprocess.Popen": ("HIGH", "SD-02 · Command Injection", "Command execution via subprocess.Popen"),
+        "os.system": ("CRITICAL", "SD-02 · Command Injection", "Shell command execution via os.system"),
+        "os.popen": ("HIGH", "SD-02 · Command Injection", "Shell command execution via os.popen"),
+        "eval": ("CRITICAL", "SD-02 · Command Injection", "Dynamic code execution via eval()"),
+        "exec": ("CRITICAL", "SD-02 · Command Injection", "Dynamic code execution via exec()"),
+        "pickle.loads": ("HIGH", "SD-02 · Command Injection", "Arbitrary code execution via pickle deserialization"),
+        "requests.post": ("MEDIUM", "SD-03 · Data Exfiltration", "Outbound HTTP POST — potential data exfiltration"),
+        "requests.get": ("LOW", "SD-03 · Data Exfiltration", "Outbound HTTP GET — review for data leakage"),
+        "httpx.post": ("MEDIUM", "SD-03 · Data Exfiltration", "Outbound HTTP POST — potential data exfiltration"),
+        "urllib.request.urlopen": ("MEDIUM", "SD-03 · Data Exfiltration", "Outbound HTTP request — potential data exfiltration"),
+    }
+
+    # Dangerous attribute access patterns
+    dangerous_attrs = {
+        "os.environ": ("MEDIUM", "SD-03 · Data Exfiltration", "Environment variable access — may harvest secrets"),
+    }
+
+    for file_path in bundle_dir.rglob("*.py"):
+        if not file_path.is_file():
+            continue
+        try:
+            source = file_path.read_text(encoding="utf-8", errors="ignore")
+            tree = python_ast.parse(source, filename=str(file_path))
+        except (SyntaxError, Exception):
+            continue
+
+        rel_path = str(file_path.relative_to(bundle_dir))
+
+        for node in python_ast.walk(tree):
+            # Check function calls
+            if isinstance(node, python_ast.Call):
+                func_name = _get_call_name(node)
+                if func_name in dangerous_calls:
+                    severity, category, desc = dangerous_calls[func_name]
+
+                    # Boost severity if shell=True is used
+                    if func_name.startswith("subprocess."):
+                        for kw in node.keywords:
+                            if kw.arg == "shell" and isinstance(kw.value, python_ast.Constant) and kw.value.value is True:
+                                severity = "CRITICAL"
+                                desc += " with shell=True"
+
+                    findings.append(
+                        Finding(
+                            severity=severity,
+                            category=category,
+                            file=rel_path,
+                            line=node.lineno,
+                            description=desc,
+                            remediation=f"Avoid {func_name} or sanitize inputs; use allowlists for commands",
+                            engine="ast",
+                            confidence=0.9,
+                        )
+                    )
+
+            # Check attribute access (e.g., os.environ.get)
+            if isinstance(node, python_ast.Attribute):
+                attr_chain = _get_attr_chain(node)
+                for pattern, (severity, category, desc) in dangerous_attrs.items():
+                    if attr_chain.startswith(pattern):
+                        findings.append(
+                            Finding(
+                                severity=severity,
+                                category=category,
+                                file=rel_path,
+                                line=node.lineno,
+                                description=desc,
+                                remediation="Do not access environment variables unless strictly necessary for the skill's stated purpose",
+                                engine="ast",
+                                confidence=0.8,
+                            )
+                        )
+                        break
+
+    return findings
+
+
+def _get_call_name(node) -> str:
+    """Extract dotted function name from a Call node."""
+    import ast as python_ast
+
+    if isinstance(node.func, python_ast.Name):
+        return node.func.id
+    elif isinstance(node.func, python_ast.Attribute):
+        parts = []
+        current = node.func
+        while isinstance(current, python_ast.Attribute):
+            parts.append(current.attr)
+            current = current.value
+        if isinstance(current, python_ast.Name):
+            parts.append(current.id)
+        return ".".join(reversed(parts))
+    return ""
+
+
+def _get_attr_chain(node) -> str:
+    """Extract dotted attribute chain from an Attribute node."""
+    import ast as python_ast
+
+    parts = []
+    current = node
+    while isinstance(current, python_ast.Attribute):
+        parts.append(current.attr)
+        current = current.value
+    if isinstance(current, python_ast.Name):
+        parts.append(current.id)
+    return ".".join(reversed(parts))
 
 
 def _scan_entropy(bundle_dir: Path) -> List[Finding]:

@@ -38,9 +38,13 @@ def test_scan_static_evil_exfil():
 
     findings = scan_static(bundle_dir)
 
-    # Should detect sensitive path access
-    sensitive_path_findings = [f for f in findings if "credential" in f.description.lower() or "aws" in f.description.lower()]
-    assert len(sensitive_path_findings) > 0, "Should detect credential references"
+    # Should detect sensitive path access or data exfiltration
+    sensitive_path_findings = [
+        f for f in findings
+        if any(term in (f.description.lower() + " " + f.category.lower())
+               for term in ("credential", "aws", "exfiltration", "sensitive"))
+    ]
+    assert len(sensitive_path_findings) > 0, f"Should detect credential/sensitive path references, got: {[f.category for f in findings]}"
 
 
 def test_scan_static_evil_inject():

@@ -3,7 +3,7 @@ SARIF 2.1 report generation.
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -45,7 +45,7 @@ def generate_sarif(result: ScanResult, output_path: Optional[Path] = None) -> st
                 "invocations": [
                     {
                         "startTimeUtc": result.scanned_at.isoformat(),
-                        "endTimeUtc": datetime.utcnow().isoformat(),
+                        "endTimeUtc": datetime.now(timezone.utc).isoformat(),
                         "exitCode": 0 if result.risk_level == "SAFE" else 1,
                     }
                 ],

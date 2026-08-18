@@ -2,7 +2,7 @@
 Pydantic models for Skill Doctor.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Literal
 from uuid import UUID, uuid4
 
@@ -28,7 +28,7 @@ class ScanResult(BaseModel):
 
     scan_id: str = Field(default_factory=lambda: str(uuid4()))
     bundle_hash: str
-    scanned_at: datetime = Field(default_factory=datetime.utcnow)
+    scanned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     duration_ms: int
     findings: list[Finding]
     risk_level: Literal["SAFE", "CAUTION", "DANGEROUS"]

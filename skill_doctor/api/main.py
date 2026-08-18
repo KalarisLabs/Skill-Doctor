@@ -45,3 +45,8 @@ def create_app() -> FastAPI:
     # TODO: Add report endpoints
 
     return app
+
+
+# Module-level app instance for uvicorn
+# Usage: uvicorn skill_doctor.api.main:app --reload
+app = create_app()

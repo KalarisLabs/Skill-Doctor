@@ -26,7 +26,9 @@ def normalize_bundle(source: Union[str, Path]) -> tuple[Path, str]:
     source_str = str(source)
 
     # Handle URLs
-    if source_str.startswith(("http://", "https://", "git://", "github.com/")):
+    if source_str.startswith(("http://", "https://", "git://", "github.com/")) or ("/" in source_str and not Path(source_str).exists() and not source_str.startswith((".", "/", "\\")) and ":" not in source_str[2:]):
+        if not source_str.startswith(("http://", "https://", "git://")):
+            source_str = "https://" + source_str
         return _normalize_from_url(source_str)
 
     # Handle local paths
@@ -80,8 +82,20 @@ def _normalize_directory(dir_path: Path) -> tuple[Path, str]:
 
 def _normalize_from_url(url: str) -> tuple[Path, str]:
     """Download and normalize from a URL."""
-    # TODO: Implement Git URL cloning and HTTP URL downloading
-    raise NotImplementedError("URL normalization not yet implemented")
+    try:
+        response = httpx.get(url, follow_redirects=True)
+        response.raise_for_status()
+    except Exception as e:
+        raise ValueError(f"Failed to download URL: {url}\n{e}")
+
+    filename = Path(urlparse(url).path).name
+    if not filename:
+        filename = "downloaded_skill.txt"
+        
+    temp_file = Path(tempfile.mkstemp(prefix="skill_doctor_", suffix="_" + filename)[1])
+    temp_file.write_bytes(response.content)
+    
+    return _normalize_single_file(temp_file)
 
 
 def _compute_hash(directory: Path) -> str:

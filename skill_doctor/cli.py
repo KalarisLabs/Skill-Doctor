@@ -28,7 +28,7 @@ def main():
 
 
 @main.command()
-@click.argument("target", type=click.Path(exists=True))
+@click.argument("target")
 @click.option(
     "--output",
     type=click.Choice(["sarif", "json", "html", "pdf"]),
@@ -61,15 +61,14 @@ def scan(
     print(f"by Kalaris Labs")
     print()
 
-    target_path = Path(target)
-    print(f"[TARGET] {target_path}")
+    print(f"[TARGET] {target}")
 
     start_time = time.time()
 
     try:
         # Layer 0: Intake and normalization
         print(f"[NORMALIZE] Normalizing bundle...")
-        bundle_dir, bundle_hash = normalize_bundle(target_path)
+        bundle_dir, bundle_hash = normalize_bundle(target)
         print(f"[HASH] Bundle hash: {bundle_hash[:16]}...")
 
         # Check threat database first

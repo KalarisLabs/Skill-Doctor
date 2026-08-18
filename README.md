@@ -1,5 +1,7 @@
 # Skill Doctor 🩺
 
+![Skill Doctor Banner](public/skill%20doctor%20banner.png)
+
 A multi-layer security platform for AI agent skill files. Detects malicious, deceptive, or vulnerable skill files before they are loaded by agent runtimes.
 
 **Skill Doctor is Kalaris Labs' first open-source infrastructure project.**
@@ -179,6 +181,38 @@ fly auth login
 fly apps create skill-doctor-scanner
 fly secrets set GROQ_API_KEY=xxx E2B_API_KEY=xxx
 fly deploy
+```
+
+## Test Results
+
+We recently scanned the Kane CLI browser automation skill (`https://testmuai.com/kane-cli/agents.md`) using the Skill Doctor master branch. The scanner successfully normalized the URL bundle and completed the analysis in 1.20s with 0 findings, verifying that the skill is safe.
+
+```
+SKILL DOCTOR v0.1.0
+by Kalaris Labs
+
+[TARGET] https://testmuai.com/kane-cli/agents.md
+[NORMALIZE] Normalizing bundle...
+[HASH] Bundle hash: 3335ef7aacedf6bf...
+[THREAT DB] Checking threat database...
+[STATIC] Running static analysis...
+[STATIC] Found 0 static findings
+[LLM] Running LLM semantic analysis...
+   Found 0 semantic findings
+[SANDBOX] Behavioral sandbox deferred to Week 2
+[TIME] Scanning completed in 1.20s
+
+============================================================
+SCAN RESULTS
+============================================================
+Risk Level: SAFE
+Risk Score: 0.0 / 10.0
+Layers Run: static, semantic
+Duration: 1.20s
+
+[SUMMARY] 0 findings total:
+
+[SAFE] No findings detected. Skill appears safe.
 ```
 
 ## License

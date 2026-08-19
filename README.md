@@ -270,17 +270,17 @@ cargo audit
 
 ## Current Status
 
-Skill Doctor is undergoing a **full rewrite from Python to Rust** (`v0.2.0`). See [MIGRATION.md](MIGRATION.md) for details.
+Skill Doctor has completed a **full rewrite from Python to Rust** (`v0.2.0`). The core execution engine is now 100% native Rust.
 
 | Component | Status |
 |-----------|--------|
-| Layer 1 — Static Analysis (YARA-X + tree-sitter + Entropy + Unicode) | 🔄 Migrating to Rust |
-| Layer 2 — LLM Semantic Analysis (REST API) | 🔄 Migrating to Rust |
+| Layer 1 — Static Analysis (YARA-X + tree-sitter + Entropy + Unicode) | ✅ Completed |
+| Layer 2 — LLM Semantic Analysis (REST API) | ✅ Completed |
 | Layer 3 — Behavioral Sandbox (E2B) | 🚧 Planned |
-| Layer 4 — Community Threat Database | 🔄 Migrating to Rust |
-| CLI + OpenTUI | 🔄 In development |
-| Skills.sh / GitHub Registry Support | 🔄 In development |
-| Cross-platform Binaries | 🚧 Planned |
+| Layer 4 — Community Threat Database | ✅ Completed |
+| CLI Core & OpenTUI Integration | ✅ Completed |
+| Skills.sh / GitHub Registry Support | ✅ Completed |
+| Cross-platform Binaries (macOS, Windows, Linux) | ✅ Completed |
 
 > The Python prototype (`v0.1.0`) is available on the `legacy/python` branch.
 
@@ -288,11 +288,11 @@ Skill Doctor is undergoing a **full rewrite from Python to Rust** (`v0.2.0`). Se
 
 ## Roadmap
 
-- [ ] Complete Rust rewrite (core scanner + CLI)
-- [ ] OpenTUI terminal interface
-- [ ] Skills.sh registry integration
-- [ ] GitHub shorthand resolution (`owner/repo`)
-- [ ] Cross-platform binary releases (Linux, macOS, Windows)
+- [x] Complete Rust rewrite (core scanner + CLI)
+- [ ] OpenTUI rich terminal interface components
+- [x] Skills.sh registry integration
+- [x] GitHub shorthand resolution (`owner/repo`)
+- [x] Cross-platform binary releases (Linux, macOS, Windows)
 - [ ] Homebrew tap, Scoop bucket, Winget manifest
 - [ ] E2B behavioral sandbox (Layer 3)
 - [ ] Registry gate API for skill registries

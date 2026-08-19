@@ -83,7 +83,10 @@ async fn run_semantic_analysis(
         .join("\n");
 
     let max_bytes = 10_000.min(skill_content.len());
-    let safe_end = skill_content.floor_char_boundary(max_bytes);
+    let mut safe_end = max_bytes;
+    while safe_end > 0 && !skill_content.is_char_boundary(safe_end) {
+        safe_end -= 1;
+    }
     let truncated_content = &skill_content[..safe_end];
 
     let user_message = format!(

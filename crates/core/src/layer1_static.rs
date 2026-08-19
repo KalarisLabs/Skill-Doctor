@@ -45,20 +45,14 @@ fn scan_yara(bundle_dir: &Path) -> Vec<Finding> {
     for file_name in YaraRules::iter() {
         if let Some(rule_data) = YaraRules::get(&file_name) {
             let rule_text = String::from_utf8_lossy(&rule_data.data);
-            if let Err(e) = compiler.add_source(&rule_text) {
+            if let Err(e) = compiler.add_source(rule_text.as_ref()) {
                 tracing::warn!("Failed to compile YARA rule {}: {}", file_name, e);
                 continue;
             }
         }
     }
 
-    let rules = match compiler.build() {
-        Ok(r) => r,
-        Err(e) => {
-            tracing::warn!("Failed to build YARA rules: {}", e);
-            return findings;
-        }
-    };
+    let rules = compiler.build();
 
     // Scan each text file in the bundle
     for entry in WalkDir::new(bundle_dir)

@@ -45,7 +45,8 @@ const TEXT_EXTENSIONS: &[&str] = &[
 ];
 
 /// Supported archive extensions.
-const ARCHIVE_EXTENSIONS: &[&str] = &["zip", "tar.gz", "tgz"];
+#[allow(dead_code)]
+const ARCHIVE_EXTENSIONS: &[&str] = &["zip", "tar", "gz", "tgz", "bz2", "xz"];
 
 /// Normalize various input formats into a flat bundle directory.
 ///
@@ -226,7 +227,7 @@ async fn normalize_from_url(url: &str) -> Result<NormalizedBundle> {
     let parsed = Url::parse(url).context("Invalid URL")?;
     let filename = parsed
         .path_segments()
-        .and_then(|s| s.last())
+        .and_then(|mut s| s.next_back())
         .filter(|s| !s.is_empty())
         .unwrap_or("downloaded_skill.txt");
 
@@ -320,14 +321,13 @@ fn normalize_tar(tar_path: &Path) -> Result<NormalizedBundle> {
         let target = temp_dir.path().join(&path);
         let canonical_temp = temp_dir.path().canonicalize()?;
 
-        if let Ok(canonical_target) = target.canonicalize() {
-            if !canonical_target.starts_with(&canonical_temp) {
+        if let Ok(canonical_target) = target.canonicalize()
+            && !canonical_target.starts_with(&canonical_temp) {
                 bail!(
                     "Tar-slip detected: '{}' would extract outside the target directory",
                     path.display()
                 );
             }
-        }
 
         entry.unpack_in(temp_dir.path())?;
     }

@@ -13,6 +13,7 @@ use skill_doctor_core::scorer::score_findings;
 
 use crate::display;
 
+#[allow(clippy::too_many_arguments)]
 pub async fn run(
     target: &str,
     output: Option<String>,

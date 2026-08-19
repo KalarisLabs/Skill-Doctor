@@ -125,6 +125,7 @@ pub struct Finding {
 
 impl Finding {
     /// Create a new finding with a generated UUID.
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         severity: Severity,
         category: impl Into<String>,

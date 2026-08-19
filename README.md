@@ -32,45 +32,27 @@ Built in **Rust** for maximum performance, distributed as a single static binary
 
 ## Install
 
-### NPM (Recommended)
+### NPM (Cross-Platform)
+
+We distribute `skill-doctor` via NPM as a defensive measure against name squatting, but it's fully written in Rust. Installing via NPM will automatically download the correct native binary (Windows, macOS, or Linux) for your system without requiring a Rust toolchain.
 
 ```bash
 npm install -g @kalarislabs/skill-doctor
 ```
 
-> **Note:** The NPM package is a lightweight wrapper that automatically downloads the native Rust binary for your OS and architecture.
-
-### macOS
-
-```bash
-brew install KalarisLabs/tap/skill-doctor
-```
-
-### Linux
-
-```bash
-curl -sSL https://raw.githubusercontent.com/KalarisLabs/Skill-Doctor/master/install.sh | sh
-```
-
-### Windows
-
-```powershell
-# Scoop
-scoop bucket add kalarislabs https://github.com/KalarisLabs/scoop-bucket
-scoop install skill-doctor
-
-# Winget
-winget install KalarisLabs.SkillDoctor
-
-# Or download directly
-irm https://raw.githubusercontent.com/KalarisLabs/Skill-Doctor/master/install.ps1 | iex
-```
+> **Note:** We recommend using the `@kalarislabs/skill-doctor` namespace. Do not use un-namespaced variants to avoid supply-chain risks.
 
 ### From source (Cargo)
+
+If you prefer building from source:
 
 ```bash
 cargo install skill-doctor
 ```
+
+### Native Package Managers (Coming Soon)
+
+We are currently working on native distribution via Homebrew, Scoop, and Winget. Check the Roadmap for updates.
 
 ### Docker
 

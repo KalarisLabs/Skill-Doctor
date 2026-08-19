@@ -53,3 +53,5 @@ Thumbs.db
 # Temporary directories
 tmp/
 temp/
+
+target/

@@ -2,6 +2,7 @@
 name = "skill-doctor-core"
 version.workspace = true
 edition.workspace = true
+rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
 description = "Core scanning library for Skill Doctor"

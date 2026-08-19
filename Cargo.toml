@@ -9,7 +9,8 @@ members = [
 [workspace.package]
 version = "0.2.0"
 edition = "2024"
-license = "AGPL-3.0"
+rust-version = "1.85"
+license = "AGPL-3.0-or-later"
 authors = ["Kalaris Labs <sayan@kalarislabs.com>"]
 repository = "https://github.com/KalarisLabs/Skill-Doctor"
 description = "Multi-layer security platform for AI agent skill files"

@@ -14,7 +14,7 @@ use crate::models::{Engine, Finding, Severity};
 
 /// Embedded YARA rule files — compiled into the binary at build time.
 #[derive(RustEmbed)]
-#[folder = "../../skill_doctor/rules/core/"]
+#[folder = "../rules/core/"]
 #[include = "*.yar"]
 struct YaraRules;
 

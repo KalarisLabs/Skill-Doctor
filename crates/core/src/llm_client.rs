@@ -15,6 +15,8 @@ pub struct LlmConfig {
     pub api_key: String,
     /// Model name (e.g., "llama-3.3-70b-versatile").
     pub model: String,
+    /// Additional headers for LLM Gateways (e.g., Helicone-Auth).
+    pub headers: std::collections::HashMap<String, String>,
 }
 
 impl LlmConfig {
@@ -26,15 +28,16 @@ impl LlmConfig {
     ///
     /// Also checks legacy `GROQ_API_KEY` for backward compatibility.
     pub fn from_env() -> Option<Self> {
-        Self::from_env_with_overrides(None, None)
+        Self::from_env_with_overrides(None, None, None)
     }
 
     /// Load configuration from environment variables with explicit CLI overrides for URL and model.
     pub fn from_env_with_overrides(
         custom_url: Option<String>,
         custom_model: Option<String>,
+        custom_headers: Option<std::collections::HashMap<String, String>>,
     ) -> Option<Self> {
-        Self::from_lookup(|k| std::env::var(k).ok(), custom_url, custom_model)
+        Self::from_lookup(|k| std::env::var(k).ok(), custom_url, custom_model, custom_headers)
     }
 
     /// Helper that loads configuration using an arbitrary environment lookup function.
@@ -42,6 +45,7 @@ impl LlmConfig {
         lookup: F,
         custom_url: Option<String>,
         custom_model: Option<String>,
+        custom_headers: Option<std::collections::HashMap<String, String>>,
     ) -> Option<Self>
     where
         F: Fn(&str) -> Option<String>,
@@ -60,6 +64,7 @@ impl LlmConfig {
             base_url,
             api_key,
             model,
+            headers: custom_headers.unwrap_or_default(),
         })
     }
 }
@@ -127,8 +132,9 @@ impl LlmClient {
     pub fn from_env_with_overrides(
         custom_url: Option<String>,
         custom_model: Option<String>,
+        custom_headers: Option<std::collections::HashMap<String, String>>,
     ) -> Option<Self> {
-        LlmConfig::from_env_with_overrides(custom_url, custom_model).map(Self::new)
+        LlmConfig::from_env_with_overrides(custom_url, custom_model, custom_headers).map(Self::new)
     }
 
     /// Send a chat completion request and return the response content.
@@ -144,11 +150,17 @@ impl LlmClient {
 
         let url = format!("{}/chat/completions", self.config.base_url);
 
-        let response = self
+        let mut req = self
             .http
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.config.api_key))
-            .header("Content-Type", "application/json")
+            .header("Content-Type", "application/json");
+
+        for (k, v) in &self.config.headers {
+            req = req.header(k, v);
+        }
+
+        let response = req
             .json(&request)
             .send()
             .await
@@ -201,7 +213,7 @@ mod tests {
     #[test]
     fn test_config_defaults() {
         // Deterministic test without mutating process environment
-        let config = LlmConfig::from_lookup(|_| None, None, None);
+        let config = LlmConfig::from_lookup(|_| None, None, None, None);
         assert!(config.is_none());
 
         let configured = LlmConfig::from_lookup(
@@ -211,6 +223,7 @@ mod tests {
             },
             Some("http://custom-url".to_string()),
             Some("custom-model".to_string()),
+            None,
         );
         assert!(configured.is_some());
         let c = configured.unwrap();

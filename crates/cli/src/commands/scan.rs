@@ -19,7 +19,7 @@ pub async fn run(
     output: Option<String>,
     fail_on: Option<String>,
     no_llm: bool,
-    _no_sandbox: bool,
+    no_sandbox: bool,
     _rule_pack: &str,
     llm_url: Option<String>,
     llm_model: Option<String>,
@@ -63,8 +63,23 @@ pub async fn run(
             layers_run.push("semantic".to_string());
         }
 
-        // Layer 3: Behavioral sandbox (deferred)
-        println!("[SANDBOX] Behavioral sandbox — coming soon");
+        // Layer 3: Behavioral sandbox
+        if !no_sandbox {
+            println!("[SANDBOX] Running behavioral sandbox...");
+            let sandbox_findings = skill_doctor_core::layer3_sandbox::run_sandbox(&bundle.path).await.unwrap_or_else(|e| {
+                println!("[WARN] Sandbox failed: {}", e);
+                vec![]
+            });
+            if !sandbox_findings.is_empty() {
+                println!("   Found {} behavioral findings", sandbox_findings.len());
+                all_findings.extend(sandbox_findings);
+            } else {
+                println!("   No behavioral findings detected");
+            }
+            layers_run.push("sandbox".to_string());
+        } else {
+            println!("[SANDBOX] Skipped by user flag");
+        }
 
         // Add to threat DB if critical/high findings exist
         let critical_high: Vec<_> = all_findings

@@ -58,6 +58,11 @@ const ARCHIVE_EXTENSIONS: &[&str] = &["zip", "tar", "gz", "tgz", "bz2", "xz"];
 /// - Skills.sh reference (`skills.sh/owner/repo`)
 /// - GitHub shorthand (`owner/repo`)
 pub async fn normalize_bundle(source: &str) -> Result<NormalizedBundle> {
+    // Lobe Hub reference
+    if is_lobe_hub_ref(source) {
+        return normalize_from_lobe_hub(source).await;
+    }
+
     // Skills.sh reference
     if is_skills_sh_ref(source) {
         return normalize_from_skills_sh(source).await;
@@ -108,6 +113,34 @@ pub async fn normalize_bundle(source: &str) -> Result<NormalizedBundle> {
     }
 
     bail!("Unsupported source type: {}", source);
+}
+
+// ---------------------------------------------------------------------------
+// Lobe Hub resolution
+// ---------------------------------------------------------------------------
+
+fn is_lobe_hub_ref(source: &str) -> bool {
+    source.starts_with("lobehub.com/skills/")
+}
+
+async fn normalize_from_lobe_hub(source: &str) -> Result<NormalizedBundle> {
+    let parts: Vec<&str> = source.trim_start_matches("lobehub.com/skills/").split('/').collect();
+    if parts.is_empty() || parts[0].is_empty() {
+        bail!(
+            "Invalid Lobe Hub reference: {}. Expected: lobehub.com/skills/skill-name",
+            source
+        );
+    }
+    let skill_name = parts[0];
+
+    tracing::info!("Resolving skill from Lobe Hub: {}", skill_name);
+
+    // Fast native scraping: Fetch the raw definition directly from Lobe Hub's index
+    let raw_url = format!(
+        "https://raw.githubusercontent.com/lobehub/lobe-chat-agents/main/src/{}/SKILL.md",
+        skill_name
+    );
+    normalize_from_url(&raw_url).await
 }
 
 // ---------------------------------------------------------------------------
@@ -467,6 +500,12 @@ pub fn is_text_file(path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_is_lobe_hub_ref() {
+        assert!(is_lobe_hub_ref("lobehub.com/skills/some-skill"));
+        assert!(!is_lobe_hub_ref("skills.sh/owner/repo"));
+    }
 
     #[test]
     fn test_is_skills_sh_ref() {

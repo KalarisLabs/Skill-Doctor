@@ -177,6 +177,7 @@ Skill Doctor is built around a five-layer scan pipeline. Each layer is independe
 ### Layer 1 — Intake and Normalization
 
 Accepts: `.zip`, `.tar.gz`, directory path, `SKILL.md` single file, Git URL, HTTP URL to archive.
+**New in v0.2.0**: Lightning-fast native Rust ingestion for public directories. Accepts URLs for **Lobe Hub** (`lobehub.com/skills/*`) and **Skills.sh**, scraping and fetching the raw `SKILL.md` in milliseconds without relying on LLM latency.
 
 Outputs: normalized flat bundle — a directory containing `SKILL.md` and all companion files, with a computed SHA-256 bundle hash.
 
@@ -197,7 +198,7 @@ Outputs: normalized flat bundle — a directory containing `SKILL.md` and all co
 
 ### Layer 4 — Behavioral Sandbox (optional, ~15–60 seconds)
 
-- **Provider**: E2B (Firecracker microVM, <200ms cold start).
+- **Provider**: `microsandbox` by superradcompany (Integrated natively via Rust SDK).
 - **Execution**: dry-run the skill in a sandboxed agent environment. The sandbox provides a mock agent runtime that loads and "uses" the skill.
 - **Monitoring**: file system reads/writes, network calls (host, port, payload), environment variable access, subprocess launches, output size.
 - **Comparison**: observed behavior vs. declared behavior. Divergence = finding.
@@ -236,8 +237,8 @@ Scoring factors: confidence of detection, exploitability, blast radius (how much
 - **Continuous monitoring**: move from point-in-time scans to runtime behavioral telemetry hooks in agent frameworks
 - **Skill health history**: longitudinal security posture tracking as skills evolve across versions
 - **Scientific Pack (SD-SCI)**: domain-specific rules for skills touching genomics APIs, LIMS integrations, electronic lab notebooks, and clinical trial data — the exclusive research environment rule pack
-- **Registry gate API**: a pre-install scan webhook for ClawHub, Skills.sh, MCPServers.org
-- **Cryptographic provenance**: Ed25519 skill signing and author key registry (`skill-doctor sign` / `skill-doctor verify`)
+- **Registry gate API**: a pre-install scan webhook for ClawHub, Skills.sh, Lobe Hub, and MCPServers.org
+- **Cryptographic provenance & Defensive Distribution**: Ed25519 skill signing and distribution via the NPM registry under the scoped namespace `@kalarislabs/skill-doctor` to thwart trademark squatting.
 - **EU AI Act compliance module**: automated checks against Article 13 transparency requirements and GDPR data handling obligations
 
 ---

@@ -1,0 +1,17 @@
+{
+  "name": "@kalarislabs/skill-doctor",
+  "version": "0.2.0",
+  "description": "Multi-layer security platform for AI agent skill files",
+  "bin": {
+    "skill-doctor": "bin/skill-doctor"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KalarisLabs/Skill-Doctor.git"
+  },
+  "author": "Kalaris Labs",
+  "license": "AGPL-3.0-or-later"
+}

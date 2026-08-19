@@ -32,6 +32,14 @@ Built in **Rust** for maximum performance, distributed as a single static binary
 
 ## Install
 
+### NPM (Recommended)
+
+```bash
+npm install -g @kalarislabs/skill-doctor
+```
+
+> **Note:** The NPM package is a lightweight wrapper that automatically downloads the native Rust binary for your OS and architecture.
+
 ### macOS
 
 ```bash
@@ -107,9 +115,9 @@ Skill Doctor runs a multi-layer analysis pipeline. Each layer is independent —
 
 | Layer | Engine | What It Does | Speed |
 |-------|--------|-------------|-------|
-| **Layer 1** | YARA-X + tree-sitter AST + Entropy + Unicode | Pattern matching, taint analysis, encoded payload detection | < 30ms |
-| **Layer 2** | LLM (OpenAI-compatible REST API) | Intent mismatch, hidden instruction extraction, tool scope audit | 3–8s |
-| **Layer 3** | E2B Firecracker microVM | Runtime behavior observation in sandboxed agent environment | 15–60s |
+| **Layer 1** | YARA-X + tree-sitter AST + Fast Scraper | Pattern matching, encoded payload detection, lightning-fast native Rust scraping for Lobe Hub/Skills.sh URLs | < 30ms |
+| **Layer 2** | LLM (OpenAI-compatible REST API) | Intent mismatch, hidden instruction extraction, tool scope audit (Optional) | 3–8s |
+| **Layer 3** | `microsandbox` (Rust SDK) | Runtime behavior observation in sandboxed agent environment | 15–60s |
 | **Layer 4** | Community Threat DB | Hash-based lookup against known-malicious skill fingerprints | < 5ms |
 
 ### Architecture
@@ -117,9 +125,9 @@ Skill Doctor runs a multi-layer analysis pipeline. Each layer is independent —
 **Rust-first, single binary architecture:**
 
 - **CLI + TUI** — Rust binary with [OpenTUI](https://github.com/niceguydave/opentui) rendering engine
-- **Static Analysis** — YARA-X (native Rust) + tree-sitter (native Rust)
-- **LLM Integration** — Provider-agnostic REST client (Groq, OpenAI, Ollama, vLLM — any OpenAI-compatible API)
-- **Sandbox** — E2B (Firecracker microVM)
+- **Static Analysis & Intake** — YARA-X, tree-sitter, and `reqwest`-powered fast ingestion (bypassing LLMs for extraction)
+- **LLM Integration** — Provider-agnostic REST client (Groq, OpenAI, Ollama, vLLM — compatible with LLM Gateways like LiteLLM/Helicone)
+- **Sandbox** — `microsandbox` by superradcompany (Rust SDK)
 - **Reports** — SARIF, JSON, HTML generated natively
 
 ### Registry Support
@@ -128,6 +136,7 @@ Skill Doctor natively resolves skills from registries and repositories:
 
 | Source | Example |
 |--------|---------|
+| **Lobe Hub** | `skill-doctor scan lobehub.com/skills/some-skill` |
 | **Skills.sh** | `skill-doctor scan skills.sh/vercel/next-skill` |
 | **GitHub shorthand** | `skill-doctor scan owner/repo` |
 | **GitHub URL** | `skill-doctor scan https://github.com/owner/repo` |
@@ -274,12 +283,12 @@ Skill Doctor has completed a **full rewrite from Python to Rust** (`v0.2.0`). Th
 
 | Component | Status |
 |-----------|--------|
-| Layer 1 — Static Analysis (YARA-X + tree-sitter + Entropy + Unicode) | ✅ Completed |
-| Layer 2 — LLM Semantic Analysis (REST API) | ✅ Completed |
-| Layer 3 — Behavioral Sandbox (E2B) | 🚧 Planned |
+| Layer 1 — Static Analysis (YARA-X + tree-sitter + Fast Scraping) | ✅ Completed |
+| Layer 2 — LLM Semantic Analysis (REST API + Gateway support) | ✅ Completed |
+| Layer 3 — Behavioral Sandbox (`microsandbox` Rust SDK) | 🚧 In Progress |
 | Layer 4 — Community Threat Database | ✅ Completed |
 | CLI Core & OpenTUI Integration | ✅ Completed |
-| Skills.sh / GitHub Registry Support | ✅ Completed |
+| Lobe Hub / Skills.sh / GitHub Registry Support | ✅ Completed |
 | Cross-platform Binaries (macOS, Windows, Linux) | ✅ Completed |
 
 > The Python prototype (`v0.1.0`) is available on the `legacy/python` branch.
@@ -290,11 +299,12 @@ Skill Doctor has completed a **full rewrite from Python to Rust** (`v0.2.0`). Th
 
 - [x] Complete Rust rewrite (core scanner + CLI)
 - [ ] OpenTUI rich terminal interface components
-- [x] Skills.sh registry integration
+- [x] Lobe Hub and Skills.sh registry integration (Fast Ingestion)
 - [x] GitHub shorthand resolution (`owner/repo`)
 - [x] Cross-platform binary releases (Linux, macOS, Windows)
+- [x] NPM defensive distribution (`@kalarislabs/skill-doctor`)
 - [ ] Homebrew tap, Scoop bucket, Winget manifest
-- [ ] E2B behavioral sandbox (Layer 3)
+- [ ] `microsandbox` behavioral sandbox (Layer 3)
 - [ ] Registry gate API for skill registries
 - [ ] Cryptographic skill provenance (Ed25519 signing)
 - [ ] MCP server mode for runtime gating

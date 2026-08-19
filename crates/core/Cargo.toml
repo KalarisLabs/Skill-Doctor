@@ -31,3 +31,4 @@ zip.workspace = true
 tar.workspace = true
 flate2.workspace = true
 rust-embed.workspace = true
+microsandbox.workspace = true

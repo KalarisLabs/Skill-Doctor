@@ -6,6 +6,7 @@
 pub mod intake;
 pub mod layer1_static;
 pub mod layer2_semantic;
+pub mod layer3_sandbox;
 pub mod layer4_threat;
 pub mod llm_client;
 pub mod models;

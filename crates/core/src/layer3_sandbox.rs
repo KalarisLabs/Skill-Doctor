@@ -1,5 +1,5 @@
 use anyhow::Result;
-use microsandbox::Sandbox;
+use microsandbox::NodeSandbox;
 use std::path::Path;
 
 use crate::models::{Finding, Severity};
@@ -11,7 +11,7 @@ pub async fn run_sandbox(bundle_dir: &Path) -> Result<Vec<Finding>> {
     tracing::info!("Initializing microsandbox session for {}", bundle_dir.display());
     
     // Initialize the micro VM using the microsandbox Rust SDK
-    let _sb = Sandbox::new().await?;
+    let _sb = NodeSandbox::create("skill-doctor-sandbox").await.map_err(|e| anyhow::anyhow!("Failed to create sandbox: {}", e))?;
     
     tracing::info!("Sandbox session started. Awaiting execution telemetry...");
 

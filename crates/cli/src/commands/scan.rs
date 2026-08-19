@@ -81,7 +81,10 @@ pub async fn run(
 
     // Score findings
     let duration_ms = start.elapsed().as_millis() as u64;
-    println!("[TIME] Scanning completed in {:.2}s", duration_ms as f64 / 1000.0);
+    println!(
+        "[TIME] Scanning completed in {:.2}s",
+        duration_ms as f64 / 1000.0
+    );
 
     let scan_result = score_findings(all_findings, &bundle.hash, layers_run, duration_ms);
 

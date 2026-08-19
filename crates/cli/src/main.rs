@@ -105,20 +105,13 @@ async fn main() -> anyhow::Result<()> {
             llm_model,
         } => {
             commands::scan::run(
-                &target, output, fail_on, no_llm, no_sandbox, &rule_pack,
-                llm_url, llm_model,
+                &target, output, fail_on, no_llm, no_sandbox, &rule_pack, llm_url, llm_model,
             )
             .await
         }
-        Commands::ScanAll { directory } => {
-            commands::scan_all::run(&directory).await
-        }
-        Commands::Diff { v1, v2 } => {
-            commands::diff::run(&v1, &v2).await
-        }
-        Commands::Mcp => {
-            commands::mcp::run().await
-        }
+        Commands::ScanAll { directory } => commands::scan_all::run(&directory).await,
+        Commands::Diff { v1, v2 } => commands::diff::run(&v1, &v2).await,
+        Commands::Mcp => commands::mcp::run().await,
         Commands::Rules => {
             commands::rules::run();
             Ok(())

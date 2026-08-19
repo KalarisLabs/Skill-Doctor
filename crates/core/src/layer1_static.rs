@@ -15,7 +15,7 @@ use crate::models::{Engine, Finding, Severity};
 
 /// Embedded YARA rule files — compiled into the binary at build time.
 #[derive(Embed)]
-#[folder = "../../rules/core/"]
+#[folder = "../../skill_doctor/rules/core/"]
 #[include = "*.yar"]
 struct YaraRules;
 
@@ -127,7 +127,10 @@ fn scan_yara(bundle_dir: &Path) -> Vec<Finding> {
                 &rel_path,
                 None,
                 description,
-                format!("Review content flagged by rule '{}'", matching_rule.identifier()),
+                format!(
+                    "Review content flagged by rule '{}'",
+                    matching_rule.identifier()
+                ),
                 Engine::Yara,
                 0.85,
             ));
@@ -143,24 +146,87 @@ fn scan_yara(bundle_dir: &Path) -> Vec<Finding> {
 
 /// Dangerous function calls to detect in Python files.
 const DANGEROUS_CALLS: &[(&str, Severity, &str, &str)] = &[
-    ("subprocess.run", Severity::High, "SD-02 · Command Injection", "Command execution via subprocess.run"),
-    ("subprocess.call", Severity::High, "SD-02 · Command Injection", "Command execution via subprocess.call"),
-    ("subprocess.Popen", Severity::High, "SD-02 · Command Injection", "Command execution via subprocess.Popen"),
-    ("os.system", Severity::Critical, "SD-02 · Command Injection", "Shell command execution via os.system"),
-    ("os.popen", Severity::High, "SD-02 · Command Injection", "Shell command execution via os.popen"),
-    ("eval", Severity::Critical, "SD-02 · Command Injection", "Dynamic code execution via eval()"),
-    ("exec", Severity::Critical, "SD-02 · Command Injection", "Dynamic code execution via exec()"),
-    ("pickle.loads", Severity::High, "SD-02 · Command Injection", "Arbitrary code execution via pickle deserialization"),
-    ("requests.post", Severity::Medium, "SD-03 · Data Exfiltration", "Outbound HTTP POST — potential data exfiltration"),
-    ("requests.get", Severity::Low, "SD-03 · Data Exfiltration", "Outbound HTTP GET — review for data leakage"),
-    ("httpx.post", Severity::Medium, "SD-03 · Data Exfiltration", "Outbound HTTP POST — potential data exfiltration"),
-    ("urllib.request.urlopen", Severity::Medium, "SD-03 · Data Exfiltration", "Outbound HTTP request — potential data exfiltration"),
+    (
+        "subprocess.run",
+        Severity::High,
+        "SD-02 · Command Injection",
+        "Command execution via subprocess.run",
+    ),
+    (
+        "subprocess.call",
+        Severity::High,
+        "SD-02 · Command Injection",
+        "Command execution via subprocess.call",
+    ),
+    (
+        "subprocess.Popen",
+        Severity::High,
+        "SD-02 · Command Injection",
+        "Command execution via subprocess.Popen",
+    ),
+    (
+        "os.system",
+        Severity::Critical,
+        "SD-02 · Command Injection",
+        "Shell command execution via os.system",
+    ),
+    (
+        "os.popen",
+        Severity::High,
+        "SD-02 · Command Injection",
+        "Shell command execution via os.popen",
+    ),
+    (
+        "eval",
+        Severity::Critical,
+        "SD-02 · Command Injection",
+        "Dynamic code execution via eval()",
+    ),
+    (
+        "exec",
+        Severity::Critical,
+        "SD-02 · Command Injection",
+        "Dynamic code execution via exec()",
+    ),
+    (
+        "pickle.loads",
+        Severity::High,
+        "SD-02 · Command Injection",
+        "Arbitrary code execution via pickle deserialization",
+    ),
+    (
+        "requests.post",
+        Severity::Medium,
+        "SD-03 · Data Exfiltration",
+        "Outbound HTTP POST — potential data exfiltration",
+    ),
+    (
+        "requests.get",
+        Severity::Low,
+        "SD-03 · Data Exfiltration",
+        "Outbound HTTP GET — review for data leakage",
+    ),
+    (
+        "httpx.post",
+        Severity::Medium,
+        "SD-03 · Data Exfiltration",
+        "Outbound HTTP POST — potential data exfiltration",
+    ),
+    (
+        "urllib.request.urlopen",
+        Severity::Medium,
+        "SD-03 · Data Exfiltration",
+        "Outbound HTTP request — potential data exfiltration",
+    ),
 ];
 
 /// Dangerous attribute access patterns.
-const DANGEROUS_ATTRS: &[(&str, Severity, &str, &str)] = &[
-    ("os.environ", Severity::Medium, "SD-03 · Data Exfiltration", "Environment variable access — may harvest secrets"),
-];
+const DANGEROUS_ATTRS: &[(&str, Severity, &str, &str)] = &[(
+    "os.environ",
+    Severity::Medium,
+    "SD-03 · Data Exfiltration",
+    "Environment variable access — may harvest secrets",
+)];
 
 fn scan_python_ast(bundle_dir: &Path) -> Vec<Finding> {
     let mut findings = Vec::new();
@@ -175,10 +241,7 @@ fn scan_python_ast(bundle_dir: &Path) -> Vec<Finding> {
     for entry in WalkDir::new(bundle_dir)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| {
-            e.file_type().is_file()
-                && e.path().extension().is_some_and(|ext| ext == "py")
-        })
+        .filter(|e| e.file_type().is_file() && e.path().extension().is_some_and(|ext| ext == "py"))
     {
         let file_path = entry.path();
         let source = match std::fs::read_to_string(file_path) {
@@ -218,9 +281,7 @@ fn walk_ast_for_calls(
         if node.kind() == "call" {
             // Extract the function name from the call expression
             if let Some(func_node) = node.child_by_field_name("function") {
-                let func_text = func_node
-                    .utf8_text(source.as_bytes())
-                    .unwrap_or("");
+                let func_text = func_node.utf8_text(source.as_bytes()).unwrap_or("");
 
                 // Check against dangerous calls
                 for &(pattern, severity, category, description) in DANGEROUS_CALLS {
@@ -232,7 +293,10 @@ fn walk_ast_for_calls(
                             rel_path,
                             Some(line),
                             description,
-                            format!("Avoid {} or sanitize inputs; use allowlists for commands", pattern),
+                            format!(
+                                "Avoid {} or sanitize inputs; use allowlists for commands",
+                                pattern
+                            ),
                             Engine::Ast,
                             0.9,
                         ));
@@ -378,14 +442,20 @@ fn scan_unicode(bundle_dir: &Path) -> Vec<Finding> {
             let line_1indexed = line_num + 1;
 
             // Check for zero-width characters
-            let zw_count = line.chars().filter(|c| zero_width_chars.contains(c)).count();
+            let zw_count = line
+                .chars()
+                .filter(|c| zero_width_chars.contains(c))
+                .count();
             if zw_count > 0 {
                 findings.push(Finding::new(
                     Severity::High,
                     "SD-01 · Prompt Injection (ASCII Smuggling)",
                     &rel_path,
                     Some(line_1indexed),
-                    format!("Zero-width Unicode characters detected: {} instances", zw_count),
+                    format!(
+                        "Zero-width Unicode characters detected: {} instances",
+                        zw_count
+                    ),
                     "Strip all non-printable Unicode characters from skill content",
                     Engine::Unicode,
                     0.9,
@@ -427,7 +497,11 @@ mod tests {
         // Random-ish bytes should have high entropy
         let data: Vec<u8> = (0..=255).collect();
         let entropy = calculate_entropy(&data);
-        assert!(entropy > 7.0, "Entropy of all byte values should be high: {}", entropy);
+        assert!(
+            entropy > 7.0,
+            "Entropy of all byte values should be high: {}",
+            entropy
+        );
     }
 
     #[test]

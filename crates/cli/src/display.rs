@@ -16,8 +16,11 @@ pub fn print_results(result: &ScanResult) {
     // Sort findings by severity then confidence
     let mut findings = result.findings.clone();
     findings.sort_by(|a, b| {
-        b.severity.order().cmp(&a.severity.order())
-            .then(b.confidence.partial_cmp(&a.confidence).unwrap_or(std::cmp::Ordering::Equal))
+        b.severity.order().cmp(&a.severity.order()).then(
+            b.confidence
+                .partial_cmp(&a.confidence)
+                .unwrap_or(std::cmp::Ordering::Equal),
+        )
     });
 
     for f in &findings {
@@ -34,7 +37,11 @@ pub fn print_results(result: &ScanResult) {
         println!("  File: {}{}", f.file, line_info);
         println!("  Description: {}", f.description);
         println!("  Remediation: {}", f.remediation);
-        println!("  Engine: {} (Confidence: {:.0}%)", f.engine, f.confidence * 100.0);
+        println!(
+            "  Engine: {} (Confidence: {:.0}%)",
+            f.engine,
+            f.confidence * 100.0
+        );
     }
     println!("\n====================");
 }

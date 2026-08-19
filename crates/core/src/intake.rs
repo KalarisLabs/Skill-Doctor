@@ -25,10 +25,23 @@ pub struct NormalizedBundle {
 
 /// Supported file extensions for single-file scanning.
 const TEXT_EXTENSIONS: &[&str] = &[
-    "md", "txt", "py", "js", "ts", "json",
-    "yaml", "yml", "toml", "cfg", "ini",
-    "sh", "bash", "zsh",
-    "clauderules", "cursorrules", "mdc",
+    "md",
+    "txt",
+    "py",
+    "js",
+    "ts",
+    "json",
+    "yaml",
+    "yml",
+    "toml",
+    "cfg",
+    "ini",
+    "sh",
+    "bash",
+    "zsh",
+    "clauderules",
+    "cursorrules",
+    "mdc",
 ];
 
 /// Supported archive extensions.
@@ -66,16 +79,10 @@ pub async fn normalize_bundle(source: &str) -> Result<NormalizedBundle> {
     }
 
     if path.is_file() {
-        let ext = path
-            .extension()
-            .and_then(|e| e.to_str())
-            .unwrap_or("");
+        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
         // Check for extensionless known files
-        let file_name = path
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or("");
+        let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
         if ext == "zip" {
             return normalize_zip(path);
@@ -114,7 +121,10 @@ async fn normalize_from_skills_sh(source: &str) -> Result<NormalizedBundle> {
     // "skills.sh/owner/repo" -> fetch from Skills.sh API
     let parts: Vec<&str> = source.trim_start_matches("skills.sh/").split('/').collect();
     if parts.len() < 2 {
-        bail!("Invalid Skills.sh reference: {}. Expected: skills.sh/owner/repo", source);
+        bail!(
+            "Invalid Skills.sh reference: {}. Expected: skills.sh/owner/repo",
+            source
+        );
     }
     let owner = parts[0];
     let repo = parts[1];
@@ -128,7 +138,9 @@ async fn normalize_from_skills_sh(source: &str) -> Result<NormalizedBundle> {
     match client.get(&api_url).send().await {
         Ok(resp) if resp.status().is_success() => {
             // Parse the API response to get the source URL
-            let body: serde_json::Value = resp.json().await
+            let body: serde_json::Value = resp
+                .json()
+                .await
                 .context("Failed to parse Skills.sh API response")?;
 
             if let Some(source_url) = body.get("source_url").and_then(|v| v.as_str()) {
@@ -236,9 +248,7 @@ async fn normalize_from_url(url: &str) -> Result<NormalizedBundle> {
 
 fn normalize_single_file(file_path: &Path) -> Result<NormalizedBundle> {
     let temp_dir = TempDir::new().context("Failed to create temp directory")?;
-    let file_name = file_path
-        .file_name()
-        .context("Invalid file name")?;
+    let file_name = file_path.file_name().context("Invalid file name")?;
     let dest = temp_dir.path().join(file_name);
     std::fs::copy(file_path, &dest).context("Failed to copy file")?;
 
@@ -358,19 +368,11 @@ fn compute_hash(directory: &Path) -> Result<String> {
 
 /// Check if a file extension is a recognized text file for scanning.
 pub fn is_text_file(path: &Path) -> bool {
-    let ext = path
-        .extension()
-        .and_then(|e| e.to_str())
-        .unwrap_or("");
+    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
 
-    let file_name = path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("");
+    let file_name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
 
-    TEXT_EXTENSIONS.contains(&ext)
-        || file_name == ".clauderules"
-        || file_name == ".cursorrules"
+    TEXT_EXTENSIONS.contains(&ext) || file_name == ".clauderules" || file_name == ".cursorrules"
 }
 
 #[cfg(test)]

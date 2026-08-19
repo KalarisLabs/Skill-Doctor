@@ -39,18 +39,12 @@ fn deduplicate_findings(findings: Vec<Finding>) -> Vec<Finding> {
     let mut result: Vec<Finding> = Vec::new();
 
     for finding in findings {
-        let key = (
-            finding.category.clone(),
-            finding.file.clone(),
-            finding.line,
-        );
+        let key = (finding.category.clone(), finding.file.clone(), finding.line);
 
         if seen.contains(&key) {
             // Replace if higher confidence
             if let Some(existing) = result.iter_mut().find(|f| {
-                f.category == finding.category
-                    && f.file == finding.file
-                    && f.line == finding.line
+                f.category == finding.category && f.file == finding.file && f.line == finding.line
             }) {
                 if finding.confidence > existing.confidence {
                     *existing = finding;

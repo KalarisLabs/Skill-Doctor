@@ -38,10 +38,7 @@ If no findings, return {"findings": []}."#;
 /// Run LLM semantic analysis on a skill bundle.
 ///
 /// Returns an empty Vec if no LLM client is configured (no API key).
-pub async fn scan_semantic(
-    bundle_dir: &Path,
-    static_findings: &[Finding],
-) -> Vec<Finding> {
+pub async fn scan_semantic(bundle_dir: &Path, static_findings: &[Finding]) -> Vec<Finding> {
     let client = match LlmClient::from_env() {
         Some(c) => c,
         None => {
@@ -123,10 +120,16 @@ async fn run_semantic_analysis(
             Some(Finding::new(
                 severity,
                 item.get("category")?.as_str()?,
-                item.get("file").and_then(|v| v.as_str()).unwrap_or("unknown"),
-                item.get("line").and_then(|v| v.as_u64()).map(|l| l as usize),
+                item.get("file")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("unknown"),
+                item.get("line")
+                    .and_then(|v| v.as_u64())
+                    .map(|l| l as usize),
                 item.get("description")?.as_str()?,
-                item.get("remediation").and_then(|v| v.as_str()).unwrap_or("Review manually"),
+                item.get("remediation")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("Review manually"),
                 Engine::Llm,
                 item.get("confidence")
                     .and_then(|v| v.as_f64())

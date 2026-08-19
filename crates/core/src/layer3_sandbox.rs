@@ -6,8 +6,6 @@ use crate::models::Finding;
 
 /// Run behavioral analysis using microsandbox
 pub async fn run_sandbox(bundle_dir: &Path) -> Result<Vec<Finding>> {
-    let findings = Vec::new();
-
     tracing::info!(
         "Initializing microsandbox session for {}",
         bundle_dir.display()

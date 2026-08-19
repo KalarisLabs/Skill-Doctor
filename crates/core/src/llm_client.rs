@@ -46,8 +46,7 @@ impl LlmConfig {
     where
         F: Fn(&str) -> Option<String>,
     {
-        let api_key = lookup("SKILL_DOCTOR_LLM_KEY")
-            .or_else(|| lookup("GROQ_API_KEY"))?;
+        let api_key = lookup("SKILL_DOCTOR_LLM_KEY").or_else(|| lookup("GROQ_API_KEY"))?;
 
         let base_url = custom_url
             .or_else(|| lookup("SKILL_DOCTOR_LLM_URL"))

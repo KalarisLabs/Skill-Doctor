@@ -410,12 +410,13 @@ fn normalize_tar(tar_path: &Path) -> Result<NormalizedBundle> {
         let canonical_temp = temp_dir.path().canonicalize()?;
 
         if let Ok(canonical_target) = target.canonicalize()
-            && !canonical_target.starts_with(&canonical_temp) {
-                bail!(
-                    "Tar-slip detected: '{}' would extract outside the target directory",
-                    path.display()
-                );
-            }
+            && !canonical_target.starts_with(&canonical_temp)
+        {
+            bail!(
+                "Tar-slip detected: '{}' would extract outside the target directory",
+                path.display()
+            );
+        }
 
         entry.unpack_in(temp_dir.path())?;
     }

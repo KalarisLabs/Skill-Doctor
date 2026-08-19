@@ -45,10 +45,10 @@ fn deduplicate_findings(findings: Vec<Finding>) -> Vec<Finding> {
             // Replace if higher confidence
             if let Some(existing) = result.iter_mut().find(|f| {
                 f.category == finding.category && f.file == finding.file && f.line == finding.line
-            })
-                && finding.confidence > existing.confidence {
-                    *existing = finding;
-                }
+            }) && finding.confidence > existing.confidence
+            {
+                *existing = finding;
+            }
         } else {
             seen.insert(key);
             result.push(finding);

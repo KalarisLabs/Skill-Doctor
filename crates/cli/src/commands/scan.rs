@@ -56,7 +56,8 @@ pub async fn run(
         if !no_llm {
             println!("[LLM] Running LLM semantic analysis...");
             let semantic_findings =
-                scan_semantic_with_overrides(&bundle.path, &static_findings, llm_url, llm_model).await;
+                scan_semantic_with_overrides(&bundle.path, &static_findings, llm_url, llm_model)
+                    .await;
             println!("   Found {} semantic findings", semantic_findings.len());
             all_findings.extend(semantic_findings);
             layers_run.push("semantic".to_string());

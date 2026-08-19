@@ -2,11 +2,11 @@ use anyhow::Result;
 use microsandbox::NodeSandbox;
 use std::path::Path;
 
-use crate::models::{Finding, Severity};
+use crate::models::Finding;
 
 /// Run behavioral analysis using microsandbox
 pub async fn run_sandbox(bundle_dir: &Path) -> Result<Vec<Finding>> {
-    let mut findings = Vec::new();
+    let findings = Vec::new();
 
     tracing::info!(
         "Initializing microsandbox session for {}",

@@ -24,6 +24,7 @@ tracing-subscriber.workspace = true
 indicatif.workspace = true
 console.workspace = true
 chrono.workspace = true
+walkdir.workspace = true
 
 [target.'cfg(unix)'.dependencies]
 opentui_rust.workspace = true

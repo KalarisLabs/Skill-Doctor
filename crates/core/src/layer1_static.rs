@@ -6,15 +6,14 @@
 use std::collections::HashMap;
 use std::path::Path;
 
-use anyhow::Result;
-use rust_embed::Embed;
+use rust_embed::RustEmbed;
 use walkdir::WalkDir;
 
 use crate::intake::is_text_file;
 use crate::models::{Engine, Finding, Severity};
 
 /// Embedded YARA rule files — compiled into the binary at build time.
-#[derive(Embed)]
+#[derive(RustEmbed)]
 #[folder = "../../skill_doctor/rules/core/"]
 #[include = "*.yar"]
 struct YaraRules;
@@ -41,13 +40,7 @@ fn scan_yara(bundle_dir: &Path) -> Vec<Finding> {
     let mut findings = Vec::new();
 
     // Compile all embedded YARA rules
-    let mut compiler = match yara_x::Compiler::new() {
-        Ok(c) => c,
-        Err(e) => {
-            tracing::warn!("Failed to create YARA compiler: {}", e);
-            return findings;
-        }
-    };
+    let mut compiler = yara_x::Compiler::new();
 
     for file_name in YaraRules::iter() {
         if let Some(rule_data) = YaraRules::get(&file_name) {

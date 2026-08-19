@@ -173,8 +173,10 @@ mod tests {
     #[test]
     fn test_config_defaults() {
         // This test works when env vars are NOT set
-        std::env::remove_var("SKILL_DOCTOR_LLM_KEY");
-        std::env::remove_var("GROQ_API_KEY");
+        unsafe {
+            std::env::remove_var("SKILL_DOCTOR_LLM_KEY");
+            std::env::remove_var("GROQ_API_KEY");
+        }
         assert!(LlmConfig::from_env().is_none());
     }
 }

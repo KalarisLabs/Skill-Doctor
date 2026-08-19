@@ -77,4 +77,4 @@ walkdir = "2"
 url = "2"
 
 # Embed YARA rules at compile time
-rust-embed = "8"
+rust-embed = { version = "8", features = ["include-exclude"] }

@@ -37,7 +37,12 @@ impl LlmConfig {
         custom_model: Option<String>,
         custom_headers: Option<std::collections::HashMap<String, String>>,
     ) -> Option<Self> {
-        Self::from_lookup(|k| std::env::var(k).ok(), custom_url, custom_model, custom_headers)
+        Self::from_lookup(
+            |k| std::env::var(k).ok(),
+            custom_url,
+            custom_model,
+            custom_headers,
+        )
     }
 
     /// Helper that loads configuration using an arbitrary environment lookup function.

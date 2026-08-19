@@ -124,7 +124,10 @@ fn is_lobe_hub_ref(source: &str) -> bool {
 }
 
 async fn normalize_from_lobe_hub(source: &str) -> Result<NormalizedBundle> {
-    let parts: Vec<&str> = source.trim_start_matches("lobehub.com/skills/").split('/').collect();
+    let parts: Vec<&str> = source
+        .trim_start_matches("lobehub.com/skills/")
+        .split('/')
+        .collect();
     if parts.is_empty() || parts[0].is_empty() {
         bail!(
             "Invalid Lobe Hub reference: {}. Expected: lobehub.com/skills/skill-name",

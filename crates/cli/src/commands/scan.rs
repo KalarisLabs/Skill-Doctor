@@ -66,19 +66,20 @@ pub async fn run(
         // Layer 3: Behavioral sandbox
         if !no_sandbox {
             println!("[SANDBOX] Running behavioral sandbox...");
-            let sandbox_findings = skill_doctor_core::layer3_sandbox::run_sandbox(&bundle.path)
-                .await
-                .unwrap_or_else(|e| {
-                    println!("[WARN] Sandbox failed: {}", e);
-                    vec![]
-                });
-            if !sandbox_findings.is_empty() {
-                println!("   Found {} behavioral findings", sandbox_findings.len());
-                all_findings.extend(sandbox_findings);
-            } else {
-                println!("   No behavioral findings detected");
+            match skill_doctor_core::layer3_sandbox::run_sandbox(&bundle.path).await {
+                Ok(sandbox_findings) => {
+                    if !sandbox_findings.is_empty() {
+                        println!("   Found {} behavioral findings", sandbox_findings.len());
+                        all_findings.extend(sandbox_findings);
+                    } else {
+                        println!("   No behavioral findings detected");
+                    }
+                    layers_run.push("sandbox".to_string());
+                }
+                Err(e) => {
+                    println!("[WARN] Sandbox failed or unsupported: {}", e);
+                }
             }
-            layers_run.push("sandbox".to_string());
         } else {
             println!("[SANDBOX] Skipped by user flag");
         }

@@ -49,7 +49,7 @@ pub async fn scan_semantic_with_overrides(
     custom_url: Option<String>,
     custom_model: Option<String>,
 ) -> Vec<Finding> {
-    let client = match LlmClient::from_env_with_overrides(custom_url, custom_model) {
+    let client = match LlmClient::from_env_with_overrides(custom_url, custom_model, None) {
         Some(c) => c,
         None => {
             tracing::debug!("No LLM API key configured, skipping semantic analysis");

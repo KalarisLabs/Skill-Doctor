@@ -20,12 +20,9 @@ pub async fn run_sandbox(bundle_dir: &Path) -> Result<Vec<Finding>> {
 
     tracing::info!("Sandbox session started. Awaiting execution telemetry...");
 
-    // TODO: Mount the bundle_dir, execute the skill using a mock agent runtime,
-    // and analyze the telemetry (file writes, network calls, spawned processes).
-    //
-    // let result = sb.run(vec!["mock_agent", "/workspace"]).await?;
-    // let events = sb.get_telemetry().await?;
-    // ...
-
-    Ok(findings)
+    // Since this behavioral analysis isn't fully implemented yet, return an error
+    // instead of an empty list, so it isn't recorded as successful coverage.
+    Err(anyhow::anyhow!(
+        "Behavioral sandbox analysis is not yet fully implemented. Telemetry analysis is unsupported."
+    ))
 }

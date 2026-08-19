@@ -1,0 +1,26 @@
+[package]
+name = "skill-doctor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Multi-layer security scanner for AI agent skill files"
+
+[[bin]]
+name = "skill-doctor"
+path = "src/main.rs"
+
+[dependencies]
+skill-doctor-core = { path = "../core" }
+skill-doctor-report = { path = "../report" }
+clap.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+opentui_rust.workspace = true
+indicatif.workspace = true
+console.workspace = true
+chrono.workspace = true

@@ -11,32 +11,70 @@
 
 <p align="center">
   <a href="https://github.com/KalarisLabs/Skill-Doctor/actions"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci.yml?style=flat-square&label=CI" alt="CI Status" /></a>
-  <a href="https://pypi.org/project/skill-doctor/"><img src="https://img.shields.io/pypi/v/skill-doctor?style=flat-square&color=blue" alt="PyPI Version" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/releases"><img src="https://img.shields.io/github/v/release/KalarisLabs/Skill-Doctor?style=flat-square&color=blue" alt="Latest Release" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-green?style=flat-square" alt="License" /></a>
-  <a href="https://skilldoctor.kalarislabs.com"><img src="https://img.shields.io/badge/web-skilldoctor.kalarislabs.com-blueviolet?style=flat-square" alt="Website" /></a>
+  <a href="https://crates.io/crates/skill-doctor"><img src="https://img.shields.io/crates/v/skill-doctor?style=flat-square&color=orange" alt="Crates.io" /></a>
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick Start</a> · <a href="#how-it-works">How It Works</a> · <a href="#threat-detection">Threat Detection</a> · <a href="#cli-reference">CLI Reference</a> · <a href="#development">Development</a> · <a href="#roadmap">Roadmap</a>
+  <a href="#install">Install</a> · <a href="#quick-start">Quick Start</a> · <a href="#how-it-works">How It Works</a> · <a href="#threat-detection">Threat Detection</a> · <a href="#cli-reference">CLI Reference</a> · <a href="#development">Development</a> · <a href="#roadmap">Roadmap</a>
 </p>
 
 ---
 
-**Skill Doctor** is Kalaris Labs' first open-source infrastructure project — a security scanner purpose-built for the emerging attack surface of AI agent skill files (`SKILL.md`, `.clauderules`, `AGENTS.md`, MCP server configs).
+**Skill Doctor** is Kalaris Labs' first open-source infrastructure project — a security scanner purpose-built for the emerging attack surface of AI agent skill files (`SKILL.md`, `.clauderules`, `AGENTS.md`, `.cursorrules`, MCP server configs).
+
+Built in **Rust** for maximum performance, distributed as a single static binary with zero runtime dependencies.
 
 > **Why this matters:** Skill files execute with the full trust context of your AI agent — access to tools, file systems, APIs, and downstream agents. A single compromised skill can exfiltrate credentials, inject backdoors, or escalate privileges across your entire agent ecosystem.
 
 ---
 
-## Quick Start
+## Install
 
-### Install via pip
+### macOS
 
 ```bash
-pip install skill-doctor
+brew install KalarisLabs/tap/skill-doctor
 ```
 
-### Scan a skill
+### Linux
+
+```bash
+curl -sSL https://raw.githubusercontent.com/KalarisLabs/Skill-Doctor/master/install.sh | sh
+```
+
+### Windows
+
+```powershell
+# Scoop
+scoop bucket add kalarislabs https://github.com/KalarisLabs/scoop-bucket
+scoop install skill-doctor
+
+# Winget
+winget install KalarisLabs.SkillDoctor
+
+# Or download directly
+irm https://raw.githubusercontent.com/KalarisLabs/Skill-Doctor/master/install.ps1 | iex
+```
+
+### From source (Cargo)
+
+```bash
+cargo install skill-doctor
+```
+
+### Docker
+
+```bash
+docker run --rm -v $(pwd):/scan ghcr.io/kalarislabs/skill-doctor scan /scan/SKILL.md
+```
+
+> All binaries are available on [GitHub Releases](https://github.com/KalarisLabs/Skill-Doctor/releases) with SHA-256 checksums.
+
+---
+
+## Quick Start
 
 ```bash
 # Scan a local skill directory
@@ -51,13 +89,15 @@ skill-doctor scan skill-bundle.zip
 # Scan from a URL
 skill-doctor scan https://example.com/skills/agents.md
 
+# Scan from Skills.sh registry
+skill-doctor scan skills.sh/vercel/next-skill
+
+# Scan from GitHub shorthand
+skill-doctor scan owner/repo
+
 # Fail on HIGH severity findings (CI/CD gating)
 skill-doctor scan ./skills/ --fail-on HIGH
 ```
-
-### Web Interface
-
-Use [skilldoctor.kalarislabs.com](https://skilldoctor.kalarislabs.com) for drag-and-drop scanning with zero installation — or deploy your own instance.
 
 ---
 
@@ -67,24 +107,34 @@ Skill Doctor runs a multi-layer analysis pipeline. Each layer is independent —
 
 | Layer | Engine | What It Does | Speed |
 |-------|--------|-------------|-------|
-| **Layer 1** | YARA-X + Python AST + Entropy + Unicode | Pattern matching, taint analysis, encoded payload detection | < 500ms |
-| **Layer 2** | Groq LLM (Llama 3.3 70B) | Intent mismatch, hidden instruction extraction, tool scope audit | 3–8s |
+| **Layer 1** | YARA-X + tree-sitter AST + Entropy + Unicode | Pattern matching, taint analysis, encoded payload detection | < 30ms |
+| **Layer 2** | LLM (OpenAI-compatible REST API) | Intent mismatch, hidden instruction extraction, tool scope audit | 3–8s |
 | **Layer 3** | E2B Firecracker microVM | Runtime behavior observation in sandboxed agent environment | 15–60s |
-| **Layer 4** | Community Threat DB | Hash-based lookup against known-malicious skill fingerprints | < 50ms |
+| **Layer 4** | Community Threat DB | Hash-based lookup against known-malicious skill fingerprints | < 5ms |
 
 ### Architecture
 
-Built on a **Cloudflare-first** edge infrastructure:
+**Rust-first, single binary architecture:**
 
-- **Web UI** — Cloudflare Pages (Next.js)
-- **API Gateway** — Cloudflare Workers (Hono.js)
-- **Database** — Cloudflare D1 (SQLite at edge)
-- **Cache** — Cloudflare KV (scan result caching)
-- **Queue** — Cloudflare Queues (async scan jobs)
-- **Storage** — Cloudflare R2 (report storage)
-- **Scanner** — fly.io (Python FastAPI)
-- **LLM** — Groq API (via Cloudflare AI Gateway)
+- **CLI + TUI** — Rust binary with [OpenTUI](https://github.com/niceguydave/opentui) rendering engine
+- **Static Analysis** — YARA-X (native Rust) + tree-sitter (native Rust)
+- **LLM Integration** — Provider-agnostic REST client (Groq, OpenAI, Ollama, vLLM — any OpenAI-compatible API)
 - **Sandbox** — E2B (Firecracker microVM)
+- **Reports** — SARIF, JSON, HTML generated natively
+
+### Registry Support
+
+Skill Doctor natively resolves skills from registries and repositories:
+
+| Source | Example |
+|--------|---------|
+| **Skills.sh** | `skill-doctor scan skills.sh/vercel/next-skill` |
+| **GitHub shorthand** | `skill-doctor scan owner/repo` |
+| **GitHub URL** | `skill-doctor scan https://github.com/owner/repo` |
+| **HTTP URL** | `skill-doctor scan https://example.com/skill.md` |
+| **Local file** | `skill-doctor scan SKILL.md` |
+| **Local directory** | `skill-doctor scan ./my-skill/` |
+| **Archive** | `skill-doctor scan skill-bundle.zip` |
 
 ---
 
@@ -115,15 +165,21 @@ skill-doctor scan ./path/                     # Scan directory
 skill-doctor scan skill.zip                   # Scan archive
 skill-doctor scan skill.md                    # Scan single file
 skill-doctor scan https://example.com/s.md    # Scan from URL
+skill-doctor scan skills.sh/owner/skill       # Scan from Skills.sh
+skill-doctor scan owner/repo                  # Scan from GitHub
 skill-doctor scan-all ./skills/               # Recursive scan
 
 # Output formats
---output sarif|json|html|pdf                  # Report format
+--output sarif|json|html                      # Report format
 --fail-on CRITICAL|HIGH|MEDIUM|LOW            # CI/CD exit code
 
 # Layer control
 --no-llm                                      # Skip LLM semantic pass
 --no-sandbox                                  # Skip E2B sandbox
+
+# LLM configuration
+--llm-url https://api.groq.com/openai/v1     # LLM provider URL
+--llm-model llama-3.3-70b-versatile           # Model name
 
 # Rule packs
 --rule-pack core,supply_chain                 # Select rule packs
@@ -135,39 +191,22 @@ skill-doctor rules                            # List loaded rule packs
 skill-doctor version                          # Print version
 ```
 
----
+### LLM Configuration
 
-## Test Results
+Skill Doctor uses a provider-agnostic REST client compatible with any OpenAI-compatible API. Configure via environment variables:
 
-Scan of the [Kane CLI browser automation skill](https://testmuai.com/kane-cli/agents.md) using the Skill Doctor `master` branch:
-
+```bash
+export SKILL_DOCTOR_LLM_URL="https://api.groq.com/openai/v1"
+export SKILL_DOCTOR_LLM_KEY="gsk_..."
+export SKILL_DOCTOR_LLM_MODEL="llama-3.3-70b-versatile"
 ```
-SKILL DOCTOR v0.1.0
-by Kalaris Labs
 
-[TARGET] https://testmuai.com/kane-cli/agents.md
-[NORMALIZE] Normalizing bundle...
-[HASH] Bundle hash: 3335ef7aacedf6bf...
-[THREAT DB] Checking threat database...
-[STATIC] Running static analysis...
-[STATIC] Found 0 static findings
-[LLM] Running LLM semantic analysis...
-   Found 0 semantic findings
-[SANDBOX] Behavioral sandbox deferred to Week 2
-[TIME] Scanning completed in 1.20s
-
-============================================================
-SCAN RESULTS
-============================================================
-Risk Level: SAFE
-Risk Score: 0.0 / 10.0
-Layers Run: static, semantic
-Duration: 1.20s
-
-[SUMMARY] 0 findings total:
-
-[SAFE] No findings detected. Skill appears safe.
-```
+| Provider | URL | Notes |
+|----------|-----|-------|
+| **Groq** | `https://api.groq.com/openai/v1` | Fast inference, free tier available |
+| **OpenAI** | `https://api.openai.com/v1` | GPT-4o-mini recommended |
+| **Ollama** (local) | `http://localhost:11434/v1` | Fully offline, no API key needed |
+| **vLLM** (self-hosted) | `http://your-server:8000/v1` | Any model |
 
 ---
 
@@ -176,102 +215,91 @@ Duration: 1.20s
 ### Prerequisites
 
 ```bash
-# Install tools
-brew install uv node docker      # macOS
-# Or: scoop install uv nodejs docker   # Windows
+# Install Rust toolchain
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# API keys (free tiers are sufficient)
-# Groq:  https://console.groq.com
-# E2B:   https://e2b.dev
-# Clerk: https://clerk.com
+# Verify
+rustc --version
+cargo --version
 ```
 
-### Local Development
+### Build & Run
 
 ```bash
 # Clone
 git clone https://github.com/KalarisLabs/Skill-Doctor.git
 cd Skill-Doctor
 
-# Install dependencies
-uv sync --all-extras
+# Build
+cargo build
 
-# Run CLI locally
-uv run python -m skill_doctor.cli scan ./test-skill/
+# Run CLI
+cargo run -- scan ./test-skill/
 
-# Start FastAPI backend
-uv run uvicorn skill_doctor.api.main:app --reload
-
-# Start Next.js web UI
-cd web && npm install && npm run dev
+# Run with release optimizations
+cargo run --release -- scan SKILL.md
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests
-uv run python -m pytest tests/ -v
+cargo test
 
-# Run a specific test file
-uv run python -m pytest tests/test_scanner.py -v
+# Run with output
+cargo test -- --nocapture
+
+# Run a specific test
+cargo test test_scan_static
 ```
 
----
-
-## Deployment
-
-### Cloudflare Infrastructure
+### Code Quality
 
 ```bash
-npm install -g wrangler && wrangler login
+# Lint
+cargo clippy -- -D warnings
 
-# Create resources
-wrangler kv:namespace create "SCAN_CACHE"
-wrangler d1 create skill-doctor-db
-wrangler r2 bucket create skill-doctor-reports
-wrangler queues create scan-jobs
+# Format
+cargo fmt
 
-# Deploy
-cd packages/worker && wrangler deploy
-cd packages/web && npm run build && wrangler pages deploy ./out --project-name=skill-doctor
-```
-
-### fly.io Scanner Service
-
-```bash
-cd packages/scanner
-fly auth login
-fly apps create skill-doctor-scanner
-fly secrets set GROQ_API_KEY=xxx E2B_API_KEY=xxx
-fly deploy
+# Check for security vulnerabilities in dependencies
+cargo audit
 ```
 
 ---
 
 ## Current Status
 
-Skill Doctor is in **Alpha** (`v0.1.0`). The following layers are operational:
+Skill Doctor is undergoing a **full rewrite from Python to Rust** (`v0.2.0`). See [MIGRATION.md](MIGRATION.md) for details.
 
-| Layer | Status |
-|-------|--------|
-| Layer 1 — Static Analysis (YARA-X + AST + Entropy + Unicode) | ✅ Live |
-| Layer 2 — LLM Semantic Analysis (Groq) | ✅ Live |
-| Layer 3 — Behavioral Sandbox (E2B) | 🚧 Week 2 |
-| Layer 4 — Community Threat Database | 🚧 Stub (local only) |
-| CLI | ✅ Live |
-| Web UI | 🚧 In development |
-| API Gateway | 🚧 In development |
+| Component | Status |
+|-----------|--------|
+| Layer 1 — Static Analysis (YARA-X + tree-sitter + Entropy + Unicode) | 🔄 Migrating to Rust |
+| Layer 2 — LLM Semantic Analysis (REST API) | 🔄 Migrating to Rust |
+| Layer 3 — Behavioral Sandbox (E2B) | 🚧 Planned |
+| Layer 4 — Community Threat Database | 🔄 Migrating to Rust |
+| CLI + OpenTUI | 🔄 In development |
+| Skills.sh / GitHub Registry Support | 🔄 In development |
+| Cross-platform Binaries | 🚧 Planned |
+
+> The Python prototype (`v0.1.0`) is available on the `legacy/python` branch.
 
 ---
 
 ## Roadmap
 
+- [ ] Complete Rust rewrite (core scanner + CLI)
+- [ ] OpenTUI terminal interface
+- [ ] Skills.sh registry integration
+- [ ] GitHub shorthand resolution (`owner/repo`)
+- [ ] Cross-platform binary releases (Linux, macOS, Windows)
+- [ ] Homebrew tap, Scoop bucket, Winget manifest
 - [ ] E2B behavioral sandbox (Layer 3)
 - [ ] Registry gate API for skill registries
 - [ ] Cryptographic skill provenance (Ed25519 signing)
-- [ ] Scientific Pack for research environments
-- [ ] EU AI Act compliance module
 - [ ] MCP server mode for runtime gating
+- [ ] GitHub Action (`uses: KalarisLabs/skill-doctor-action@v1`)
+- [ ] EU AI Act compliance module
 
 ---
 
@@ -280,7 +308,8 @@ Skill Doctor is in **Alpha** (`v0.1.0`). The following layers are operational:
 We welcome contributions! Key areas:
 
 - Additional YARA rules for new attack patterns
-- Support for more skill file formats
+- tree-sitter grammars for more languages
+- Registry integrations (Skills.sh, MCPServers.org)
 - Performance optimizations
 - Documentation improvements
 - Bug fixes
@@ -294,8 +323,7 @@ Please see `CONTRIBUTING.md` for guidelines.
 - **Cisco AI Defense** — Skill Scanner (Apache 2.0) — YARA rule inspiration
 - **NVIDIA** — SkillSpector (MIT) — AST analysis patterns
 - **OWASP** — Agentic Skills Top 10 and MCP Top 10 — Threat taxonomy
-- **Cloudflare** — Edge infrastructure platform
-- **Groq** — Fast LLM inference
+- **OpenTUI** — Terminal UI rendering engine
 - **E2B** — Behavioral sandboxing
 
 ---
@@ -317,5 +345,5 @@ If you run Skill Doctor as a network service or modify it, you must release your
 
 <p align="center">
   <strong>Skill Doctor</strong> · Securing the AI skill ecosystem, one file at a time.<br/>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor">GitHub</a> · <a href="mailto:sayan@kalarislabs.com">Email</a> · <a href="https://skilldoctor.kalarislabs.com">Website</a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor">GitHub</a> · <a href="mailto:sayan@kalarislabs.com">Email</a>
 </p>

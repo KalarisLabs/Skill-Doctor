@@ -1,0 +1,63 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build_and_release:
+    name: Release for ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact_name: skill-doctor
+            asset_name: skill-doctor-linux-amd64
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact_name: skill-doctor
+            asset_name: skill-doctor-linux-arm64
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact_name: skill-doctor
+            asset_name: skill-doctor-darwin-amd64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact_name: skill-doctor
+            asset_name: skill-doctor-darwin-arm64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_name: skill-doctor.exe
+            asset_name: skill-doctor-windows-amd64.exe
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Rust toolchain
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: ${{ matrix.target }}
+
+    - name: Install cross-compilation tools
+      if: matrix.os == 'ubuntu-latest' && matrix.target == 'aarch64-unknown-linux-gnu'
+      run: sudo apt-get install -y gcc-aarch64-linux-gnu
+
+    - name: Build release binary
+      run: cargo build --release --target ${{ matrix.target }}
+      env:
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+
+    - name: Prepare artifact
+      shell: bash
+      run: |
+        cd target/${{ matrix.target }}/release
+        cp ${{ matrix.artifact_name }} ../../../${{ matrix.asset_name }}
+
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: ${{ matrix.asset_name }}
+        generate_release_notes: true

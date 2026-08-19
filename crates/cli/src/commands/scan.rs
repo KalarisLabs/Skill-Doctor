@@ -6,7 +6,7 @@ use std::time::Instant;
 use anyhow::Result;
 use skill_doctor_core::intake::normalize_bundle;
 use skill_doctor_core::layer1_static::scan_static;
-use skill_doctor_core::layer2_semantic::scan_semantic;
+use skill_doctor_core::layer2_semantic::scan_semantic_with_overrides;
 use skill_doctor_core::layer4_threat::{add_to_threat_db, scan_threat_db};
 use skill_doctor_core::models::Severity;
 use skill_doctor_core::scorer::score_findings;
@@ -21,8 +21,8 @@ pub async fn run(
     no_llm: bool,
     _no_sandbox: bool,
     _rule_pack: &str,
-    _llm_url: Option<String>,
-    _llm_model: Option<String>,
+    llm_url: Option<String>,
+    llm_model: Option<String>,
 ) -> Result<()> {
     let version = env!("CARGO_PKG_VERSION");
 
@@ -55,7 +55,8 @@ pub async fn run(
         // Layer 2: LLM semantic analysis
         if !no_llm {
             println!("[LLM] Running LLM semantic analysis...");
-            let semantic_findings = scan_semantic(&bundle.path, &static_findings).await;
+            let semantic_findings =
+                scan_semantic_with_overrides(&bundle.path, &static_findings, llm_url, llm_model).await;
             println!("   Found {} semantic findings", semantic_findings.len());
             all_findings.extend(semantic_findings);
             layers_run.push("semantic".to_string());

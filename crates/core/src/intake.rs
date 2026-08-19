@@ -209,9 +209,18 @@ async fn normalize_from_github(source: &str) -> Result<NormalizedBundle> {
 // URL download
 // ---------------------------------------------------------------------------
 
+/// Maximum download size for remote skills (25 MB).
+const MAX_DOWNLOAD_BYTES: usize = 25 * 1024 * 1024;
+/// Maximum number of files in an archive (zip bomb protection).
+const MAX_ARCHIVE_ENTRIES: usize = 10_000;
+/// Maximum total uncompressed archive size (100 MB).
+const MAX_ARCHIVE_TOTAL_BYTES: u64 = 100 * 1024 * 1024;
+/// Maximum single file uncompressed size (25 MB).
+const MAX_SINGLE_FILE_BYTES: u64 = 25 * 1024 * 1024;
+
 async fn normalize_from_url(url: &str) -> Result<NormalizedBundle> {
     let client = reqwest::Client::new();
-    let response = client
+    let mut response = client
         .get(url)
         .send()
         .await
@@ -221,7 +230,26 @@ async fn normalize_from_url(url: &str) -> Result<NormalizedBundle> {
         bail!("HTTP {} when downloading: {}", response.status(), url);
     }
 
-    let bytes = response.bytes().await?;
+    if let Some(content_length) = response.content_length() {
+        if content_length > MAX_DOWNLOAD_BYTES as u64 {
+            bail!(
+                "Remote file size ({} bytes) exceeds maximum limit of {} bytes",
+                content_length,
+                MAX_DOWNLOAD_BYTES
+            );
+        }
+    }
+
+    let mut bytes = Vec::new();
+    while let Some(chunk) = response.chunk().await? {
+        if bytes.len() + chunk.len() > MAX_DOWNLOAD_BYTES {
+            bail!(
+                "Downloaded content exceeds maximum limit of {} bytes",
+                MAX_DOWNLOAD_BYTES
+            );
+        }
+        bytes.extend_from_slice(&chunk);
+    }
 
     // Derive filename from URL
     let parsed = Url::parse(url).context("Invalid URL")?;
@@ -249,9 +277,14 @@ async fn normalize_from_url(url: &str) -> Result<NormalizedBundle> {
 
 fn normalize_single_file(file_path: &Path) -> Result<NormalizedBundle> {
     let temp_dir = TempDir::new().context("Failed to create temp directory")?;
-    let file_name = file_path.file_name().context("Invalid file name")?;
-    let dest = temp_dir.path().join(file_name);
-    std::fs::copy(file_path, &dest).context("Failed to copy file")?;
+    let filename = file_path
+        .file_name()
+        .context("Invalid file path")?
+        .to_str()
+        .context("Invalid UTF-8 filename")?;
+
+    let dest = temp_dir.path().join(filename);
+    std::fs::copy(file_path, &dest).context("Failed to copy file to temp bundle")?;
 
     let hash = compute_hash(temp_dir.path())?;
     Ok(NormalizedBundle {
@@ -272,8 +305,19 @@ fn normalize_directory(dir_path: &Path) -> Result<NormalizedBundle> {
 
 fn normalize_zip(zip_path: &Path) -> Result<NormalizedBundle> {
     let temp_dir = TempDir::new().context("Failed to create temp directory")?;
-    let file = std::fs::File::open(zip_path).context("Failed to open ZIP")?;
-    let mut archive = zip::ZipArchive::new(file).context("Invalid ZIP archive")?;
+    let file = std::fs::File::open(zip_path).context("Failed to open zip file")?;
+    let mut archive = zip::ZipArchive::new(file).context("Failed to read zip archive")?;
+
+    if archive.len() > MAX_ARCHIVE_ENTRIES {
+        bail!(
+            "Zip archive contains {} entries, exceeding maximum limit of {}",
+            archive.len(),
+            MAX_ARCHIVE_ENTRIES
+        );
+    }
+
+    use std::io::Read;
+    let mut total_extracted_bytes: u64 = 0;
 
     for i in 0..archive.len() {
         let mut entry = archive.by_index(i)?;
@@ -296,7 +340,24 @@ fn normalize_zip(zip_path: &Path) -> Result<NormalizedBundle> {
                 std::fs::create_dir_all(parent)?;
             }
             let mut outfile = std::fs::File::create(&target)?;
-            std::io::copy(&mut entry, &mut outfile)?;
+            let mut limited_reader = (&mut entry).take(MAX_SINGLE_FILE_BYTES + 1);
+            let bytes_written = std::io::copy(&mut limited_reader, &mut outfile)?;
+
+            if bytes_written > MAX_SINGLE_FILE_BYTES {
+                bail!(
+                    "File '{}' exceeds single-file extraction limit of {} bytes",
+                    entry_path.display(),
+                    MAX_SINGLE_FILE_BYTES
+                );
+            }
+
+            total_extracted_bytes += bytes_written;
+            if total_extracted_bytes > MAX_ARCHIVE_TOTAL_BYTES {
+                bail!(
+                    "Archive total uncompressed size exceeds limit of {} bytes",
+                    MAX_ARCHIVE_TOTAL_BYTES
+                );
+            }
         }
     }
 
@@ -314,9 +375,36 @@ fn normalize_tar(tar_path: &Path) -> Result<NormalizedBundle> {
     let gz = flate2::read::GzDecoder::new(file);
     let mut archive = tar::Archive::new(gz);
 
-    // Tar-slip protection: unpack only within temp_dir
+    let mut entry_count: usize = 0;
+    let mut total_extracted_bytes: u64 = 0;
+
+    // Tar-slip and size bomb protection
     for entry in archive.entries()? {
+        entry_count += 1;
+        if entry_count > MAX_ARCHIVE_ENTRIES {
+            bail!(
+                "Tar archive contains more than {} entries",
+                MAX_ARCHIVE_ENTRIES
+            );
+        }
+
         let mut entry = entry?;
+        let size = entry.header().size()?;
+        if size > MAX_SINGLE_FILE_BYTES {
+            bail!(
+                "File in tar archive exceeds single-file limit of {} bytes",
+                MAX_SINGLE_FILE_BYTES
+            );
+        }
+
+        total_extracted_bytes += size;
+        if total_extracted_bytes > MAX_ARCHIVE_TOTAL_BYTES {
+            bail!(
+                "Tar archive total uncompressed size exceeds limit of {} bytes",
+                MAX_ARCHIVE_TOTAL_BYTES
+            );
+        }
+
         let path = entry.path()?.to_path_buf();
         let target = temp_dir.path().join(&path);
         let canonical_temp = temp_dir.path().canonicalize()?;

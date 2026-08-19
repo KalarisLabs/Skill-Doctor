@@ -39,7 +39,17 @@ If no findings, return {"findings": []}."#;
 ///
 /// Returns an empty Vec if no LLM client is configured (no API key).
 pub async fn scan_semantic(bundle_dir: &Path, static_findings: &[Finding]) -> Vec<Finding> {
-    let client = match LlmClient::from_env() {
+    scan_semantic_with_overrides(bundle_dir, static_findings, None, None).await
+}
+
+/// Run LLM semantic analysis on a skill bundle with optional LLM configuration overrides.
+pub async fn scan_semantic_with_overrides(
+    bundle_dir: &Path,
+    static_findings: &[Finding],
+    custom_url: Option<String>,
+    custom_model: Option<String>,
+) -> Vec<Finding> {
+    let client = match LlmClient::from_env_with_overrides(custom_url, custom_model) {
         Some(c) => c,
         None => {
             tracing::debug!("No LLM API key configured, skipping semantic analysis");
@@ -72,6 +82,10 @@ async fn run_semantic_analysis(
         .collect::<Vec<_>>()
         .join("\n");
 
+    let max_bytes = 10_000.min(skill_content.len());
+    let safe_end = skill_content.floor_char_boundary(max_bytes);
+    let truncated_content = &skill_content[..safe_end];
+
     let user_message = format!(
         "Static analysis findings:\n{}\n\nSkill bundle content:\n{}",
         if static_context.is_empty() {
@@ -79,7 +93,7 @@ async fn run_semantic_analysis(
         } else {
             static_context
         },
-        &skill_content[..skill_content.len().min(10000)]
+        truncated_content
     );
 
     let messages = vec![

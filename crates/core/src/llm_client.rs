@@ -18,7 +18,7 @@ pub struct LlmConfig {
 }
 
 impl LlmConfig {
-    /// Load configuration from environment variables.
+    /// Load configuration from environment variables with optional CLI overrides.
     ///
     /// - `SKILL_DOCTOR_LLM_URL` (default: Groq)
     /// - `SKILL_DOCTOR_LLM_KEY` (required)
@@ -26,15 +26,36 @@ impl LlmConfig {
     ///
     /// Also checks legacy `GROQ_API_KEY` for backward compatibility.
     pub fn from_env() -> Option<Self> {
-        let api_key = std::env::var("SKILL_DOCTOR_LLM_KEY")
-            .or_else(|_| std::env::var("GROQ_API_KEY"))
-            .ok()?;
+        Self::from_env_with_overrides(None, None)
+    }
 
-        let base_url = std::env::var("SKILL_DOCTOR_LLM_URL")
-            .unwrap_or_else(|_| "https://api.groq.com/openai/v1".to_string());
+    /// Load configuration from environment variables with explicit CLI overrides for URL and model.
+    pub fn from_env_with_overrides(
+        custom_url: Option<String>,
+        custom_model: Option<String>,
+    ) -> Option<Self> {
+        Self::from_lookup(|k| std::env::var(k).ok(), custom_url, custom_model)
+    }
 
-        let model = std::env::var("SKILL_DOCTOR_LLM_MODEL")
-            .unwrap_or_else(|_| "llama-3.3-70b-versatile".to_string());
+    /// Helper that loads configuration using an arbitrary environment lookup function.
+    pub fn from_lookup<F>(
+        lookup: F,
+        custom_url: Option<String>,
+        custom_model: Option<String>,
+    ) -> Option<Self>
+    where
+        F: Fn(&str) -> Option<String>,
+    {
+        let api_key = lookup("SKILL_DOCTOR_LLM_KEY")
+            .or_else(|| lookup("GROQ_API_KEY"))?;
+
+        let base_url = custom_url
+            .or_else(|| lookup("SKILL_DOCTOR_LLM_URL"))
+            .unwrap_or_else(|| "https://api.groq.com/openai/v1".to_string());
+
+        let model = custom_model
+            .or_else(|| lookup("SKILL_DOCTOR_LLM_MODEL"))
+            .unwrap_or_else(|| "llama-3.3-70b-versatile".to_string());
 
         Some(Self {
             base_url,
@@ -101,6 +122,14 @@ impl LlmClient {
     /// Returns `None` if no API key is configured.
     pub fn from_env() -> Option<Self> {
         LlmConfig::from_env().map(Self::new)
+    }
+
+    /// Create a client from environment variables with optional CLI overrides.
+    pub fn from_env_with_overrides(
+        custom_url: Option<String>,
+        custom_model: Option<String>,
+    ) -> Option<Self> {
+        LlmConfig::from_env_with_overrides(custom_url, custom_model).map(Self::new)
     }
 
     /// Send a chat completion request and return the response content.
@@ -172,11 +201,22 @@ mod tests {
 
     #[test]
     fn test_config_defaults() {
-        // This test works when env vars are NOT set
-        unsafe {
-            std::env::remove_var("SKILL_DOCTOR_LLM_KEY");
-            std::env::remove_var("GROQ_API_KEY");
-        }
-        assert!(LlmConfig::from_env().is_none());
+        // Deterministic test without mutating process environment
+        let config = LlmConfig::from_lookup(|_| None, None, None);
+        assert!(config.is_none());
+
+        let configured = LlmConfig::from_lookup(
+            |k| match k {
+                "SKILL_DOCTOR_LLM_KEY" => Some("test-key".to_string()),
+                _ => None,
+            },
+            Some("http://custom-url".to_string()),
+            Some("custom-model".to_string()),
+        );
+        assert!(configured.is_some());
+        let c = configured.unwrap();
+        assert_eq!(c.api_key, "test-key");
+        assert_eq!(c.base_url, "http://custom-url");
+        assert_eq!(c.model, "custom-model");
     }
 }

@@ -5,6 +5,14 @@ use std::path::Path;
 use anyhow::Result;
 use skill_doctor_core::models::{ScanResult, Severity};
 
+fn escape_html(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#x27;")
+}
+
 /// Generate an HTML report file from scan results.
 pub fn generate_html(result: &ScanResult, output_path: &Path) -> Result<()> {
     let severity_color = |s: &Severity| -> &str {
@@ -31,13 +39,13 @@ pub fn generate_html(result: &ScanResult, output_path: &Path) -> Result<()> {
                     <small>Engine: {} | Confidence: {:.0}%</small>
                 </div>"#,
                 severity_color(&f.severity),
-                f.severity,
-                f.category,
-                f.file,
+                escape_html(&f.severity.to_string()),
+                escape_html(&f.category),
+                escape_html(&f.file),
                 f.line.map(|l| format!(":{}", l)).unwrap_or_default(),
-                f.description,
-                f.remediation,
-                f.engine,
+                escape_html(&f.description),
+                escape_html(&f.remediation),
+                escape_html(&f.engine.to_string()),
                 f.confidence * 100.0,
             )
         })

@@ -3120,7 +3120,7 @@ checksum = "e3a9fe34e3e7a50316060351f37187a3f546bce95496156754b601a5fa71b76e"
 
 [[package]]
 name = "skill-doctor"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3141,7 +3141,7 @@ dependencies = [
 
 [[package]]
 name = "skill-doctor-core"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "chrono",
@@ -3171,7 +3171,7 @@ dependencies = [
 
 [[package]]
 name = "skill-doctor-report"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "chrono",

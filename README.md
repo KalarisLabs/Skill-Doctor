@@ -296,7 +296,7 @@ Skill Doctor has completed a **full rewrite from Python to Rust** (`v0.2.0`). Th
 |-----------|--------|
 | Layer 1 — Static Analysis (YARA-X + tree-sitter + Fast Scraping) | ✅ Completed |
 | Layer 2 — LLM Semantic Analysis (REST API + Gateway support) | ✅ Completed |
-| Layer 3 — Behavioral Sandbox (`microsandbox` Rust SDK) | 🚧 In Progress |
+| Layer 3 — Behavioral Sandbox (`microsandbox` Rust SDK) | ✅ Completed |
 | Layer 4 — Community Threat Database | ✅ Completed |
 | CLI Core & OpenTUI Integration | ✅ Completed |
 | Lobe Hub / Skills.sh / GitHub Registry Support | ✅ Completed |
@@ -308,18 +308,27 @@ Skill Doctor has completed a **full rewrite from Python to Rust** (`v0.2.0`). Th
 
 ## Roadmap
 
+### 📦 Near-Term Infrastructure
 - [x] Complete Rust rewrite (core scanner + CLI)
 - [ ] OpenTUI rich terminal interface components
 - [x] Lobe Hub and Skills.sh registry integration (Fast Ingestion)
 - [x] GitHub shorthand resolution (`owner/repo`)
 - [x] Cross-platform binary releases (Linux, macOS, Windows)
 - [ ] Homebrew tap, Scoop bucket, Winget manifest
-- [ ] `microsandbox` behavioral sandbox (Layer 3)
+- [x] `microsandbox` behavioral sandbox (Layer 3)
 - [ ] Registry gate API for skill registries
-- [ ] Cryptographic skill provenance (Ed25519 signing)
-- [ ] MCP server mode for runtime gating
-- [ ] GitHub Action (`uses: KalarisLabs/skill-doctor-action@v1`)
-- [ ] EU AI Act compliance module
+
+### 🌱 Open-Source Scale (Community & Adoption)
+- [ ] **GitHub Action Integration:** Make `uses: kalarislabs/skill-doctor-action@v1` the standard CI step for AI agent pipelines.
+- [ ] **DeepSeek "Red Team" Harness (Layer 3.5):** Use models like DeepSeek to automatically generate adversarial attacks (e.g. prompt injections) against running skills in the sandbox.
+- [ ] **MCP Server Proxy:** Native validation and proxying for the Model Context Protocol (MCP) in real-time.
+- [ ] **Community Rule Packs:** Simple JSON-based sharing for Layer 1/4 threat intel.
+
+### 🏢 Enterprise Scale (Monetization & Trust)
+- [ ] **True Kernel-Level Sandboxing:** Upgrade Layer 3 from temp directories to eBPF or microVMs (gVisor/Firecracker) to intercept raw kernel/network syscalls.
+- [ ] **Runtime Protection (RASP):** Run alongside the agent runtime to continuously monitor API calls, preventing TOCTOU (Time-of-Check to Time-of-Use) evasions.
+- [ ] **Cryptographic Provenance:** Integrate Sigstore/Cosign for Ed25519 signing so enterprises only execute certified skills.
+- [ ] **Compliance Dashboards:** SARIF/PDF export mapping to SOC2, ISO 27001, and EU AI Act.
 
 ---
 

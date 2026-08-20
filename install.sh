@@ -21,17 +21,19 @@ else
 fi
 
 ASSET_NAME="skill-doctor-$OS-$ARCH"
+DOWNLOAD_URL="https://github.com/$REPO/releases/latest/download/$ASSET_NAME"
 
-# Fetch latest release URL
-LATEST_URL=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | grep "browser_download_url.*$ASSET_NAME" | cut -d '"' -f 4 | head -n 1)
-
-if [ -z "$LATEST_URL" ]; then
-    echo "Error: Could not find release asset for $OS-$ARCH"
-    exit 1
+echo "Downloading Skill Doctor ($ASSET_NAME)..."
+if ! curl -fsSL "$DOWNLOAD_URL" -o /tmp/skill-doctor; then
+    echo "Direct download failed, querying GitHub releases API..."
+    LATEST_URL=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | grep "browser_download_url.*$ASSET_NAME" | cut -d '"' -f 4 | head -n 1)
+    if [ -z "$LATEST_URL" ]; then
+        echo "Error: Could not find release asset for $OS-$ARCH"
+        exit 1
+    fi
+    curl -fsSL "$LATEST_URL" -o /tmp/skill-doctor
 fi
 
-echo "Downloading from $LATEST_URL..."
-curl -sL "$LATEST_URL" -o /tmp/skill-doctor
 chmod +x /tmp/skill-doctor
 
 # Install to /usr/local/bin

@@ -56,15 +56,9 @@ If you have a Rust toolchain installed, you can build directly from `crates.io`:
 cargo install skill-doctor
 ```
 
-### NPM (Node.js Developers)
+### Direct Binary Downloads
 
-We also distribute `skill-doctor` via NPM as a defensive measure against name squatting. Running this command will automatically download the correct native binary (Windows, macOS, or Linux) under the hood.
-
-```bash
-npm install -g @kalarislabs/skill-doctor
-```
-
-> **Note:** We recommend using the `@kalarislabs/skill-doctor` namespace. Do not use un-namespaced variants to avoid supply-chain risks.
+Pre-compiled standalone binaries for Windows, macOS, and Linux are available directly on our [GitHub Releases](https://github.com/KalarisLabs/Skill-Doctor/releases) page. Download the binary for your platform and place it in your system PATH.
 
 ### Native Package Managers (Coming Soon)
 
@@ -315,7 +309,6 @@ Skill Doctor has completed a **full rewrite from Python to Rust** (`v0.2.0`). Th
 - [x] Lobe Hub and Skills.sh registry integration (Fast Ingestion)
 - [x] GitHub shorthand resolution (`owner/repo`)
 - [x] Cross-platform binary releases (Linux, macOS, Windows)
-- [x] NPM defensive distribution (`@kalarislabs/skill-doctor`)
 - [ ] Homebrew tap, Scoop bucket, Winget manifest
 - [ ] `microsandbox` behavioral sandbox (Layer 3)
 - [ ] Registry gate API for skill registries

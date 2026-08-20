@@ -78,27 +78,18 @@ impl HoneypotEnv {
     /// Returns honeypot environment variables to inject into the sub-process.
     pub fn env_vars(&self) -> HashMap<String, String> {
         let mut map = HashMap::new();
-        map.insert("HOME".to_string(), self.home_dir.to_string_lossy().to_string());
+        map.insert(
+            "HOME".to_string(),
+            self.home_dir.to_string_lossy().to_string(),
+        );
         map.insert(
             "USERPROFILE".to_string(),
             self.home_dir.to_string_lossy().to_string(),
         );
-        map.insert(
-            "OPENAI_API_KEY".to_string(),
-            CANARY_OPENAI_KEY.to_string(),
-        );
-        map.insert(
-            "AWS_ACCESS_KEY_ID".to_string(),
-            CANARY_AWS_KEY.to_string(),
-        );
-        map.insert(
-            "GITHUB_TOKEN".to_string(),
-            CANARY_GITHUB_TOKEN.to_string(),
-        );
-        map.insert(
-            "SKILL_DOCTOR_SANDBOX".to_string(),
-            "1".to_string(),
-        );
+        map.insert("OPENAI_API_KEY".to_string(), CANARY_OPENAI_KEY.to_string());
+        map.insert("AWS_ACCESS_KEY_ID".to_string(), CANARY_AWS_KEY.to_string());
+        map.insert("GITHUB_TOKEN".to_string(), CANARY_GITHUB_TOKEN.to_string());
+        map.insert("SKILL_DOCTOR_SANDBOX".to_string(), "1".to_string());
         map
     }
 }
@@ -234,7 +225,9 @@ pub async fn execute_in_sandbox(
     let bashrc = honeypot.home_dir.join(".bashrc");
     if let Ok(content) = std::fs::read_to_string(&bashrc) {
         if content.trim() != "# Empty mock bashrc" {
-            telemetry.modified_persistence_files.push(".bashrc".to_string());
+            telemetry
+                .modified_persistence_files
+                .push(".bashrc".to_string());
         }
     }
 
@@ -250,7 +243,9 @@ pub async fn execute_in_sandbox(
     let claudemd = cwd.join("CLAUDE.md");
     if let Ok(content) = std::fs::read_to_string(&claudemd) {
         if content.trim() != "# Empty mock CLAUDE.md" {
-            telemetry.modified_persistence_files.push("CLAUDE.md".to_string());
+            telemetry
+                .modified_persistence_files
+                .push("CLAUDE.md".to_string());
         }
     }
 
@@ -363,11 +358,7 @@ pub async fn run_sandbox(bundle_dir: &Path) -> Result<Vec<Finding>> {
                 all_findings.extend(findings);
             }
             Err(e) => {
-                tracing::warn!(
-                    "Sandbox execution error on {}: {}",
-                    script.file_name,
-                    e
-                );
+                tracing::warn!("Sandbox execution error on {}: {}", script.file_name, e);
             }
         }
     }

@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build_and_release:
     name: Release for ${{ matrix.target }}
@@ -66,7 +69,7 @@ jobs:
       if: matrix.os == 'ubuntu-latest' && matrix.target == 'x86_64-unknown-linux-gnu'
       uses: actions/setup-node@v4
       with:
-        node-version: '20.x'
+        node-version: '24.x'
         registry-url: 'https://registry.npmjs.org'
         
     - name: Publish to NPM

@@ -54,4 +54,11 @@ Thumbs.db
 tmp/
 temp/
 
+# Rust
 target/
+
+# LaTeX
+*.aux
+*.log
+*.out
+*.toc

@@ -129,6 +129,12 @@ Skill Doctor inherently treats skills as \textit{bundles}. Upon ingestion, the s
 
 By relying on \texttt{yara-x} (a memory-safe Rust implementation of YARA) and \texttt{tree-sitter}, the core scanning engine bypasses the overhead associated with spinning up Python interpreters, achieving near-instantaneous static evaluation.
 
+\subsection{Layer 3: Behavioral Sandbox (Honeypot Environment)}
+
+While static and semantic analysis effectively catch structural vulnerabilities, obfuscated logic or dynamically downloaded payloads necessitate runtime evaluation. Skill Doctor integrates a \textit{Layer 3 Behavioral Sandbox} specifically designed for companion scripts (e.g., Python, Node.js, Shell). 
+
+Upon detecting a runnable script within a skill bundle, Skill Doctor creates an ephemeral, isolated environment using \texttt{tempfile}. To detect credential harvesting (SD-03), the sandbox aggressively seeds the environment with "canary" tokens, such as simulated AWS keys (\texttt{AKIA\_...}), SSH private keys (\texttt{\textasciitilde/.ssh/id\_rsa}), and OpenAI API keys. The target script is executed under a strict 3,000ms timeout via \texttt{tokio::process::Command}. The engine then parses stdout and stderr for exfiltrated canary keys and inspects the temporary filesystem for unauthorized persistence mechanisms (e.g., writes to \texttt{.bashrc} or \texttt{.cursorrules}).
+
 \section{Competitive Analysis and Benchmarks}
 
 We benchmarked Skill Doctor \texttt{v0.2.0} (Rust) against Cisco Skill Scanner (v1.4) and NVIDIA SkillSpector (v2.1). The evaluation corpus consisted of 1,000 benign skills and 50 synthetically generated malicious skills engineered to evade traditional static analysis.
@@ -190,9 +196,21 @@ jobs:
 
 By forcing all newly submitted skills through the Skill Doctor GitHub Action, registries can mathematically guarantee that payloads containing known OWASP vulnerabilities are blocked before they are published to end-users.
 
+\section{Future Work: Open-Source and Enterprise Scale}
+
+The current architecture provides a foundational defense against agentic supply chain attacks. However, as the ecosystem matures, Skill Doctor's roadmap diverges into distinct tracks to support both open-source communities and highly regulated enterprise environments.
+
+\subsection{Open-Source Integration and Red Teaming}
+
+To foster community adoption, future iterations will integrate automated adversarial testing using models such as DeepSeek (the \textit{Layer 3.5 Red Team Harness}). Rather than passively scanning scripts, this harness will actively generate prompt injections and adversarial inputs to stress-test skills running in the sandbox. Additionally, native proxy support for the emerging Model Context Protocol (MCP) will allow real-time validation of MCP server responses.
+
+\subsection{Enterprise-Grade Isolation and Compliance}
+
+For enterprise deployments, the \texttt{tempfile}-based Layer 3 sandbox will be upgraded to enforce true kernel-level isolation. By implementing eBPF (Extended Berkeley Packet Filter) or leveraging microVMs (e.g., Firecracker), Skill Doctor will intercept and block raw network egress and unauthorized system calls. Furthermore, cryptographic provenance will be established using Sigstore/Cosign (Ed25519 signing), ensuring agent runtimes execute only certified skills, accompanied by SOC2 and EU AI Act compliance dashboards.
+
 \section{Conclusion}
 
-Skill Doctor represents a paradigm shift in autonomous agent security infrastructure. By abandoning legacy interpreted languages in favor of a memory-safe, hyper-performant Rust architecture, it enables real-time security gating for the agentic web. Through its bundle-first analysis philosophy and seamless integration paths via GitHub Actions, Skill Doctor provides the foundational security layer necessary to safely scale multi-agent ecosystems.
+Skill Doctor represents a paradigm shift in autonomous agent security infrastructure. By abandoning legacy interpreted languages in favor of a memory-safe, hyper-performant Rust architecture, it enables real-time security gating for the agentic web. Through its bundle-first analysis philosophy, proactive canary sandboxing, and seamless integration paths via GitHub Actions, Skill Doctor provides the foundational security layer necessary to safely scale multi-agent ecosystems.
 
 \begin{thebibliography}{9}
 

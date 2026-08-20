@@ -32,23 +32,39 @@ Built in **Rust** for maximum performance, distributed as a single static binary
 
 ## Install
 
-### NPM (Cross-Platform)
+### Native (macOS & Linux)
 
-We distribute `skill-doctor` via NPM as a defensive measure against name squatting, but it's fully written in Rust. Installing via NPM will automatically download the correct native binary (Windows, macOS, or Linux) for your system without requiring a Rust toolchain.
+The fastest and most robust way to install Skill Doctor natively is using our zero-dependency installer script. This will automatically detect your OS and architecture, and download the correct pre-compiled Rust binary directly from GitHub Releases.
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/KalarisLabs/Skill-Doctor/main/install.sh | bash
+```
+
+### Native (Windows)
+
+Open PowerShell as Administrator and run the following command to download and add the binary to your PATH:
+
+```powershell
+irm https://raw.githubusercontent.com/KalarisLabs/Skill-Doctor/main/install.ps1 | iex
+```
+
+### From source (Cargo)
+
+If you have a Rust toolchain installed, you can build directly from `crates.io`:
+
+```bash
+cargo install skill-doctor
+```
+
+### NPM (Node.js Developers)
+
+We also distribute `skill-doctor` via NPM as a defensive measure against name squatting. Running this command will automatically download the correct native binary (Windows, macOS, or Linux) under the hood.
 
 ```bash
 npm install -g @kalarislabs/skill-doctor
 ```
 
 > **Note:** We recommend using the `@kalarislabs/skill-doctor` namespace. Do not use un-namespaced variants to avoid supply-chain risks.
-
-### From source (Cargo)
-
-If you prefer building from source:
-
-```bash
-cargo install skill-doctor
-```
 
 ### Native Package Managers (Coming Soon)
 

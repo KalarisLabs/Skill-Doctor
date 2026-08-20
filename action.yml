@@ -1,0 +1,41 @@
+name: 'Skill Doctor Scan'
+description: 'Scan AI agent skill files for malicious payloads, prompt injections, and supply-chain vulnerabilities.'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  target:
+    description: 'Path to the skill directory, file, or repository to scan'
+    required: false
+    default: '.'
+  fail-on:
+    description: 'Minimum severity level to fail the build (CRITICAL, HIGH, MEDIUM, LOW)'
+    required: false
+    default: 'HIGH'
+  rule-pack:
+    description: 'Comma-separated list of rule packs to use (core, supply_chain, etc.)'
+    required: false
+    default: 'core'
+  args:
+    description: 'Additional arguments to pass to skill-doctor scan'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Download Skill Doctor
+      shell: bash
+      run: |
+        echo "Installing Skill Doctor..."
+        # In a real environment, this fetches the latest compiled binary from GitHub Releases
+        npm install -g @kalarislabs/skill-doctor || echo "Using locally built or cached binary"
+
+    - name: Run Skill Doctor Scan
+      shell: bash
+      run: |
+        skill-doctor scan "${{ inputs.target }}" \
+          --fail-on "${{ inputs.fail-on }}" \
+          --rule-pack "${{ inputs.rule-pack }}" \
+          ${{ inputs.args }}

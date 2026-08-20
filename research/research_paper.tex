@@ -47,20 +47,35 @@
 
 \begin{document}
 
-\maketitle
-
 \begin{center}
-    \includegraphics[width=0.35\textwidth]{kalarislabs_logo.png}
+    \includegraphics[height=1.6cm]{clean_logo.png}\\[0.5em]
+    {\LARGE \textbf{Skill Doctor: A High-Performance, Multi-Layer Security Framework for AI Agent Skill Files}}\\[1.2em]
+    
+    \noindent\fcolorbox{gray!30}{gray!5}{
+        \begin{minipage}{0.85\textwidth}
+            \centering
+            \vspace{0.4em}
+            \textbf{Sayan Chowdhury}\\
+            \textit{Kalaris Labs Research Team}\\
+            \href{mailto:sayan@kalarislabs.com}{\texttt{sayan@kalarislabs.com}} $\cdot$ \href{https://github.com/KalarisLabs/Skill-Doctor}{\texttt{github.com/KalarisLabs/Skill-Doctor}}
+            \vspace{0.4em}
+        \end{minipage}
+    }\\[1em]
+    {\small August 2026 $\cdot$ Preprint $\cdot$ Release v0.2.3}
 \end{center}
 
-\vspace{1em}
+\vspace{0.8em}
 
-\begin{abstract}
-\noindent The proliferation of autonomous AI agent frameworks---such as Claude Code, OpenAI Codex CLI, Gemini CLI, Cursor, Windsurf, and their successors---has introduced a novel and largely undefended attack surface: the agentic \textit{skill file}. Skill files are structured instruction documents (\texttt{SKILL.md}, \texttt{.clauderules}, \texttt{AGENTS.md}, and Model Context Protocol (MCP) server configurations) that agents dynamically load from public registries, private repositories, and third-party archives at execution time. Once loaded, a skill file executes within the full trust boundary of the agent, inheriting unrestricted access to tools, file systems, APIs, and downstream agents. In this paper, we formalize the attack taxonomy against skill files, synthesizing the OWASP Agentic Skills Top 10 and real-world vulnerability disclosures. We present \textbf{Skill Doctor}, a multi-engine security platform built entirely in Rust. By combining memory-safe YARA-X static analysis, native \texttt{tree-sitter} cross-file Abstract Syntax Tree (AST) scanning, and Large Language Model (LLM)-powered semantic reasoning, Skill Doctor accurately detects malicious, deceptive, and non-compliant skill files prior to runtime ingestion. Benchmarks demonstrate that Skill Doctor's native single-binary architecture achieves sub-30ms static scan times, significantly outperforming legacy Python-based tools like Cisco Skill Scanner and NVIDIA SkillSpector. Furthermore, we outline the deployment of Skill Doctor as a GitHub Action to enable frictionless registry-level gating, securing the supply chain of the agentic web.
-\end{abstract}
-
-\vspace{1em}
-\noindent \textbf{Keywords:} AI Security, Agentic Web, Static Analysis, Supply Chain Security, Model Context Protocol (MCP), Rust, Abstract Syntax Trees (AST)
+\noindent\fcolorbox{blue!40}{blue!2}{
+    \begin{minipage}{0.96\textwidth}
+        \vspace{0.5em}
+        \textbf{Abstract}---The proliferation of autonomous AI agent frameworks---such as Claude Code, OpenAI Codex CLI, Gemini CLI, Cursor, Windsurf, and their successors---has introduced a novel and largely undefended attack surface: the agentic \textit{skill file}. Skill files are structured instruction documents (\texttt{SKILL.md}, \texttt{.clauderules}, \texttt{AGENTS.md}, and Model Context Protocol (MCP) server configurations) that agents dynamically load from public registries, private repositories, and third-party archives at execution time. Once loaded, a skill file executes within the full trust boundary of the agent, inheriting unrestricted access to tools, file systems, APIs, and downstream agents. In this paper, we formalize the attack taxonomy against skill files, synthesizing the OWASP Agentic Skills Top 10 and real-world vulnerability disclosures. We present \textbf{Skill Doctor}, a multi-engine security platform built entirely in Rust. By combining memory-safe YARA-X static analysis, native \texttt{tree-sitter} cross-file Abstract Syntax Tree (AST) scanning, and Large Language Model (LLM)-powered semantic reasoning, Skill Doctor accurately detects malicious, deceptive, and non-compliant skill files prior to runtime ingestion. Benchmarks demonstrate that Skill Doctor's native single-binary architecture achieves sub-30ms static scan times, significantly outperforming legacy Python-based tools like Cisco Skill Scanner and NVIDIA SkillSpector. Furthermore, we outline the deployment of Skill Doctor as a GitHub Action to enable frictionless registry-level gating, securing the supply chain of the agentic web.
+        
+        \vspace{0.6em}
+        \noindent \textbf{Keywords:} AI Security, Agentic Web, Static Analysis, Supply Chain Security, Model Context Protocol (MCP), Rust, Abstract Syntax Trees (AST)
+        \vspace{0.5em}
+    \end{minipage}
+}
 
 \vspace{2em}
 

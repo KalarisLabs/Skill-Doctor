@@ -14,11 +14,15 @@
   <a href="https://github.com/KalarisLabs/Skill-Doctor/releases"><img src="https://img.shields.io/github/v/release/KalarisLabs/Skill-Doctor?style=flat-square&color=blue" alt="Latest Release" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-green?style=flat-square" alt="License" /></a>
   <a href="https://crates.io/crates/skill-doctor"><img src="https://img.shields.io/crates/v/skill-doctor?style=flat-square&color=orange" alt="Crates.io" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/stargazers"><img src="https://img.shields.io/github/stars/KalarisLabs/Skill-Doctor?style=flat-square&color=yellow&label=Stars" alt="Stars" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor"><img src="https://komarev.com/ghpvc/?username=kalarislabs-skill-doctor&label=Active+Views&color=blueviolet&style=flat-square" alt="Active Views" /></a>
 </p>
 
 <p align="center">
   <a href="#install">Install</a> · <a href="#quick-start">Quick Start</a> · <a href="#how-it-works">How It Works</a> · <a href="#threat-detection">Threat Detection</a> · <a href="#cli-reference">CLI Reference</a> · <a href="#development">Development</a> · <a href="#roadmap">Roadmap</a>
 </p>
+
+> **Report Abuse & Credits**: If you discover a malicious skill bypassing the filters, please report it via [sayan@kalarislabs.com](mailto:sayan@kalarislabs.com) or open a security advisory. Credits to the community for continuous threat intelligence.
 
 ---
 

@@ -69,16 +69,16 @@ if (-not (Test-Path "$TempPath") -or ((Get-Item "$TempPath").Length -lt 100000))
 
 Move-Item -Path "$TempPath" -Destination "$DestPath" -Force
 
-# Add to User PATH persistently
+# Add to User PATH persistently (prepended so it takes highest priority)
 $UserPath = [Environment]::GetEnvironmentVariable("Path", "User")
 if ($UserPath -notmatch [regex]::Escape($InstallDir)) {
     Write-Host "Adding $InstallDir to user PATH..." -ForegroundColor DarkGray
-    [Environment]::SetEnvironmentVariable("Path", "$UserPath;$InstallDir", "User")
+    [Environment]::SetEnvironmentVariable("Path", "$InstallDir;$UserPath", "User")
 }
 
 # Update current session PATH so skill-doctor works immediately
 if ($env:Path -notmatch [regex]::Escape($InstallDir)) {
-    $env:Path = "$env:Path;$InstallDir"
+    $env:Path = "$InstallDir;$env:Path"
 }
 
 Write-Host "`nSkill Doctor installed successfully to $DestPath!" -ForegroundColor Green

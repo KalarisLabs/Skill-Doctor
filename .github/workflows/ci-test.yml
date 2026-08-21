@@ -40,6 +40,9 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
 
+    - name: End-to-End CLI Execution Test
+      run: cargo run -- scan ./tests/corpus/SD-01-Prompt-Injection/
+
   coverage:
     name: Code Coverage
     runs-on: ubuntu-latest

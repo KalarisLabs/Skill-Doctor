@@ -31,7 +31,7 @@ jobs:
           node-version: 18
 
       - name: Install Kane CLI
-        run: npm install -g @testmuai/kane-cli
+        run: npm install -g @testmuai/kane-cli@latest
 
       - name: Authenticate Kane CLI
         env:
@@ -47,14 +47,15 @@ jobs:
           LT_USERNAME: ${{ secrets.LT_USERNAME }}
           LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
         run: |
+          # Use xvfb-run to provide a virtual display buffer for Chrome on Ubuntu headless runners
           # AI validation via Kane CLI for SD-01
-          kane-cli run "Open file://$(pwd)/tests/results/report_sd01.html. Verify that the 'SD-01 Prompt Injection' vulnerability is displayed in the report summary."
+          xvfb-run kane-cli run "Open file://$(pwd)/tests/results/report_sd01.html. Verify that the 'SD-01 Prompt Injection' vulnerability is displayed in the report summary."
 
           # AI validation via Kane CLI for SD-02
-          kane-cli run "Open file://$(pwd)/tests/results/report_sd02.html. Verify that the 'SD-02 Command Injection' vulnerability is highlighted."
+          xvfb-run kane-cli run "Open file://$(pwd)/tests/results/report_sd02.html. Verify that the 'SD-02 Command Injection' vulnerability is highlighted."
 
           # AI validation via Kane CLI for SD-03
-          kane-cli run "Open file://$(pwd)/tests/results/report_sd03.html. Verify that the 'SD-03 Data Exfiltration' vulnerability is detected."
+          xvfb-run kane-cli run "Open file://$(pwd)/tests/results/report_sd03.html. Verify that the 'SD-03 Data Exfiltration' vulnerability is detected."
 
       - name: Archive Test Results
         uses: actions/upload-artifact@v4

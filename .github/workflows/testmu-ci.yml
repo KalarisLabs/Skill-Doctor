@@ -2,9 +2,10 @@ name: MuLamBDA E2E Testing Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "feature/mulambda-testing-pipeline" ]
   pull_request:
     branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
   testmu-validation:

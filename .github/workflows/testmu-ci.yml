@@ -33,6 +33,14 @@ jobs:
       - name: Install Kane CLI
         run: npm install -g @testmuai/kane-cli
 
+      - name: Authenticate Kane CLI
+        env:
+          LT_USERNAME: ${{ secrets.LT_USERNAME }}
+          LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
+        run: |
+          # Authenticate using the explicit flags provided by the CLI
+          kane-cli login --username "$LT_USERNAME" --access-key "$LT_ACCESS_KEY"
+
 
       - name: Execute E2E Validation on HTML Reports
         env:

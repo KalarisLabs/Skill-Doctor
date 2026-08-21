@@ -33,13 +33,6 @@ jobs:
       - name: Install Kane CLI
         run: npm install -g @testmuai/kane-cli
 
-      - name: Authenticate Kane CLI
-        env:
-          LT_USERNAME: ${{ secrets.LT_USERNAME }}
-          LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
-        run: |
-          # The Kane CLI supports authentication via env vars for CI environments
-          kane-cli login --headless
 
       - name: Execute E2E Validation on HTML Reports
         env:
@@ -47,13 +40,13 @@ jobs:
           LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
         run: |
           # AI validation via Kane CLI for SD-01
-          kane-cli test "Open file://$(pwd)/tests/results/report_sd01.html. Verify that the 'SD-01 Prompt Injection' vulnerability is displayed in the report summary." --headless
+          kane-cli run "Open file://$(pwd)/tests/results/report_sd01.html. Verify that the 'SD-01 Prompt Injection' vulnerability is displayed in the report summary."
 
           # AI validation via Kane CLI for SD-02
-          kane-cli test "Open file://$(pwd)/tests/results/report_sd02.html. Verify that the 'SD-02 Command Injection' vulnerability is highlighted." --headless
+          kane-cli run "Open file://$(pwd)/tests/results/report_sd02.html. Verify that the 'SD-02 Command Injection' vulnerability is highlighted."
 
           # AI validation via Kane CLI for SD-03
-          kane-cli test "Open file://$(pwd)/tests/results/report_sd03.html. Verify that the 'SD-03 Data Exfiltration' vulnerability is detected." --headless
+          kane-cli run "Open file://$(pwd)/tests/results/report_sd03.html. Verify that the 'SD-03 Data Exfiltration' vulnerability is detected."
 
       - name: Archive Test Results
         uses: actions/upload-artifact@v4

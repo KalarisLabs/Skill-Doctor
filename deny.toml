@@ -20,8 +20,14 @@ allow = [
     "CC0-1.0",
     "AGPL-3.0",
     "AGPL-3.0-or-later",
-    "MPL-2.0"
+    "MPL-2.0",
+    "Unicode-3.0",
+    "CDLA-Permissive-2.0"
 ]
+
+[[licenses.exceptions]]
+allow = ["(MIT OR Apache-2.0) AND Unicode-3.0"]
+name = "unicode-ident"
 
 [bans]
 multiple-versions = "warn"

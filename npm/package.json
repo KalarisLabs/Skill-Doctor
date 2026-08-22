@@ -1,6 +1,6 @@
 {
   "name": "@kalarislabs/skill-doctor",
-  "version": "0.2.2",
+  "version": "1.0.0",
   "description": "Multi-layer security platform for AI agent skill files",
   "bin": {
     "skill-doctor": "bin/skill-doctor"

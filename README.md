@@ -134,7 +134,7 @@ Skill Doctor runs a multi-layer analysis pipeline. Each layer is independent —
 
 ### Competitive Advantage & Benchmarks
 
-Skill Doctor `v0.2.0` (Rust) completely outperforms legacy Python-based tools like Cisco Skill Scanner (v1.4) and NVIDIA SkillSpector (v2.1).
+Skill Doctor `v1.0.0` (Rust) completely outperforms legacy Python-based tools like Cisco Skill Scanner (v1.4) and NVIDIA SkillSpector (v2.1).
 
 1. **The Bundle vs. File Paradigm:** Competitors analyze a `SKILL.md` in isolation, blinding them to maliciously crafted companion scripts. Skill Doctor unpacks archives, Git repos, or directories and performs **cross-file AST taint analysis** across the entire bundle simultaneously.
 2. **Speed:** By using native `tree-sitter` and `yara-x` in Rust, static analysis executes in under 30 milliseconds — making it the only viable choice for synchronous webhooks and pre-commit GitHub Actions.
@@ -311,7 +311,7 @@ cargo audit
 
 ## Current Status
 
-Skill Doctor has completed a **full rewrite from Python to Rust** (`v0.2.0`). The core execution engine is now 100% native Rust.
+Skill Doctor has completed a **full rewrite from Python to Rust** (`v1.0.0`). The core execution engine is now 100% native Rust.
 
 | Component | Status |
 |-----------|--------|

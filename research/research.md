@@ -97,7 +97,7 @@ By relying on `yara-x` (a memory-safe Rust implementation of YARA) and `tree-sit
 
 ## 4. Competitive Analysis and Empirical Benchmarks
 
-We benchmarked Skill Doctor `v0.2.0` (Rust) against two prominent industry baselines: Cisco Skill Scanner (v1.4) and NVIDIA SkillSpector (v2.1). The evaluation corpus consisted of 1,000 benign skills and 50 synthetically generated malicious skills engineered to evade traditional static analysis.
+We benchmarked Skill Doctor `v1.0.0` (Rust) against two prominent industry baselines: Cisco Skill Scanner (v1.4) and NVIDIA SkillSpector (v2.1). The evaluation corpus consisted of 1,000 benign skills and 50 synthetically generated malicious skills engineered to evade traditional static analysis.
 
 *Testing Environment: Ubuntu 24.04 LTS, 8-Core AMD EPYC, 16GB RAM.*
 

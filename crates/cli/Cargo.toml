@@ -12,8 +12,8 @@ name = "skill-doctor"
 path = "src/main.rs"
 
 [dependencies]
-skill-doctor-core = { path = "../core", version = "0.2.3" }
-skill-doctor-report = { path = "../report", version = "0.2.3" }
+skill-doctor-core = { path = "../core", version = "1.0.0" }
+skill-doctor-report = { path = "../report", version = "1.0.0" }
 clap.workspace = true
 tokio.workspace = true
 serde.workspace = true

@@ -4,7 +4,7 @@
 
 | Version | Supported Until |
 |---------|----------------|
-| v0.2.x | Until v0.3.0 release |
+| v1.0.x | Until v2.0.0 release |
 | v0.1.x (Python) | End of life - no longer supported |
 
 Only the current major version and the most recent minor version receive security updates.

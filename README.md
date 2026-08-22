@@ -1,11 +1,18 @@
 <div align="center">
-  <img src="public/skill doctor banner.png" alt="Skill Doctor Banner" width="100%">
+  <img src="public/skill%20doctor%20banner.png" alt="Skill Doctor Banner" width="100%">
   <br/>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/actions"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-test.yml?branch=main" alt="CI Status"></a>
-  <a href="https://crates.io/crates/skill-doctor"><img src="https://img.shields.io/crates/v/skill-doctor.svg" alt="Crates.io"></a>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/blob/main/LICENSE"><img src="https://img.shields.io/github/license/KalarisLabs/Skill-Doctor" alt="License"></a>
-  <a href="https://app.devin.ai/org/kalarislabs/wiki/KalarisLabs/Skill-Doctor?branch=main"><img src="https://img.shields.io/badge/Architecture-Devin_Wiki-black" alt="Devin Wiki"></a>
-  <a href="https://discord.gg/HQDEJvFZa"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
+  <br/>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-test.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-test.yml?style=for-the-badge&label=CI" alt="CI Status" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-security.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-security.yml?style=for-the-badge&label=Security" alt="Security" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-benchmark.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-benchmark.yml?style=for-the-badge&label=Benchmark" alt="Benchmark" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/releases"><img src="https://img.shields.io/github/v/release/KalarisLabs/Skill-Doctor?style=for-the-badge&color=blue" alt="Latest Release" /></a>
+  <a href="https://crates.io/crates/skill-doctor"><img src="https://img.shields.io/crates/v/skill-doctor?style=for-the-badge&color=orange" alt="Crates.io" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-green?style=for-the-badge" alt="License" /></a>
+  <a href="https://app.devin.ai/org/kalarislabs/wiki/KalarisLabs/Skill-Doctor?branch=main"><img src="https://img.shields.io/badge/Architecture-Devin_Wiki-black?style=for-the-badge" alt="Devin Wiki"></a>
+  <a href="https://discord.gg/HQDEJvFZa"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white&style=for-the-badge" alt="Discord"></a>
+  <br/>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/stargazers"><img src="https://img.shields.io/github/stars/KalarisLabs/Skill-Doctor?style=for-the-badge&color=yellow&label=Stars" alt="Stars" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor"><img src="https://komarev.com/ghpvc/?username=kalarislabs-skill-doctor&label=Active+Views&color=blueviolet&style=for-the-badge" alt="Active Views" /></a>
 </div>
 
 <h1 align="center">Skill Doctor</h1>
@@ -13,17 +20,6 @@
 <p align="center">
   <strong>Multi-layer security platform for AI agent skill files.</strong><br/>
   Detect malicious, deceptive, or vulnerable skills before they reach your agent runtime.
-</p>
-
-<p align="center">
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-test.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-test.yml?style=flat-square&label=CI" alt="CI Status" /></a>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-security.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-security.yml?style=flat-square&label=Security" alt="Security" /></a>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-benchmark.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-benchmark.yml?style=flat-square&label=Benchmark" alt="Benchmark" /></a>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/releases"><img src="https://img.shields.io/github/v/release/KalarisLabs/Skill-Doctor?style=flat-square&color=blue" alt="Latest Release" /></a>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-green?style=flat-square" alt="License" /></a>
-  <a href="https://crates.io/crates/skill-doctor"><img src="https://img.shields.io/crates/v/skill-doctor?style=flat-square&color=orange" alt="Crates.io" /></a>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/stargazers"><img src="https://img.shields.io/github/stars/KalarisLabs/Skill-Doctor?style=flat-square&color=yellow&label=Stars" alt="Stars" /></a>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor"><img src="https://komarev.com/ghpvc/?username=kalarislabs-skill-doctor&label=Active+Views&color=blueviolet&style=flat-square" alt="Active Views" /></a>
 </p>
 
 <p align="center">
@@ -125,7 +121,7 @@ Skill Doctor runs a multi-layer analysis pipeline. Each layer is independent —
 |-------|--------|-------------|-------|
 | **Layer 1** | YARA-X + tree-sitter AST + Fast Scraper | Pattern matching, encoded payload detection, lightning-fast native Rust scraping for Lobe Hub/Skills.sh URLs | < 30ms |
 | **Layer 2** | LLM (OpenAI-compatible REST API) | Intent mismatch, hidden instruction extraction, tool scope audit (Optional) | 3–8s |
-| **Layer 3** | `microsandbox` (Rust SDK) | Runtime behavior observation in sandboxed agent environment | 15–60s |
+| **Layer 3** | `microsandbox` (Subprocess) | TempDir subprocess honeypot for basic behavior observation | 1–5s |
 | **Layer 4** | Community Threat DB | Hash-based lookup against known-malicious skill fingerprints | < 5ms |
 
 ### Architecture
@@ -135,25 +131,23 @@ Skill Doctor runs a multi-layer analysis pipeline. Each layer is independent —
 - **CLI + TUI** — Rust binary with [OpenTUI](https://github.com/niceguydave/opentui) rendering engine
 - **Static Analysis & Intake** — YARA-X, tree-sitter, and `reqwest`-powered fast ingestion (bypassing LLMs for extraction)
 - **LLM Integration** — Provider-agnostic REST client (Groq, OpenAI, Ollama, vLLM — compatible with LLM Gateways like LiteLLM/Helicone)
-- **Sandbox** — `microsandbox` by superradcompany (Rust SDK)
+- **Sandbox** — `microsandbox` subprocess runner for isolated testing
 - **Reports** — SARIF, JSON, HTML generated natively
 
-### Competitive Advantage & Benchmarks
+### Internal Benchmarks
 
-Skill Doctor `v1.0.0` (Rust) completely outperforms legacy Python-based tools like Cisco Skill Scanner (v1.4) and NVIDIA SkillSpector (v2.1).
+Skill Doctor `v1.0.0` (Rust) has been designed for maximum speed.
 
-1. **The Bundle vs. File Paradigm:** Competitors analyze a `SKILL.md` in isolation, blinding them to maliciously crafted companion scripts. Skill Doctor unpacks archives, Git repos, or directories and performs **cross-file AST taint analysis** across the entire bundle simultaneously.
+1. **The Bundle vs. File Paradigm:** Cross-file AST taint analysis across the entire bundle simultaneously.
 2. **Speed:** By using native `tree-sitter` and `yara-x` in Rust, static analysis executes in under 30 milliseconds — making it the only viable choice for synchronous webhooks and pre-commit GitHub Actions.
 
-| Metric | Skill Doctor (Rust) | NVIDIA SkillSpector | Cisco Skill Scanner |
-|--------|---------------------|----------------------|---------------------|
-| **Startup Time** | **~2 ms** | ~450 ms | ~1,200 ms |
-| **Static Scan (Single File)** | **~12 ms** | ~85 ms | ~210 ms |
-| **Static Scan (Bundle - 50 files)**| **~28 ms** | ~310 ms | ~890 ms |
-| **True Positive Rate (TPR)** | **98.2%** | 84.0% | 91.5% |
-| **Cross-file Catch Rate**| **100%** | 0% | 40% |
+| Metric | Skill Doctor (Rust) |
+|--------|---------------------|
+| **Startup Time** | **~2 ms** |
+| **Static Scan (Single File)** | **~12 ms** |
+| **Static Scan (Bundle - 50 files)**| **~28 ms** |
 
-> *(Note: Benchmarks are based on internal testing against the `tests/corpus/` dataset under controlled lab conditions on an M3 MacBook Pro. True Positive Rate and cross-file catch rate are currently pending independent third-party validation.)*
+> *(Note: Benchmarks are based on preliminary internal testing against the `tests/corpus/` dataset under controlled lab conditions on an M3 MacBook Pro. Not independently verified.)*
 
 ### Registry Support
 
@@ -209,7 +203,7 @@ skill-doctor scan-all ./skills/               # Recursive scan
 
 # Layer control
 --no-llm                                      # Skip LLM semantic pass
---no-sandbox                                  # Skip E2B sandbox
+--no-sandbox                                  # Skip microsandbox sandbox
 
 # LLM configuration
 --llm-url https://api.groq.com/openai/v1     # LLM provider URL
@@ -322,8 +316,8 @@ Skill Doctor has completed a **full rewrite from Python to Rust** (`v1.0.0`). Th
 |-----------|--------|
 | Layer 1 — Static Analysis (YARA-X + tree-sitter + Fast Scraping) | ✅ Completed |
 | Layer 2 — LLM Semantic Analysis (REST API + Gateway support) | ✅ Completed |
-| Layer 3 — Behavioral Sandbox (`microsandbox` Rust SDK) | ✅ Completed |
-| Layer 4 — Community Threat Database | ✅ Completed |
+| Layer 3 — Behavioral Sandbox (Subprocess/TempDir Honeypot) | ✅ Completed |
+| Layer 4 — Community Threat Database | 🚧 In Progress / Stub |
 | CLI Core & OpenTUI Integration | ✅ Completed |
 | Lobe Hub / Skills.sh / GitHub Registry Support | ✅ Completed |
 | Cross-platform Binaries (macOS, Windows, Linux) | ✅ Completed |
@@ -379,7 +373,7 @@ Please see `CONTRIBUTING.md` for guidelines.
 - **NVIDIA** — SkillSpector (MIT) — AST analysis patterns
 - **OWASP** — Agentic Skills Top 10 and MCP Top 10 — Threat taxonomy
 - **OpenTUI** — Terminal UI rendering engine
-- **E2B** — Behavioral sandboxing
+- **microsandbox** — Behavioral sandboxing
 
 ---
 

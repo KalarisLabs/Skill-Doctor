@@ -495,4 +495,24 @@ mod tests {
     fn test_calculate_entropy_empty() {
         assert_eq!(calculate_entropy(b""), 0.0);
     }
+
+    #[test]
+    fn test_yara_rules_compile() {
+        let mut compiler = yara_x::Compiler::new();
+        let mut compiled_count = 0;
+
+        for file_name in YaraRules::iter() {
+            if let Some(rule_data) = YaraRules::get(&file_name) {
+                let rule_text = String::from_utf8_lossy(&rule_data.data);
+                if let Err(e) = compiler.add_source(rule_text.as_ref()) {
+                    panic!("Failed to compile YARA rule {}: {}", file_name, e);
+                }
+                compiled_count += 1;
+            }
+        }
+
+        assert!(compiled_count > 0, "No YARA rules found to compile");
+        // Ensure the rules can actually be built
+        let _rules = compiler.build();
+    }
 }

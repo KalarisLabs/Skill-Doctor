@@ -11,12 +11,12 @@ rule SD10_Homoglyph_Substitution
         author = "Kalaris Labs (adapted from Cisco/NVIDIA)"
 
     strings:
-        // Common Cyrillic lookalikes for Latin characters
-        $homo1 = /[\u0430\u0410]/  // Cyrillic a/A vs Latin a/A
-        $homo2 = /[\u0435\u0415]/  // Cyrillic e/E vs Latin e/E
-        $homo3 = /[\u043E\u041E]/  // Cyrillic o/O vs Latin o/O
-        $homo4 = /[\u0440\u0420]/  // Cyrillic r/R vs Latin r/R
-        $homo5 = /[\u0441\u0421]/  // Cyrillic c/C vs Latin c/C
+        // Common Cyrillic lookalikes for Latin characters (UTF-8 byte matches)
+        $homo1 = /\xd0\xb0|\xd0\x90/  // Cyrillic a/A
+        $homo2 = /\xd0\xb5|\xd0\x95/  // Cyrillic e/E
+        $homo3 = /\xd0\xbe|\xd0\x9e/  // Cyrillic o/O
+        $homo4 = /\xd1\x80|\xd0\xa0/  // Cyrillic r/R
+        $homo5 = /\xd1\x81|\xd0\xa1/  // Cyrillic c/C
 
     condition:
         any of them

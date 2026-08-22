@@ -47,8 +47,8 @@ rule SD01_ASCII_Smuggling
         author = "Kalaris Labs (adapted from Cisco/NVIDIA)"
 
     strings:
-        // Zero-width space, non-joiner, joiner, BOM
-        $zw = /[\u200B\u200C\u200D\uFEFF]/
+        // Zero-width space, non-joiner, joiner, BOM (UTF-8 hex escapes)
+        $zw = /\xe2\x80\x8b|\xe2\x80\x8c|\xe2\x80\x8d|\xef\xbb\xbf/
 
     condition:
         $zw

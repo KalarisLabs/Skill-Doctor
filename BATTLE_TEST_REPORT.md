@@ -1,7 +1,7 @@
 # Skill Doctor Battle Test Report
 
 **Date**: 2026-08-22  
-**Version**: v0.2.3 (Rust implementation)  
+**Version**: v1.0.0 (Rust implementation)  
 **Test Environment**: Windows  
 **CLI**: skill-doctor.exe (installed via install.ps1)
 

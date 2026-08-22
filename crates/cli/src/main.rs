@@ -40,7 +40,7 @@ enum Commands {
         #[arg(long)]
         no_llm: bool,
 
-        /// Skip E2B behavioral sandbox.
+        /// Skip microsandbox behavioral sandbox.
         #[arg(long)]
         no_sandbox: bool,
 

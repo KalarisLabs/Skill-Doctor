@@ -25,10 +25,6 @@ allow = [
     "CDLA-Permissive-2.0"
 ]
 
-[[licenses.exceptions]]
-allow = ["(MIT OR Apache-2.0) AND Unicode-3.0"]
-name = "unicode-ident"
-
 [bans]
 multiple-versions = "warn"
 wildcards = "allow"

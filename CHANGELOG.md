@@ -25,9 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - (No unreleased security fixes yet)
 
-## [0.2.3] - 2026-08-22
+## [1.0.0] - 2026-08-22
 
 ### Added
+- Official GitHub Action release for seamless CI/CD integration (`uses: KalarisLabs/Skill-Doctor@v1.0.0`)
 - Rust-based CLI with OpenTUI rendering engine
 - Multi-layer scan pipeline (YARA-X + tree-sitter + microsandbox + LLM)
 - Lobe Hub and Skills.sh registry integration with fast scraping
@@ -42,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Static analysis now executes in <30ms (vs ~85ms in Python)
 - Cross-file AST taint analysis across entire skill bundles
 - Provider-agnostic LLM integration (Groq, OpenAI, Ollama, vLLM)
+
+### Removed
+- Deprecated NPM package distribution channel to favor native binaries and GitHub Actions
 
 ### Security
 - Fixed YARA rule compilation errors for Unicode patterns

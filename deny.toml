@@ -26,8 +26,8 @@ allow = [
 ]
 
 [[licenses.exceptions]]
-allow = ['(MIT OR Apache-2.0) AND Unicode-3.0']
 name = "unicode-ident"
+allow = ["MIT", "Apache-2.0", "Unicode-3.0"]
 
 [bans]
 multiple-versions = "warn"

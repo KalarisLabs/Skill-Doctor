@@ -23,8 +23,8 @@ CATEGORIES=(
 
 for cat in "${CATEGORIES[@]}"; do
   echo "Scanning $cat..."
-  cargo run --release -- scan "./tests/corpus/$cat/" --output html > "./tests/results/report_${cat}.html" 2>&1 || true
-  cargo run --release -- scan "./tests/corpus/$cat/" --output json > "./tests/results/report_${cat}.json" 2>&1 || true
+  cargo run --release -- scan "./tests/corpus/$cat/" --output html > "./tests/results/report_${cat}.html" || true
+  cargo run --release -- scan "./tests/corpus/$cat/" --output json > "./tests/results/report_${cat}.json" || true
 done
 
 echo "Scan complete. All reports generated in ./tests/results/"

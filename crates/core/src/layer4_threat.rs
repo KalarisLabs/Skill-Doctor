@@ -1,4 +1,4 @@
-//! Layer 4: Threat Database — hash-based lookup against known-malicious skill fingerprints.
+//! Layer 4: Threat Database (hash-based lookup against known-malicious skill fingerprints).
 //!
 //! Provides persistent storage of known-bad bundle hashes using SQLite.
 //! When a bundle hash matches a previously flagged malicious payload,

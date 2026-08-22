@@ -4,7 +4,7 @@ This document describes the core dataflow and layer contracts of the `skill-doct
 
 ## Pipeline Dataflow
 
-When a skill bundle is ingested, it traverses four sequential layers. The system is designed to degrade gracefully—if an API key is missing or the sandbox is disabled, the pipeline continues with the remaining layers.
+When a skill bundle is ingested, it traverses four sequential layers. The system is designed to degrade gracefully: if an API key is missing or the sandbox is disabled, the pipeline continues with the remaining layers.
 
 ```mermaid
 graph TD

@@ -58,7 +58,7 @@ pub fn generate_html(result: &ScanResult, output_path: &Path) -> Result<()> {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skill Doctor Report — {scan_id}</title>
+    <title>Skill Doctor Report: {scan_id}</title>
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; padding: 2rem; }}
@@ -82,7 +82,7 @@ pub fn generate_html(result: &ScanResult, output_path: &Path) -> Result<()> {
         <p class="meta">Scan ID: {scan_id} | {scanned_at} | Duration: {duration}s</p>
 
         <div class="summary">
-            <p class="risk {risk_level}">{risk_level} — {risk_score:.1}/10.0</p>
+            <p class="risk {risk_level}">{risk_level} ({risk_score:.1}/10.0)</p>
             <p>{findings_count} findings | Layers: {layers}</p>
         </div>
 

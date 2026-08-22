@@ -1,4 +1,4 @@
-//! Skill Doctor Core — scanning engine library.
+//! Skill Doctor Core: scanning engine library.
 //!
 //! This crate provides the multi-layer analysis pipeline for AI agent skill files.
 //! It is used by the CLI binary and can be embedded into other tools.

@@ -1,4 +1,4 @@
-//! Risk scoring module — merge, deduplicate, and score findings from all layers.
+//! Risk scoring module: merge, deduplicate, and score findings from all layers.
 //!
 //! Equivalent to Python's `skill_doctor/scanner/scorer.py`.
 

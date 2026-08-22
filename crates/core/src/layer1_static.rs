@@ -1,4 +1,4 @@
-//! Layer 1: Static Analysis — YARA-X + tree-sitter AST + Entropy + Unicode.
+//! Layer 1: Static Analysis (YARA-X + tree-sitter AST + Entropy + Unicode).
 //!
 //! Equivalent to Python's `skill_doctor/scanner/layer1_static.py`.
 //! Uses YARA-X and tree-sitter as native Rust libraries (no FFI overhead).
@@ -12,7 +12,7 @@ use walkdir::WalkDir;
 use crate::intake::is_text_file;
 use crate::models::{Engine, Finding, Severity};
 
-/// Embedded YARA rule files — compiled into the binary at build time.
+/// Embedded YARA rule files (compiled into the binary at build time).
 #[derive(RustEmbed)]
 #[folder = "rules/core/"]
 #[include = "*.yar"]
@@ -179,31 +179,32 @@ const DANGEROUS_CALLS: &[(&str, Severity, &str, &str)] = &[
         "pickle.loads",
         Severity::High,
         "SD-02 · Command Injection",
+        "SD-02 - Command Injection",
         "Arbitrary code execution via pickle deserialization",
     ),
     (
         "requests.post",
         Severity::Medium,
-        "SD-03 · Data Exfiltration",
-        "Outbound HTTP POST — potential data exfiltration",
+        "SD-03 - Data Exfiltration",
+        "Outbound HTTP POST - potential data exfiltration",
     ),
     (
         "requests.get",
         Severity::Low,
-        "SD-03 · Data Exfiltration",
-        "Outbound HTTP GET — review for data leakage",
+        "SD-03 - Data Exfiltration",
+        "Outbound HTTP GET - review for data leakage",
     ),
     (
         "httpx.post",
         Severity::Medium,
-        "SD-03 · Data Exfiltration",
-        "Outbound HTTP POST — potential data exfiltration",
+        "SD-03 - Data Exfiltration",
+        "Outbound HTTP POST - potential data exfiltration",
     ),
     (
         "urllib.request.urlopen",
         Severity::Medium,
-        "SD-03 · Data Exfiltration",
-        "Outbound HTTP request — potential data exfiltration",
+        "SD-03 - Data Exfiltration",
+        "Outbound HTTP request - potential data exfiltration",
     ),
 ];
 
@@ -211,8 +212,8 @@ const DANGEROUS_CALLS: &[(&str, Severity, &str, &str)] = &[
 const DANGEROUS_ATTRS: &[(&str, Severity, &str, &str)] = &[(
     "os.environ",
     Severity::Medium,
-    "SD-03 · Data Exfiltration",
-    "Environment variable access — may harvest secrets",
+    "SD-03 - Data Exfiltration",
+    "Environment variable access - may harvest secrets",
 )];
 
 fn scan_python_ast(bundle_dir: &Path) -> Vec<Finding> {

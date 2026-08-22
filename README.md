@@ -16,23 +16,37 @@
 <h1 align="center">Skill Doctor</h1>
 
 <p align="center">
-  <strong>Multi-layer security platform for AI agent skill files.</strong><br/>
-  Advanced LLM security, threat detection, and AI agent sandboxing. Detect malicious prompt injections, Copilot security flaws, and MCP vulnerabilities before they reach your agent runtime. Built in Rust for maximum performance.
+  <strong>The dedicated security layer for AI agent skills and MCP tools.</strong><br/>
+  Detect malicious prompt injections, code execution sinks, backdoors, and MCP vulnerabilities before they reach your agent runtime. Built in Rust for sub-30ms performance.
 </p>
 
 <p align="center">
-  <a href="#install">Install</a> · <a href="#quick-start">Quick Start</a> · <a href="#how-it-works">How It Works</a> · <a href="#threat-detection">Threat Detection</a> · <a href="#cli-reference">CLI Reference</a> · <a href="#development">Development</a> · <a href="#roadmap">Roadmap</a>
+  <a href="#the-problem">The Problem</a> · <a href="#the-solution">The Solution</a> · <a href="#install">Install</a> · <a href="#quick-start">Quick Start</a> · <a href="#how-it-works">How It Works</a> · <a href="#threat-detection">Threat Detection</a> · <a href="#cli-reference">CLI Reference</a>
 </p>
 
-> **Report Abuse & Credits**: If you discover a malicious skill bypassing the filters, please report it via [sayan@kalarislabs.com](mailto:sayan@kalarislabs.com) or open a security advisory. Credits to the community for continuous threat intelligence.
+> **Report Vulnerabilities & Threats**: If you find a malicious skill pattern bypassing filters, report it to [sayan@kalarislabs.com](mailto:sayan@kalarislabs.com).
 
 ---
 
-**Skill Doctor** is Kalaris Labs' first open-source infrastructure project — a security scanner purpose-built for the emerging attack surface of AI agent skill files (`SKILL.md`, `.clauderules`, `AGENTS.md`, `.cursorrules`, MCP server configs).
+## The Problem
 
-Built in **Rust** for maximum performance, distributed as a single static binary with zero runtime dependencies.
+AI agent skill files (`SKILL.md`, `.clauderules`, `AGENTS.md`, `.cursorrules`, MCP server configs) execute with the full trust and privileges of your AI agent:
+- Direct access to local files, system terminals, environment variables, and API tokens.
+- Ability to make outbound network calls and execute subprocess commands.
+- Capability to silently register proxy tools and shadow system commands.
 
-> **Why this matters:** Skill files execute with the full trust context of your AI agent — access to tools, file systems, APIs, and downstream agents. A single compromised skill can exfiltrate credentials, inject backdoors, or escalate privileges across your entire agent ecosystem.
+When pulling third-party skills from community registries (Skills.sh, Lobe Hub, GitHub), skills can be corrupted, malicious, or poorly secured. A single poisoned skill can exfiltrate credentials, inject persistent backdoors, or escape sandboxes into your runtime.
+
+## The Solution
+
+**Skill Doctor** serves as the automated security gatekeeper for agent skills. Instead of blindly trusting text files and tool schemas in production, Skill Doctor runs a 4-layer inspection pipeline:
+
+1. **Static Rules (YARA-X & Tree-sitter AST):** Catches known payloads, dangerous language sinks (`eval`, `exec`, `subprocess`), and encoded payloads in under 30 milliseconds.
+2. **Semantic Inspection (LLM Layer):** Identifies hidden instructions, prompt injections, and scope discrepancies.
+3. **Behavioral Sandboxing (`microsandbox`):** Observes tool behavior in isolated subprocess honeypots.
+4. **Threat Intelligence DB:** Instant cryptographic matching against cataloged malicious skill hashes.
+
+Skill Doctor is compiled as a single static Rust binary with zero runtime dependencies.
 
 ---
 
@@ -113,31 +127,31 @@ skill-doctor scan ./skills/ --fail-on HIGH
 
 ## How It Works
 
-Skill Doctor runs a multi-layer analysis pipeline. Each layer is independent — the system degrades gracefully if a layer is unavailable.
+Skill Doctor runs a multi-layer analysis pipeline. Each layer is independent; the system degrades gracefully if a layer is unavailable.
 
 | Layer | Engine | What It Does | Speed |
 |-------|--------|-------------|-------|
-| **Layer 1** | YARA-X + tree-sitter AST + Fast Scraper | Pattern matching, encoded payload detection, lightning-fast native Rust scraping for Lobe Hub/Skills.sh URLs | < 30ms |
-| **Layer 2** | LLM (OpenAI-compatible REST API) | Intent mismatch, hidden instruction extraction, tool scope audit (Optional) | 3–8s |
-| **Layer 3** | `microsandbox` (Subprocess) | TempDir subprocess honeypot for basic behavior observation | 1–5s |
+| **Layer 1** | YARA-X + tree-sitter AST + Fast Scraper | Pattern matching, encoded payload detection, native Rust scraping for Lobe Hub/Skills.sh URLs | < 30ms |
+| **Layer 2** | LLM (OpenAI-compatible REST API) | Intent mismatch, hidden instruction extraction, tool scope audit (Optional) | 3-8s |
+| **Layer 3** | `microsandbox` (Subprocess) | TempDir subprocess honeypot for basic behavior observation | 1-5s |
 | **Layer 4** | Community Threat DB | SQLite hash-based lookup against known-malicious skill fingerprints | < 5ms |
 
 ### Architecture
 
 **Rust-first, single binary architecture:**
 
-- **CLI + TUI** — Rust binary with [OpenTUI](https://github.com/niceguydave/opentui) rendering engine
-- **Static Analysis & Intake** — YARA-X, tree-sitter, and `reqwest`-powered fast ingestion (bypassing LLMs for extraction)
-- **LLM Integration** — Provider-agnostic REST client (Groq, OpenAI, Ollama, vLLM — compatible with LLM Gateways like LiteLLM/Helicone)
-- **Sandbox** — `microsandbox` subprocess runner for isolated testing
-- **Reports** — SARIF, JSON, HTML generated natively
+- **CLI + TUI**: Rust binary with [OpenTUI](https://github.com/niceguydave/opentui) rendering engine
+- **Static Analysis & Intake**: YARA-X, tree-sitter, and `reqwest`-powered fast ingestion (bypassing LLMs for extraction)
+- **LLM Integration**: Provider-agnostic REST client (Groq, OpenAI, Ollama, vLLM, LiteLLM, Helicone)
+- **Sandbox**: `microsandbox` subprocess runner for isolated testing
+- **Reports**: SARIF, JSON, HTML generated natively
 
 ### Internal Benchmarks
 
 Skill Doctor `v1.0.0` (Rust) has been designed for maximum speed.
 
 1. **The Bundle vs. File Paradigm:** Cross-file AST taint analysis across the entire bundle simultaneously.
-2. **Speed:** By using native `tree-sitter` and `yara-x` in Rust, static analysis executes in under 30 milliseconds — making it the only viable choice for synchronous webhooks and pre-commit GitHub Actions.
+2. **Speed:** By using native `tree-sitter` and `yara-x` in Rust, static analysis executes in under 30 milliseconds, making it ideal for synchronous webhooks and pre-commit GitHub Actions.
 
 | Metric | Skill Doctor (Rust) |
 |--------|---------------------|
@@ -332,10 +346,10 @@ Skill Doctor has completed a **full rewrite from Python to Rust** (`v1.0.0`). Th
 
 | Component | Status |
 |-----------|--------|
-| Layer 1 — Static Analysis (YARA-X + tree-sitter + Fast Scraping) | ✅ Completed |
-| Layer 2 — LLM Semantic Analysis (REST API + Gateway support) | ✅ Completed |
-| Layer 3 — Behavioral Sandbox (Subprocess/TempDir Honeypot) | ✅ Completed |
-| Layer 4 — Community Threat Database | ✅ SQLite Threat DB |
+| Layer 1: Static Analysis (YARA-X + tree-sitter + Fast Scraping) | ✅ Completed |
+| Layer 2: LLM Semantic Analysis (REST API + Gateway support) | ✅ Completed |
+| Layer 3: Behavioral Sandbox (Subprocess/TempDir Honeypot) | ✅ Completed |
+| Layer 4: Community Threat Database | ✅ SQLite Threat DB |
 | CLI Core & OpenTUI Integration | ✅ Completed |
 | Lobe Hub / Skills.sh / GitHub Registry Support | ✅ Completed |
 | Cross-platform Binaries (macOS, Windows, Linux) | ✅ Completed |
@@ -387,11 +401,11 @@ Please see `CONTRIBUTING.md` for guidelines.
 
 ## Acknowledgments
 
-- **Cisco AI Defense** — Skill Scanner (Apache 2.0) — YARA rule inspiration
-- **NVIDIA** — SkillSpector (MIT) — AST analysis patterns
-- **OWASP** — Agentic Skills Top 10 and MCP Top 10 — Threat taxonomy
-- **OpenTUI** — Terminal UI rendering engine
-- **microsandbox** — Behavioral sandboxing
+- **Cisco AI Defense**: Skill Scanner (Apache 2.0) for YARA rule inspiration
+- **NVIDIA**: SkillSpector (MIT) for AST analysis patterns
+- **OWASP**: Agentic Skills Top 10 and MCP Top 10 for threat taxonomy
+- **OpenTUI**: Terminal UI rendering engine
+- **microsandbox**: Behavioral sandboxing
 
 ---
 

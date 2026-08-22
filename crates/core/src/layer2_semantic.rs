@@ -1,4 +1,4 @@
-//! Layer 2: LLM Semantic Analysis — provider-agnostic REST API integration.
+//! Layer 2: LLM Semantic Analysis (provider-agnostic REST API integration).
 //!
 //! Equivalent to Python's `skill_doctor/scanner/layer2_semantic.py`.
 //! Uses the generic LlmClient instead of the Groq SDK.

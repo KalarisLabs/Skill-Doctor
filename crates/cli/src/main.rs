@@ -1,4 +1,4 @@
-//! Skill Doctor CLI — command-line interface for skill file scanning.
+//! Skill Doctor CLI: command-line interface for skill file scanning.
 //!
 //! Built with Clap for argument parsing and OpenTUI for terminal rendering.
 
@@ -12,7 +12,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 #[derive(Parser)]
 #[command(
     name = "skill-doctor",
-    about = "Skill Doctor — Multi-layer security platform for AI agent skill files.",
+    about = "Skill Doctor: Multi-layer security platform for AI agent skill files.",
     version = VERSION,
     author = "Kalaris Labs <sayan@kalarislabs.com>",
 )]

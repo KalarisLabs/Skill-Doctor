@@ -178,7 +178,6 @@ const DANGEROUS_CALLS: &[(&str, Severity, &str, &str)] = &[
     (
         "pickle.loads",
         Severity::High,
-        "SD-02 · Command Injection",
         "SD-02 - Command Injection",
         "Arbitrary code execution via pickle deserialization",
     ),

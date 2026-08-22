@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="public/skill-doctor-banner.gif" alt="Skill Doctor Banner" width="100%">
+  <video src="public/skill-doctor-banner.mp4" width="100%" autoplay loop muted playsinline></video>
   <br/>
   <br/>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-test.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-test.yml?style=for-the-badge&label=CI" alt="CI Status" /></a>

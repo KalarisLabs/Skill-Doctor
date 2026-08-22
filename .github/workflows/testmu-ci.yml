@@ -49,13 +49,13 @@ jobs:
         run: |
           # Use xvfb-run to provide a virtual display buffer for Chrome on Ubuntu headless runners
           # AI validation via Kane CLI for SD-01
-          xvfb-run kane-cli run "Open file://$(pwd)/tests/results/report_sd01.html. Verify that the 'SD-01 Prompt Injection' vulnerability is displayed in the report summary."
+          xvfb-run kane-cli run "Open file://$(pwd)/tests/results/report_SD-01-Prompt-Injection.html. Verify that the 'SD-01 Prompt Injection' vulnerability is displayed in the report summary."
 
           # AI validation via Kane CLI for SD-02
-          xvfb-run kane-cli run "Open file://$(pwd)/tests/results/report_sd02.html. Verify that the 'SD-02 Command Injection' vulnerability is highlighted."
+          xvfb-run kane-cli run "Open file://$(pwd)/tests/results/report_SD-02-Command-Injection.html. Verify that the 'SD-02 Command Injection' vulnerability is highlighted."
 
           # AI validation via Kane CLI for SD-03
-          xvfb-run kane-cli run "Open file://$(pwd)/tests/results/report_sd03.html. Verify that the 'SD-03 Data Exfiltration' vulnerability is detected."
+          xvfb-run kane-cli run "Open file://$(pwd)/tests/results/report_SD-03-Data-Exfiltration.html. Verify that the 'SD-03 Data Exfiltration' vulnerability is detected."
 
       - name: Archive Test Results
         uses: actions/upload-artifact@v4

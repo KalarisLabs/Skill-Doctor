@@ -2,10 +2,8 @@
   <img src="public/skill-doctor-banner.webp" alt="Skill Doctor Banner" width="100%">
   <br/>
   <br/>
-  <a href="https://app.devin.ai/org/kalarislabs/wiki/KalarisLabs/Skill-Doctor?branch=main"><img src="https://img.shields.io/badge/Ask_DeepWiki-00A4E4?logo=devin&logoColor=white&style=for-the-badge" alt="Ask DeepWiki"></a>
   <a href="https://discord.gg/HQDEJvFZa"><img src="https://img.shields.io/badge/Discord-Join%20Discord-white?logo=discord&logoColor=black&style=for-the-badge" alt="Join Discord"></a>
   <a href="https://www.linkedin.com/company/kalarislabs"><img src="https://img.shields.io/badge/LinkedIn-Follow_Kalaris_Labs-blue?logo=linkedin&style=for-the-badge" alt="Follow Kalaris Labs"></a>
-  <a href="https://trendshift.io/"><img src="https://img.shields.io/badge/Trendshift-%231_Repository_Of_The_Week-blue?style=for-the-badge" alt="Trendshift"></a>
   <br/>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-test.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-test.yml?style=for-the-badge&label=CI" alt="CI Status" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-security.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-security.yml?style=for-the-badge&label=Security" alt="Security" /></a>

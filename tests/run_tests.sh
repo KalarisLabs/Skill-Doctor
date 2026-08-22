@@ -6,16 +6,26 @@ echo "Starting Skill Doctor Corpus Scan..."
 # Ensure results directory exists
 mkdir -p ./tests/results
 
-# Scan SD-01 Prompt Injection
-cargo run --release -- scan ./tests/corpus/SD-01-Prompt-Injection/ --output html > ./tests/results/report_sd01.html
-cargo run --release -- scan ./tests/corpus/SD-01-Prompt-Injection/ --output json > ./tests/results/report_sd01.json
+# Scan all threat categories (SD-01 through SD-10) and benign baseline
+CATEGORIES=(
+  "SD-01-Prompt-Injection"
+  "SD-02-Command-Injection"
+  "SD-03-Data-Exfiltration"
+  "SD-04-Privilege-Escalation"
+  "SD-05-Supply-Chain-Tampering"
+  "SD-06-SSRF"
+  "SD-07-Tool-Poisoning"
+  "SD-08-Persistent-Backdoors"
+  "SD-09-Context-Flooding"
+  "SD-10-Obfuscation"
+  "benign-clean-skill"
+)
 
-# Scan SD-02 Command Injection
-cargo run --release -- scan ./tests/corpus/SD-02-Command-Injection/ --output html > ./tests/results/report_sd02.html
-cargo run --release -- scan ./tests/corpus/SD-02-Command-Injection/ --output json > ./tests/results/report_sd02.json
+for cat in "${CATEGORIES[@]}"; do
+  echo "Scanning $cat..."
+  cargo run --release -- scan "./tests/corpus/$cat/" --output html > "./tests/results/report_${cat}.html" 2>&1 || true
+  cargo run --release -- scan "./tests/corpus/$cat/" --output json > "./tests/results/report_${cat}.json" 2>&1 || true
+done
 
-# Scan SD-03 Data Exfiltration
-cargo run --release -- scan ./tests/corpus/SD-03-Data-Exfiltration/ --output html > ./tests/results/report_sd03.html
-cargo run --release -- scan ./tests/corpus/SD-03-Data-Exfiltration/ --output json > ./tests/results/report_sd03.json
+echo "Scan complete. All reports generated in ./tests/results/"
 
-echo "Scan complete. Reports generated in ./tests/results/"

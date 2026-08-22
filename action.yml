@@ -29,7 +29,7 @@ runs:
       shell: bash
       run: |
         echo "Installing Skill Doctor..."
-        npm install -g @kalarislabs/skill-doctor
+        curl -fsSL https://raw.githubusercontent.com/KalarisLabs/Skill-Doctor/main/install.sh | bash
 
     - name: Run Skill Doctor Scan
       shell: bash

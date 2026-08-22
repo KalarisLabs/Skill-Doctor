@@ -24,7 +24,7 @@ What actually happened. Include error messages, stack traces, or screenshots if 
 ## Environment
 - Skill Doctor version: [e.g., v0.2.3]
 - Operating System: [e.g., Windows 11, macOS 14, Ubuntu 22.04]
-- Installation method: [e.g., install.sh, install.ps1, cargo install, npm]
+- Installation method: [e.g., install.sh, install.ps1, cargo install]
 - Rust version (if building from source): [run `rustc --version`]
 - If applicable: YARA-X version, tree-sitter version
 

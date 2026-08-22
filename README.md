@@ -246,7 +246,6 @@ To help navigate the source code, here is a mapping of our top-level directories
 |-----------|---------|
 | `crates/` | The core Rust engine containing the CLI (`crates/cli`), scanner (`crates/core`), and reporting logic (`crates/report`). |
 | `tests/corpus/` | Intentionally malicious sample skills used as detection fixtures for our CI pipeline. |
-| `npm/` | Distribution channel for the JS ecosystem. Includes the postinstall downloader (`install.js`). |
 | `research/` & `.github/` | Security research papers, documentation, and our multi-dimensional CI workflows. |
 
 ---

@@ -4,6 +4,7 @@
   <a href="https://github.com/KalarisLabs/Skill-Doctor/actions"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-test.yml?branch=main" alt="CI Status"></a>
   <a href="https://crates.io/crates/skill-doctor"><img src="https://img.shields.io/crates/v/skill-doctor.svg" alt="Crates.io"></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/blob/main/LICENSE"><img src="https://img.shields.io/github/license/KalarisLabs/Skill-Doctor" alt="License"></a>
+  <a href="https://app.devin.ai/org/kalarislabs/wiki/KalarisLabs/Skill-Doctor?branch=main"><img src="https://img.shields.io/badge/Architecture-Devin_Wiki-black" alt="Devin Wiki"></a>
   <a href="https://discord.gg/HQDEJvFZa"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
 </div>
 

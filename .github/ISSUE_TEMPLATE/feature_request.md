@@ -1,9 +1,10 @@
 ---
 name: Feature Request
-description: Suggest a new feature or enhancement for Skill Doctor
+about: ''
 title: "[FEATURE] "
-labels: ["enhancement"]
-assignees: []
+labels: enhancement
+assignees: ''
+
 ---
 
 ## Feature Description

@@ -2,7 +2,12 @@
 
 This dataset is specifically designed as a test corpus for validating the Skill Doctor engine via the MuLamBDA (TestMu AI / Kane CLI) CI pipeline.
 
-It contains a journaled collection of intentionally vulnerable and malicious AI skills spanning multiple threat categories (SD-01 through SD-10). The CI pipeline scans these skills and outputs the structured results into the `tests/results/` directory, which is then parsed and visually validated by the TestMu AI agents.
+### Definitions
+- **TestMu AI**: An autonomous QA agent platform capable of parsing visual and structured test artifacts.
+- **MuLamBDA**: The underlying AI model architecture powering TestMu AI's visual reasoning.
+- **Kane CLI**: The command-line interface used to trigger TestMu AI test suites within CI/CD pipelines (e.g., GitHub Actions).
+
+It contains a journaled collection of intentionally vulnerable and malicious AI skills spanning multiple threat categories (SD-01 through SD-03). The CI pipeline scans these skills and outputs the structured results into the `tests/results/` directory, which is then parsed and visually validated by the TestMu AI agents.
 
 ## Corpus Structure
 

@@ -13,7 +13,7 @@ inputs:
     description: 'Minimum severity level to fail the build (CRITICAL, HIGH, MEDIUM, LOW)'
     required: false
     default: 'HIGH'
-  rule-pack:
+  rule_pack:
     description: 'Comma-separated list of rule packs to use (core, supply_chain, etc.)'
     required: false
     default: 'core'
@@ -29,13 +29,12 @@ runs:
       shell: bash
       run: |
         echo "Installing Skill Doctor..."
-        # In a real environment, this fetches the latest compiled binary from GitHub Releases
-        npm install -g @kalarislabs/skill-doctor || echo "Using locally built or cached binary"
+        npm install -g @kalarislabs/skill-doctor
 
     - name: Run Skill Doctor Scan
       shell: bash
       run: |
         skill-doctor scan "${{ inputs.target }}" \
           --fail-on "${{ inputs.fail-on }}" \
-          --rule-pack "${{ inputs.rule-pack }}" \
+          --rule-pack "${{ inputs.rule_pack }}" \
           ${{ inputs.args }}

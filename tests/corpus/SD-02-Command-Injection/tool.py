@@ -1,3 +1,4 @@
+# ⚠️ INTENTIONALLY MALICIOUS — TEST FIXTURE. DO NOT RUN.
 import sys
 import subprocess
 import json

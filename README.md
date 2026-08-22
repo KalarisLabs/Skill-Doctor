@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/skill%20doctor%20banner.png" alt="Skill Doctor — Multi-Layer Security for AI Agent Skill Files" width="100%" />
+  <img src="public/skill doctor banner.png" alt="Skill Doctor — Multi-Layer Security for AI Agent Skill Files" width="100%" />
 </p>
 
 <h1 align="center">Skill Doctor</h1>
@@ -10,9 +10,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/actions"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci.yml?style=flat-square&label=CI" alt="CI Status" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-test.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-test.yml?style=flat-square&label=CI" alt="CI Status" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-security.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-security.yml?style=flat-square&label=Security" alt="Security" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-benchmark.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-benchmark.yml?style=flat-square&label=Benchmark" alt="Benchmark" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/releases"><img src="https://img.shields.io/github/v/release/KalarisLabs/Skill-Doctor?style=flat-square&color=blue" alt="Latest Release" /></a>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/blob/master/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-green?style=flat-square" alt="License" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-green?style=flat-square" alt="License" /></a>
   <a href="https://crates.io/crates/skill-doctor"><img src="https://img.shields.io/crates/v/skill-doctor?style=flat-square&color=orange" alt="Crates.io" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/stargazers"><img src="https://img.shields.io/github/stars/KalarisLabs/Skill-Doctor?style=flat-square&color=yellow&label=Stars" alt="Stars" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor"><img src="https://komarev.com/ghpvc/?username=kalarislabs-skill-doctor&label=Active+Views&color=blueviolet&style=flat-square" alt="Active Views" /></a>
@@ -44,6 +46,8 @@ The fastest and most robust way to install Skill Doctor natively is using our ze
 curl -fsSL https://raw.githubusercontent.com/KalarisLabs/Skill-Doctor/main/install.sh | bash
 ```
 
+> *(Note: Installation scripts pull the latest binary from GitHub Releases. As a best security practice, review the scripts before piping them to your shell.)*
+
 ### Native (Windows)
 
 Open PowerShell as Administrator and run the following command to download and add the binary to your PATH:
@@ -51,6 +55,8 @@ Open PowerShell as Administrator and run the following command to download and a
 ```powershell
 irm https://raw.githubusercontent.com/KalarisLabs/Skill-Doctor/main/install.ps1 | iex
 ```
+
+> *(Note: Installation scripts pull the latest binary from GitHub Releases. As a best security practice, review the scripts before piping them to your shell.)*
 
 ### From source (Cargo)
 
@@ -141,6 +147,8 @@ Skill Doctor `v0.2.0` (Rust) completely outperforms legacy Python-based tools li
 | **True Positive Rate (TPR)** | **98.2%** | 84.0% | 91.5% |
 | **Cross-file Catch Rate**| **100%** | 0% | 40% |
 
+> *(Note: Benchmarks are based on internal testing against the `tests/corpus/` dataset under controlled lab conditions on an M3 MacBook Pro. True Positive Rate and cross-file catch rate are currently pending independent third-party validation.)*
+
 ### Registry Support
 
 Skill Doctor natively resolves skills from registries and repositories:
@@ -227,6 +235,19 @@ export SKILL_DOCTOR_LLM_MODEL="llama-3.3-70b-versatile"
 | **OpenAI** | `https://api.openai.com/v1` | GPT-4o-mini recommended |
 | **Ollama** (local) | `http://localhost:11434/v1` | Fully offline, no API key needed |
 | **vLLM** (self-hosted) | `http://your-server:8000/v1` | Any model |
+
+---
+
+## Repository Structure
+
+To help navigate the source code, here is a mapping of our top-level directories:
+
+| Directory | Purpose |
+|-----------|---------|
+| `crates/` | The core Rust engine containing the CLI (`crates/cli`), scanner (`crates/core`), and reporting logic (`crates/report`). |
+| `tests/corpus/` | Intentionally malicious sample skills used as detection fixtures for our CI pipeline. |
+| `npm/` | Distribution channel for the JS ecosystem. Includes the postinstall downloader (`install.js`). |
+| `research/` & `.github/` | Security research papers, documentation, and our multi-dimensional CI workflows. |
 
 ---
 

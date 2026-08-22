@@ -51,6 +51,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed YARA rule compilation errors for Unicode patterns
 - Added comprehensive security-focused testing corpus
 
+## [0.2.3] - 2026-08-20
+
+### Added
+- First public proof-of-concept release
+- Basic threat detection capabilities
+
 ## [0.2.2] - 2026-08-15
 
 ### Added
@@ -93,7 +99,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Initial security-focused feature set
-- AGPL v3 licensing
+- Apache 2.0 licensing
 
 [Unreleased]: https://github.com/KalarisLabs/Skill-Doctor/compare/v1.0.0...HEAD
 [0.1.0]: https://github.com/KalarisLabs/Skill-Doctor/releases/tag/v0.1.0

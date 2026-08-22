@@ -1,5 +1,3 @@
 # These are supported funding model platforms
 
-github: [saynchowdhury, e2b]
-# Ko-fi and Buy Me a Coffee are popular in India, but you can also use a direct UPI intent link
-custom: ["upi://pay?pa=your-upi-id-here@bank&pn=KalarisLabs", "https://buymeacoffee.com/your-username"]
+github: [saynchowdhury]

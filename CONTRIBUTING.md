@@ -14,7 +14,6 @@ Thank you for your interest in contributing to Skill Doctor! This document provi
   ```
 
 - **Git**: For cloning and managing the repository
-- **Optional**: [Just](https://github.com/casey/just) for running commands defined in `justfile`
 
 ### Building
 
@@ -153,4 +152,4 @@ For security vulnerabilities, please see [SECURITY.md](SECURITY.md) for responsi
 
 ## License
 
-By contributing to Skill Doctor, you agree that your contributions will be licensed under the GNU Affero General Public License v3 (AGPL v3).
+By contributing to Skill Doctor, you agree that your contributions will be licensed under the Apache License 2.0 (Apache-2.0).

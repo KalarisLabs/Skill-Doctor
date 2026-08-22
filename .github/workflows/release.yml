@@ -17,11 +17,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
+            target: x86_64-unknown-linux-musl
             artifact_name: skill-doctor
             asset_name: skill-doctor-linux-amd64
           - os: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
+            target: aarch64-unknown-linux-musl
             artifact_name: skill-doctor
             asset_name: skill-doctor-linux-arm64
           - os: macos-latest
@@ -45,14 +45,19 @@ jobs:
       with:
         targets: ${{ matrix.target }}
 
-    - name: Install cross-compilation tools
-      if: matrix.os == 'ubuntu-latest' && matrix.target == 'aarch64-unknown-linux-gnu'
-      run: sudo apt-get install -y gcc-aarch64-linux-gnu
+    - name: Install cross-compilation tools and musl
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y musl-tools
+        if [ "${{ matrix.target }}" = "aarch64-unknown-linux-musl" ]; then
+          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+        fi
 
     - name: Build release binary
       run: cargo build --release --target ${{ matrix.target }}
       env:
-        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER: aarch64-linux-gnu-gcc
 
     - name: Prepare artifact
       shell: bash
@@ -62,10 +67,19 @@ jobs:
         cd ../../../
         sha256sum ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
 
+    - name: Generate SBOM
+      if: matrix.os == 'ubuntu-latest' && matrix.target == 'x86_64-unknown-linux-musl'
+      run: |
+        cargo install cargo-cyclonedx
+        cargo cyclonedx --format json --all-features
+        cp bom.json skill-doctor-sbom.json
+        sha256sum skill-doctor-sbom.json > skill-doctor-sbom.json.sha256
+
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
         files: |
           ${{ matrix.asset_name }}
           ${{ matrix.asset_name }}.sha256
+          skill-doctor-sbom.json*
         generate_release_notes: true

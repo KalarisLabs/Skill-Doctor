@@ -21,6 +21,10 @@ inputs:
     description: 'Additional arguments to pass to skill-doctor scan'
     required: false
     default: ''
+  version:
+    description: 'Version of Skill Doctor to install'
+    required: false
+    default: 'latest'
 
 runs:
   using: 'composite'
@@ -29,7 +33,23 @@ runs:
       shell: bash
       run: |
         echo "Installing Skill Doctor..."
-        curl -fsSL https://raw.githubusercontent.com/KalarisLabs/Skill-Doctor/main/install.sh | bash
+        VERSION="${{ inputs.version }}"
+        if [ "$VERSION" = "latest" ]; then
+          DOWNLOAD_URL="https://github.com/KalarisLabs/Skill-Doctor/releases/latest/download/skill-doctor-linux-amd64"
+          SHA256_URL="https://github.com/KalarisLabs/Skill-Doctor/releases/latest/download/skill-doctor-linux-amd64.sha256"
+        else
+          DOWNLOAD_URL="https://github.com/KalarisLabs/Skill-Doctor/releases/download/${VERSION}/skill-doctor-linux-amd64"
+          SHA256_URL="https://github.com/KalarisLabs/Skill-Doctor/releases/download/${VERSION}/skill-doctor-linux-amd64.sha256"
+        fi
+        
+        curl -fsSL -o skill-doctor "$DOWNLOAD_URL"
+        curl -fsSL -o skill-doctor.sha256 "$SHA256_URL"
+        
+        # Verify checksum
+        sha256sum -c skill-doctor.sha256
+        
+        chmod +x skill-doctor
+        sudo mv skill-doctor /usr/local/bin/
 
     - name: Run Skill Doctor Scan
       shell: bash

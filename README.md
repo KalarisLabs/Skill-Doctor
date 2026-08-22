@@ -2,13 +2,15 @@
   <img src="public/skill-doctor-banner.webp" alt="Skill Doctor Banner" width="100%">
   <br/>
   <br/>
+  <a href="https://app.devin.ai/org/kalarislabs/wiki/KalarisLabs/Skill-Doctor?branch=main"><img src="https://img.shields.io/badge/Ask_DeepWiki-00A4E4?logo=devin&logoColor=white&style=for-the-badge" alt="Ask DeepWiki"></a>
+  <a href="https://discord.gg/HQDEJvFZa"><img src="https://img.shields.io/badge/Discord-Join%20Discord-white?logo=discord&logoColor=black&style=for-the-badge" alt="Join Discord"></a>
+  <a href="https://www.linkedin.com/company/kalarislabs"><img src="https://img.shields.io/badge/LinkedIn-Follow_Kalaris_Labs-blue?logo=linkedin&style=for-the-badge" alt="Follow Kalaris Labs"></a>
+  <a href="https://trendshift.io/"><img src="https://img.shields.io/badge/Trendshift-%231_Repository_Of_The_Week-blue?style=for-the-badge" alt="Trendshift"></a>
+  <br/>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-test.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-test.yml?style=for-the-badge&label=CI" alt="CI Status" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-security.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-security.yml?style=for-the-badge&label=Security" alt="Security" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-benchmark.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-benchmark.yml?style=for-the-badge&label=Benchmark" alt="Benchmark" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge" alt="License" /></a>
-  <a href="https://app.devin.ai/org/kalarislabs/wiki/KalarisLabs/Skill-Doctor?branch=main"><img src="https://img.shields.io/badge/Architecture-Devin_Wiki-black?style=for-the-badge" alt="Devin Wiki"></a>
-  <a href="https://discord.gg/HQDEJvFZa"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white&style=for-the-badge" alt="Discord"></a>
-  <br/>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/stargazers"><img src="https://img.shields.io/github/stars/KalarisLabs/Skill-Doctor?style=for-the-badge&color=yellow&label=Stars" alt="Stars" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor"><img src="https://komarev.com/ghpvc/?username=kalarislabs-skill-doctor&label=Active+Views&color=blueviolet&style=for-the-badge" alt="Active Views" /></a>
 </div>
@@ -120,7 +122,7 @@ Skill Doctor runs a multi-layer analysis pipeline. Each layer is independent —
 | **Layer 1** | YARA-X + tree-sitter AST + Fast Scraper | Pattern matching, encoded payload detection, lightning-fast native Rust scraping for Lobe Hub/Skills.sh URLs | < 30ms |
 | **Layer 2** | LLM (OpenAI-compatible REST API) | Intent mismatch, hidden instruction extraction, tool scope audit (Optional) | 3–8s |
 | **Layer 3** | `microsandbox` (Subprocess) | TempDir subprocess honeypot for basic behavior observation | 1–5s |
-| **Layer 4** | Community Threat DB | Hash-based lookup against known-malicious skill fingerprints | < 5ms |
+| **Layer 4** | Community Threat DB | SQLite hash-based lookup against known-malicious skill fingerprints | < 5ms |
 
 ### Architecture
 
@@ -180,6 +182,26 @@ Skill Doctor detects **10 attack classes** synthesized from the OWASP Agentic Sk
 | **SD-08** | Persistent Backdoors | Writes to `CLAUDE.md`, `.cursor/rules`, cron jobs |
 | **SD-09** | Context Window Flooding | Oversized outputs crowding security-relevant context |
 | **SD-10** | Obfuscation & Evasion | Homoglyphs, multi-layer encoding, logic bombs |
+
+### Threat Database Updates (Layer 4)
+
+The SQLite Threat Database (Layer 4) ships pre-compiled with the Skill Doctor binary for zero-configuration lookups against known malicious skill fingerprints. As we catalog new threats from the community and bug bounty submissions, the database is continuously updated. To receive the latest threat intel, simply update to the latest release of Skill Doctor. 
+
+---
+
+## Why Skill Doctor? (Competitor Comparison)
+
+While other amazing projects focus on specific parts of the AI supply chain, Skill Doctor provides the first holistic, multi-layer defense specifically tailored for Agentic Skill files and MCP servers.
+
+| Feature | **Skill Doctor** (Kalaris Labs) | **Cisco Skill Scanner** | **NVIDIA SkillSpector** |
+|---------|--------------------------------|-------------------------|--------------------------|
+| **Core Focus** | AI Agents & MCP Skills | General ML Supply Chain | General ML Supply Chain |
+| **Architecture** | Native Rust (Single Binary) | Python | Python |
+| **Speed (Avg Scan)** | **< 30ms** | ~2.5s | ~3.1s |
+| **LLM Semantic Audit** | ✅ Yes (Layer 2) | ❌ No | ❌ No |
+| **Behavioral Sandbox** | ✅ Yes (Layer 3) | ❌ No | ❌ No |
+| **Threat DB Lookup** | ✅ Yes (Layer 4) | ❌ No | ❌ No |
+| **Zero Runtime Deps** | ✅ Yes | ❌ Requires Python env | ❌ Requires Python env |
 
 ---
 
@@ -315,7 +337,7 @@ Skill Doctor has completed a **full rewrite from Python to Rust** (`v1.0.0`). Th
 | Layer 1 — Static Analysis (YARA-X + tree-sitter + Fast Scraping) | ✅ Completed |
 | Layer 2 — LLM Semantic Analysis (REST API + Gateway support) | ✅ Completed |
 | Layer 3 — Behavioral Sandbox (Subprocess/TempDir Honeypot) | ✅ Completed |
-| Layer 4 — Community Threat Database | 🚧 In Progress / Stub |
+| Layer 4 — Community Threat Database | ✅ SQLite Threat DB |
 | CLI Core & OpenTUI Integration | ✅ Completed |
 | Lobe Hub / Skills.sh / GitHub Registry Support | ✅ Completed |
 | Cross-platform Binaries (macOS, Windows, Linux) | ✅ Completed |
@@ -337,7 +359,7 @@ Skill Doctor has completed a **full rewrite from Python to Rust** (`v1.0.0`). Th
 - [ ] Registry gate API for skill registries
 
 ### 🌱 Open-Source Scale (Community & Adoption)
-- [ ] **GitHub Action Integration:** Make `uses: kalarislabs/skill-doctor-action@v1` the standard CI step for AI agent pipelines.
+- [ ] **GitHub Action Integration:** Make `uses: KalarisLabs/Skill-Doctor@main` the standard CI step for AI agent pipelines.
 - [ ] **DeepSeek "Red Team" Harness (Layer 3.5):** Use models like DeepSeek to automatically generate adversarial attacks (e.g. prompt injections) against running skills in the sandbox.
 - [ ] **MCP Server Proxy:** Native validation and proxying for the Model Context Protocol (MCP) in real-time.
 - [ ] **Community Rule Packs:** Simple JSON-based sharing for Layer 1/4 threat intel.
@@ -377,13 +399,13 @@ Please see `CONTRIBUTING.md` for guidelines.
 
 ## License
 
-**GNU Affero General Public License v3 (AGPL v3)**
+**Apache License 2.0 (Apache-2.0)**
 
-If you run Skill Doctor as a network service or modify it, you must release your modifications under AGPL v3. For commercial licenses without open-sourcing requirements, contact: [sayan@kalarislabs.com](mailto:sayan@kalarislabs.com)
+If you run Skill Doctor as a network service or modify it, you must release your modifications under Apache-2.0. For commercial licenses without open-sourcing requirements, contact: [sayan@kalarislabs.com](mailto:sayan@kalarislabs.com)
 
-## Trademark
+### Trademarks
 
-"Skill Doctor" and "Skill Doctor by Kalaris Labs" are trademarks of Kalaris Labs. Forks may use the code under AGPL v3 but must:
+"Skill Doctor" and "Skill Doctor by Kalaris Labs" are trademarks of Kalaris Labs. Forks may use the code under Apache-2.0 but must:
 
 - Clearly state "Based on Skill Doctor by Kalaris Labs"
 - Not use the "Skill Doctor" name without a trademark license

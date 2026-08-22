@@ -5,7 +5,10 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Core scanning library for Skill Doctor"
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Core scanning engine for Skill Doctor"
 
 [dependencies]
 yara-x.workspace = true

@@ -5,7 +5,10 @@ edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 authors.workspace = true
-description = "Report generation for Skill Doctor"
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Reporting and formatting engine for Skill Doctor"
 
 [dependencies]
 skill-doctor-core = { path = "../core", version = "1.0.0" }

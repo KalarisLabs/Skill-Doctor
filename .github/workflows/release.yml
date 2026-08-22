@@ -59,9 +59,13 @@ jobs:
       run: |
         cd target/${{ matrix.target }}/release
         cp ${{ matrix.artifact_name }} ../../../${{ matrix.asset_name }}
+        cd ../../../
+        sha256sum ${{ matrix.asset_name }} > ${{ matrix.asset_name }}.sha256
 
     - name: Release
       uses: softprops/action-gh-release@v2
       with:
-        files: ${{ matrix.asset_name }}
+        files: |
+          ${{ matrix.asset_name }}
+          ${{ matrix.asset_name }}.sha256
         generate_release_notes: true

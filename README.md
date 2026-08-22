@@ -5,9 +5,7 @@
   <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-test.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-test.yml?style=for-the-badge&label=CI" alt="CI Status" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-security.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-security.yml?style=for-the-badge&label=Security" alt="Security" /></a>
   <a href="https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci-benchmark.yml"><img src="https://img.shields.io/github/actions/workflow/status/KalarisLabs/Skill-Doctor/ci-benchmark.yml?style=for-the-badge&label=Benchmark" alt="Benchmark" /></a>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/releases"><img src="https://img.shields.io/github/v/release/KalarisLabs/Skill-Doctor?style=for-the-badge&color=blue" alt="Latest Release" /></a>
-  <a href="https://crates.io/crates/skill-doctor"><img src="https://img.shields.io/crates/v/skill-doctor?style=for-the-badge&color=orange" alt="Crates.io" /></a>
-  <a href="https://github.com/KalarisLabs/Skill-Doctor/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-green?style=for-the-badge" alt="License" /></a>
+  <a href="https://github.com/KalarisLabs/Skill-Doctor/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue?style=for-the-badge" alt="License" /></a>
   <a href="https://app.devin.ai/org/kalarislabs/wiki/KalarisLabs/Skill-Doctor?branch=main"><img src="https://img.shields.io/badge/Architecture-Devin_Wiki-black?style=for-the-badge" alt="Devin Wiki"></a>
   <a href="https://discord.gg/HQDEJvFZa"><img src="https://img.shields.io/badge/Discord-Join%20Community-5865F2?logo=discord&logoColor=white&style=for-the-badge" alt="Discord"></a>
   <br/>

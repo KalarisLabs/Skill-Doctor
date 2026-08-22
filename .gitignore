@@ -62,3 +62,9 @@ target/
 *.log
 *.out
 *.toc
+*.bbl
+*.blg
+*.synctex.gz
+
+# Threat DB (local state)
+threat_db.sqlite

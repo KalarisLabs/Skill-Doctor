@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use Skill Doctor in your research, please cite it using the metadata from this file."
+type: software
+title: "Skill Doctor: A High-Performance, Multi-Layer Security Framework for AI Agent Skill Files"
+version: 1.0.0
+date-released: 2026-08-22
+license: Apache-2.0
+url: "https://github.com/KalarisLabs/Skill-Doctor"
+repository-code: "https://github.com/KalarisLabs/Skill-Doctor"
+keywords:
+  - ai-security
+  - agentic-web
+  - static-analysis
+  - supply-chain-security
+  - mcp
+  - rust
+  - yara
+authors:
+  - family-names: Chowdhury
+    given-names: Sayan
+    email: sayan@kalarislabs.com
+    orcid: "https://orcid.org/0009-0004-8421-0087"
+    affiliation: "Kalaris Labs"

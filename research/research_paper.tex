@@ -1,10 +1,10 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[11pt,letterpaper]{article}
 
 \usepackage[utf8]{inputenc}
 \usepackage{geometry}
-\geometry{a4paper, margin=1in}
-\usepackage{graphicx}
+\geometry{letterpaper, margin=1in}
 \usepackage{hyperref}
+\usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{amsmath}
@@ -12,9 +12,12 @@
 \usepackage{tikz}
 \usepackage{caption}
 \usepackage{float}
+\usepackage[numbers]{natbib}
+\usepackage{listings}
 \usepackage{xcolor}
 
-\usepackage{listings}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+
 \lstset{
     basicstyle=\ttfamily\small,
     breaklines=true,
@@ -35,48 +38,27 @@
     citecolor=blue,
 }
 
-\title{\textbf{Skill Doctor: A High-Performance, Multi-Layer Security Framework for AI Agent Skill Files}}
+\title{\includegraphics[height=1.5cm]{clean_logo.png}\\[1em] \textbf{Skill Doctor: A High-Performance, Multi-Layer Security Framework for AI Agent Skill Files}}
 
 \author{
   \textbf{Sayan Chowdhury}\\
-  \textit{Kalaris Labs Research Team}\\
-  \href{mailto:sayan@kalarislabs.com}{sayan@kalarislabs.com}
+  \textit{Founder, Kalaris Labs}\\
+  \href{mailto:sayan@kalarislabs.com}{sayan@kalarislabs.com} $\cdot$ \href{https://github.com/KalarisLabs/Skill-Doctor}{\texttt{github.com/KalarisLabs/Skill-Doctor}}\\
+  \href{https://orcid.org/0009-0004-8421-0087}{\includegraphics[height=1em]{orcid.png} ORCID} $\cdot$ \href{https://scholar.google.com/citations?user=LqCGDSQAAAAJ&hl=en}{Google Scholar}
 }
 
-\date{August 2026 $\cdot$ Preprint}
+\date{August 2026 $\cdot$ Preprint $\cdot$ Release v1.0.0}
 
 \begin{document}
 
-\begin{center}
-    \includegraphics[height=1.6cm]{clean_logo.png}\\[0.5em]
-    {\LARGE \textbf{Skill Doctor: A High-Performance, Multi-Layer Security Framework for AI Agent Skill Files}}\\[1.2em]
-    
-    \noindent\fcolorbox{gray!30}{gray!5}{
-        \begin{minipage}{0.85\textwidth}
-            \centering
-            \vspace{0.4em}
-            \textbf{Sayan Chowdhury}\\
-            \textit{Kalaris Labs Research Team}\\
-            \href{mailto:sayan@kalarislabs.com}{\texttt{sayan@kalarislabs.com}} $\cdot$ \href{https://github.com/KalarisLabs/Skill-Doctor}{\texttt{github.com/KalarisLabs/Skill-Doctor}}
-            \vspace{0.4em}
-        \end{minipage}
-    }\\[1em]
-    {\small August 2026 $\cdot$ Preprint $\cdot$ Release v1.0.0}
-\end{center}
+\maketitle
 
-\vspace{0.8em}
+\begin{abstract}
+The proliferation of autonomous AI agent frameworks---such as Claude Code, OpenAI Codex CLI, Gemini CLI, Cursor, Windsurf, and their successors---has introduced a novel and largely undefended attack surface: the agentic \textit{skill file}. Skill files are structured instruction documents (\texttt{SKILL.md}, \texttt{.clauderules}, \texttt{AGENTS.md}, and Model Context Protocol (MCP) server configurations) that agents dynamically load from public registries, private repositories, and third-party archives at execution time. Once loaded, a skill file executes within the full trust boundary of the agent, inheriting unrestricted access to tools, file systems, APIs, and downstream agents. In this paper, we formalize the attack taxonomy against skill files, synthesizing the OWASP Agentic Skills Top 10 and real-world vulnerability disclosures. We present \textbf{Skill Doctor}, a multi-engine security platform built entirely in Rust. By combining memory-safe YARA-X static analysis, native \texttt{tree-sitter} cross-file Abstract Syntax Tree (AST) scanning, and Large Language Model (LLM)-powered semantic reasoning, Skill Doctor accurately detects malicious, deceptive, and non-compliant skill files prior to runtime ingestion. Benchmarks demonstrate that Skill Doctor's native single-binary architecture achieves sub-30ms static scan times. Furthermore, we outline the deployment of Skill Doctor as a GitHub Action to enable frictionless registry-level gating, securing the supply chain of the agentic web.
+\end{abstract}
 
-\noindent\fcolorbox{blue!40}{blue!2}{
-    \begin{minipage}{0.96\textwidth}
-        \vspace{0.5em}
-        \textbf{Abstract}---The proliferation of autonomous AI agent frameworks---such as Claude Code, OpenAI Codex CLI, Gemini CLI, Cursor, Windsurf, and their successors---has introduced a novel and largely undefended attack surface: the agentic \textit{skill file}. Skill files are structured instruction documents (\texttt{SKILL.md}, \texttt{.clauderules}, \texttt{AGENTS.md}, and Model Context Protocol (MCP) server configurations) that agents dynamically load from public registries, private repositories, and third-party archives at execution time. Once loaded, a skill file executes within the full trust boundary of the agent, inheriting unrestricted access to tools, file systems, APIs, and downstream agents. In this paper, we formalize the attack taxonomy against skill files, synthesizing the OWASP Agentic Skills Top 10 and real-world vulnerability disclosures. We present \textbf{Skill Doctor}, a multi-engine security platform built entirely in Rust. By combining memory-safe YARA-X static analysis, native \texttt{tree-sitter} cross-file Abstract Syntax Tree (AST) scanning, and Large Language Model (LLM)-powered semantic reasoning, Skill Doctor accurately detects malicious, deceptive, and non-compliant skill files prior to runtime ingestion. Benchmarks demonstrate that Skill Doctor's native single-binary architecture achieves sub-30ms static scan times, significantly outperforming legacy Python-based tools like Cisco Skill Scanner and NVIDIA SkillSpector. Furthermore, we outline the deployment of Skill Doctor as a GitHub Action to enable frictionless registry-level gating, securing the supply chain of the agentic web.
-        
-        \vspace{0.6em}
-        \noindent \textbf{Keywords:} AI Security, Agentic Web, Static Analysis, Supply Chain Security, Model Context Protocol (MCP), Rust, Abstract Syntax Trees (AST)
-        \vspace{0.5em}
-    \end{minipage}
-}
-
+\vspace{0.6em}
+\noindent \textbf{Keywords:} AI Security, Agentic Web, Static Analysis, Supply Chain Security, Model Context Protocol (MCP), Rust, Abstract Syntax Trees (AST)
 \vspace{2em}
 
 \section{Introduction}
@@ -87,61 +69,103 @@ In traditional software ecosystems, malicious binaries require execution permiss
 
 The severity of this attack vector has been empirically demonstrated:
 \begin{itemize}
-    \item During the ClawHavoc Campaign (2026), 1,184 confirmed malicious skills were discovered in ClawHub, exploiting automatic context injection.
-    \item A survey of 7,000+ public Model Context Protocol (MCP) servers by BlueRock Security revealed that 36.7\% were vulnerable to Server-Side Request Forgery (SSRF) attacks due to unvalidated tool schemas \cite{bluerock2026}.
-    \item Research by NVIDIA (2026) indicates that skills bundled with companion scripts (e.g., Python utilities) are 2.12$\times$ more likely to contain exploitable command injection vulnerabilities compared to standalone Markdown configurations \cite{nvidia2026}.
+    \item During the ClawHavoc Campaign (2026), 1,184 confirmed malicious skills were discovered exploiting automatic context injection \cite{clawhavoc2026}.
+    \item A survey of 7,000+ public Model Context Protocol (MCP) servers revealed that 36.7\% were vulnerable to Server-Side Request Forgery (SSRF) attacks due to unvalidated tool schemas \cite{bluerock2026}.
+    \item Empirical research indicates that skills bundled with companion scripts (e.g., Python utilities) are highly likely to contain exploitable command injection vulnerabilities compared to standalone Markdown configurations \cite{nvidia2026}.
 \end{itemize}
 
-Despite these critical risks, defensive tooling remains immature. Existing static scanners rely on highly latent interpreted runtimes, lack cross-file contextual analysis, and operate in isolation without community threat intelligence.
+Despite these critical risks, defensive tooling remains immature. Skill Doctor mitigates architectural deficiencies in prior tools by introducing a high-performance, Rust-native platform designed for direct integration into CI/CD pipelines, GitHub Actions, and agent registries.
 
-Skill Doctor mitigates these architectural deficiencies by introducing a high-performance, Rust-native platform designed for direct integration into CI/CD pipelines, GitHub Actions, and agent registries.
+\section{Background and Related Work}
+
+The necessity for securing autonomous agent workflows has led to formalized vulnerability tracking. The OWASP Foundation has categorized these threats into the Agentic Skills Top 10 \cite{owasp2026} and the MCP Top 10 \cite{owaspmcp2026}, providing a baseline for risk assessment.
+
+Prior approaches to scanning agent configurations include early static analyzers such as Cisco's Skill Scanner \cite{cisco2026} and NVIDIA's SkillSpector \cite{nvidia2026}. While these systems demonstrated the feasibility of detecting prompt injections and SSRF vulnerabilities, their reliance on interpreted runtimes (e.g., Python) introduced significant execution latency, rendering them unsuitable for high-throughput, synchronous CI/CD gating. Furthermore, these early tools often lacked cross-file contextual analysis, evaluating files in isolation rather than as cohesive skill bundles.
 
 \section{Threat Model and Taxonomy (SDTM-v1)}
 
-We define the Skill Doctor Threat Model (SDTM-v1), a synthesis of the OWASP Agentic Skills Top 10, the MCP Top 10, and observed adversarial behavior in public skill registries.
+We define the Skill Doctor Threat Model (SDTM-v1), a synthesis of the OWASP Agentic Skills Top 10 \cite{owasp2026}, the MCP Top 10 \cite{owaspmcp2026}, and observed adversarial behavior in public skill registries.
 
 \subsection{Classification of Attacks}
 
 \begin{itemize}
     \item \textbf{SD-01 $\cdot$ Prompt Injection}: Direct system prompt overrides, ASCII smuggling (zero-width Unicode payloads), and base64-encoded payloads.
-    \item \textbf{SD-02 $\cdot$ Command Injection}: Unsanitized parameters passed to critical execution sinks such as \texttt{subprocess.run()}, \texttt{eval()}, or \texttt{pickle.loads()} within companion scripts.
-    \item \textbf{SD-03 $\cdot$ Data Exfiltration}: Malicious directives targeting sensitive paths (e.g., \texttt{\textasciitilde/.aws/credentials}) and leaking them via HTTP callbacks or DNS exfiltration.
-    \item \textbf{SD-04 $\cdot$ Privilege Escalation}: Tool scope violations, such as a localized code-formatting skill silently registering system-wide read permissions.
-    \item \textbf{SD-05 $\cdot$ Supply Chain Tampering}: Cryptographic hash mismatches, typosquatting, and \texttt{.pyc} cache poisoning within skill bundles.
-    \item \textbf{SD-06 $\cdot$ SSRF via Tool Parameters}: Unvalidated URL schemas in tool descriptions designed to coerce the agent into scanning internal network architectures.
-    \item \textbf{SD-07 $\cdot$ Tool Poisoning}: Shadow tool registration, wherein a malicious skill registers an obfuscated proxy tool masquerading as a legitimate system utility.
-    \item \textbf{SD-08 $\cdot$ Persistent Backdoors}: The injection of persistence mechanisms into auto-loaded environment files (e.g., \texttt{.cursorrules}) to survive the deletion of the original skill.
-    \item \textbf{SD-09 $\cdot$ Context Window Flooding}: The generation of excessively large stochastic outputs designed to purposefully overflow the agent's context window.
+    \item \textbf{SD-02 $\cdot$ Command Injection}: Unsanitized parameters passed to critical execution sinks such as \texttt{subprocess.run()} within companion scripts.
+    \item \textbf{SD-03 $\cdot$ Data Exfiltration}: Malicious directives targeting sensitive paths and leaking them via HTTP callbacks or DNS exfiltration.
+    \item \textbf{SD-04 $\cdot$ Privilege Escalation}: Tool scope violations, such as silently registering system-wide read permissions.
+    \item \textbf{SD-05 $\cdot$ Supply Chain Tampering}: Cryptographic hash mismatches and cache poisoning within skill bundles.
+    \item \textbf{SD-06 $\cdot$ SSRF via Tool Parameters}: Unvalidated URL schemas in tool descriptions designed to scan internal network architectures.
+    \item \textbf{SD-07 $\cdot$ Tool Poisoning}: Shadow tool registration, masquerading as a legitimate system utility.
+    \item \textbf{SD-08 $\cdot$ Persistent Backdoors}: The injection of persistence mechanisms into auto-loaded environment files.
+    \item \textbf{SD-09 $\cdot$ Context Window Flooding}: The generation of stochastic outputs designed to purposefully overflow the agent's context window.
     \item \textbf{SD-10 $\cdot$ Obfuscation and Evasion}: Homoglyph substitution, bidirectional text spoofing, and multi-layer encoding chains.
 \end{itemize}
 
-\section{System Architecture and Methodology}
+\section{Implementation and System Architecture}
 
-To achieve comprehensive security without compromising registry throughput, Skill Doctor utilizes a multi-layer analysis pipeline driven by a highly concurrent Rust backend (\texttt{tokio}). The pipeline degrades gracefully, ensuring that static rules trigger even if external LLM providers experience latency.
+Skill Doctor is implemented entirely in Rust, utilizing a multi-layer analysis pipeline driven by a highly concurrent backend (\texttt{tokio}). The architecture is divided into specialized crates (e.g., \texttt{crates/core}, \texttt{crates/cli}, \texttt{crates/report}) organized within a Cargo workspace. 
 
-\subsection{The Bundle vs. File Paradigm}
+\begin{figure}[h!]
+\centering
+\begin{tikzpicture}[
+    node distance=1.5cm and 1cm,
+    box/.style={rectangle, draw, rounded corners, minimum height=0.8cm, text centered, font=\small},
+    layer/.style={rectangle, draw, dashed, inner sep=0.3cm, fill=gray!5},
+    arrow/.style={-{Stealth[scale=1.2]}, thick}
+]
+    % Nodes
+    \node[box, fill=blue!10] (payload) {Skill Payload (Local, Remote, Archive)};
+    \node[box, below=0.8cm of payload] (ingestion) {Ingestion Engine};
+    
+    % Layer 1 and 2 (Middle row)
+    \node[box, below=1cm of ingestion] (ast) {Tree-Sitter AST Taint Analysis};
+    \node[box, left=0.5cm of ast] (yara) {YARA-X Pattern Matching};
+    \node[box, right=0.5cm of ast] (llm) {LLM Semantic Reasoner};
+    
+    % Layer 3 and 4 (Bottom row)
+    \node[box, below=1cm of yara] (sandbox) {Behavioral Sandbox};
+    \node[box, below=1cm of llm] (db) {Community Threat DB};
+    
+    % Report
+    \node[box, fill=green!10, below=1cm of ast] (report) {SARIF / JSON Report Generator};
 
-A critical limitation of legacy scanners is their isolated, file-by-file analysis approach. A syntactically benign \texttt{SKILL.md} can effortlessly mask a maliciously crafted \texttt{utils.py} located in the same directory.
+    % Arrows
+    \draw[arrow] (payload) -- (ingestion);
+    \draw[arrow] (ingestion) -- (yara);
+    \draw[arrow] (ingestion) -- (ast);
+    \draw[arrow] (ingestion) -- (llm);
+    
+    \draw[arrow] (ingestion) -- (sandbox);
+    \draw[arrow] (ingestion) -- (db);
+    
+    \draw[arrow] (yara) -- (report);
+    \draw[arrow] (ast) -- (report);
+    \draw[arrow] (llm) -- (report);
+    \draw[arrow] (sandbox) -- (report);
+    \draw[arrow] (db) -- (report);
 
-Skill Doctor inherently treats skills as \textit{bundles}. Upon ingestion, the static engine utilizes \texttt{tree-sitter} bindings to construct a unified Abstract Syntax Tree (AST). This enables cross-file taint analysis, seamlessly tracking variable flow from user inputs in a Markdown configuration to dangerous execution sinks in a companion Python script.
+\end{tikzpicture}
+\caption{High-level architectural flowchart of the Skill Doctor analysis pipeline.}
+\label{fig:architecture}
+\end{figure}
 
-\subsection{High-Performance Engine}
+\subsection{The Bundle vs. File Paradigm (Layer 1)}
 
-By relying on \texttt{yara-x} (a memory-safe Rust implementation of YARA) and \texttt{tree-sitter}, the core scanning engine bypasses the overhead associated with spinning up Python interpreters, achieving near-instantaneous static evaluation.
+A critical limitation of legacy scanners is their isolated, file-by-file analysis approach. Skill Doctor inherently treats skills as \textit{bundles}. Upon ingestion, the static engine utilizes \texttt{tree-sitter} bindings to construct a unified Abstract Syntax Tree (AST). This enables cross-file taint analysis, seamlessly tracking variable flow from user inputs in a Markdown configuration to dangerous execution sinks in a companion Python script. The core engine is built on \texttt{yara-x}, achieving near-instantaneous static evaluation.
 
-\subsection{Layer 3: Behavioral Sandbox (Honeypot Environment)}
+\section{Evaluation and Experimental Setup}
 
-While static and semantic analysis effectively catch structural vulnerabilities, obfuscated logic or dynamically downloaded payloads necessitate runtime evaluation. Skill Doctor integrates a \textit{Layer 3 Behavioral Sandbox} specifically designed for companion scripts (e.g., Python, Node.js, Shell). 
+We benchmarked Skill Doctor \texttt{v1.0.0} against two prominent Python-based static analysis tools: Cisco Skill Scanner v1.4 \cite{cisco2026} and NVIDIA SkillSpector v2.1 \cite{nvidia2026}.
 
-Upon detecting a runnable script within a skill bundle, Skill Doctor creates an ephemeral, isolated environment using \texttt{tempfile}. To detect credential harvesting (SD-03), the sandbox aggressively seeds the environment with "canary" tokens, such as simulated AWS keys (\texttt{AKIA\_...}), SSH private keys (\texttt{\textasciitilde/.ssh/id\_rsa}), and OpenAI API keys. The target script is executed under a strict 3,000ms timeout via \texttt{tokio::process::Command}. The engine then parses stdout and stderr for exfiltrated canary keys and inspects the temporary filesystem for unauthorized persistence mechanisms (e.g., writes to \texttt{.bashrc} or \texttt{.cursorrules}).
+\subsection{Experimental Setup}
 
-\section{Competitive Analysis and Benchmarks}
+The evaluation corpus consisted of 1,000 benign skills (curated from public repositories) and 50 synthetically generated malicious skills (categorized as SD-01 through SD-10) engineered to evade traditional static analysis. Our corpus is maintained within the \texttt{tests/corpus} directory of the Skill Doctor repository for reproducible E2E testing. 
 
-We benchmarked Skill Doctor \texttt{v1.0.0} (Rust) against Cisco Skill Scanner (v1.4) and NVIDIA SkillSpector (v2.1). The evaluation corpus consisted of 1,000 benign skills and 50 synthetically generated malicious skills engineered to evade traditional static analysis.
-
-\textit{Testing Environment: Ubuntu 24.04 LTS, 8-Core AMD EPYC, 16GB RAM.}
+All benchmarks were conducted on an Ubuntu 24.04 LTS environment powered by an 8-Core AMD EPYC processor with 16GB of RAM. The results presented below are based on preliminary internal measurements.
 
 \subsection{Execution Latency and Scalability}
+
+As agent registries scale, execution overhead per scan becomes the primary bottleneck for synchronous CI/CD gating. Table \ref{tab:latency} demonstrates the performance advantage of a natively compiled Rust architecture.
 
 \begin{table}[h!]
 \centering
@@ -149,15 +173,18 @@ We benchmarked Skill Doctor \texttt{v1.0.0} (Rust) against Cisco Skill Scanner (
 \toprule
 \textbf{Metric} & \textbf{Skill Doctor (Rust)} & \textbf{NVIDIA SkillSpector} & \textbf{Cisco Skill Scanner} \\
 \midrule
-\textbf{Startup Overhead} & \textbf{\textasciitilde 2 ms} & \textasciitilde 450 ms (Python init) & \textasciitilde 1,200 ms (heavy imports) \\
+\textbf{Startup Overhead} & \textbf{\textasciitilde 2 ms} & \textasciitilde 450 ms & \textasciitilde 1,200 ms \\
 \textbf{Scan (Single File)} & \textbf{\textasciitilde 12 ms} & \textasciitilde 85 ms & \textasciitilde 210 ms \\
 \textbf{Scan (Bundle - 50)} & \textbf{\textasciitilde 28 ms} & \textasciitilde 310 ms & \textasciitilde 890 ms \\
 \bottomrule
 \end{tabular}
-\caption{Performance benchmarking showing a 30$\times$ improvement over Python baselines.}
+\caption{Performance benchmarking showing substantial latency improvements over Python baselines (Preliminary Internal Measurements).}
+\label{tab:latency}
 \end{table}
 
 \subsection{Detection Efficacy}
+
+By utilizing cross-file AST taint analysis, Skill Doctor captures vulnerabilities that isolated file scanners miss, as detailed in Table \ref{tab:efficacy}.
 
 \begin{table}[h!]
 \centering
@@ -167,71 +194,30 @@ We benchmarked Skill Doctor \texttt{v1.0.0} (Rust) against Cisco Skill Scanner (
 \midrule
 \textbf{True Positive Rate} & \textbf{98.2\%} & 84.0\% & 91.5\% \\
 \textbf{False Positive Rate} & \textbf{1.1\%} & 3.8\% & 2.4\% \\
-\textbf{Cross-file Catch} & \textbf{100\%} & 0\% (Isolated scans) & 40\% (Partial AST) \\
+\textbf{Cross-file Catch} & \textbf{100\%} & 0\% & 40\% \\
 \bottomrule
 \end{tabular}
-\caption{Detection efficacy rates against SDTM-v1 threats.}
+\caption{Detection efficacy rates against SDTM-v1 threats (Preliminary Internal Measurements).}
+\label{tab:efficacy}
 \end{table}
 
-\section{Registry Gating and GitHub Actions Integration}
+\section{Discussion and Limitations}
 
-A standalone Command Line Interface (CLI) is insufficient to secure an entire ecosystem; security must be enforced structurally at the distribution and integration layer.
+While Skill Doctor establishes a robust pipeline, several architectural limitations exist in the v1.0.0 release:
 
-To actualize this, Skill Doctor is designed to operate natively within CI/CD pipelines. We have officially deployed the system as a GitHub Action (\texttt{KalarisLabs/skill-doctor-action@v1}). This integration acts as a "Registry Gate API," enabling public skill registries to implement frictionless, pre-commit webhooks.
+\textbf{Sandbox Isolation Limitations:} The Layer 3 Behavioral Sandbox currently operates as a \texttt{tempfile}-backed subprocess honeypot. It executes scripts using \texttt{tokio::process::Command} and relies on timeout constraints and standard output parsing to detect anomalies (e.g., accessed canary tokens). It does \textit{not} provide strict kernel-level isolation (e.g., eBPF or Firecracker microVMs). Consequently, highly sophisticated payloads may still execute restricted system calls or evade the honeypot detection mechanisms.
 
-\begin{lstlisting}[language=bash, caption={Example YAML for GitHub Actions Registry Gating}]
-name: Skill Doctor Validation
-on: [pull_request]
-jobs:
-  scan-skill:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Validate Skill Payload
-        uses: KalarisLabs/skill-doctor-action@v1
-        with:
-          target: './submitted-skills/'
-          fail-on: 'HIGH'
-\end{lstlisting}
+\textbf{Threat Database Persistence:} The Layer 4 Community Threat Database currently caches malicious hashes in memory during the execution lifecycle. Persistent on-disk or remote graph-database syncing is planned for a future release.
 
-By forcing all newly submitted skills through the Skill Doctor GitHub Action, registries can mathematically guarantee that payloads containing known OWASP vulnerabilities are blocked before they are published to end-users.
+\section{Ethics and Responsible Disclosure}
 
-\section{Future Work: Open-Source and Enterprise Scale}
-
-The current architecture provides a foundational defense against agentic supply chain attacks. However, as the ecosystem matures, Skill Doctor's roadmap diverges into distinct tracks to support both open-source communities and highly regulated enterprise environments.
-
-\subsection{Open-Source Integration and Red Teaming}
-
-To foster community adoption, future iterations will integrate automated adversarial testing using models such as DeepSeek (the \textit{Layer 3.5 Red Team Harness}). Rather than passively scanning scripts, this harness will actively generate prompt injections and adversarial inputs to stress-test skills running in the sandbox. Additionally, native proxy support for the emerging Model Context Protocol (MCP) will allow real-time validation of MCP server responses.
-
-\subsection{Enterprise-Grade Isolation and Compliance}
-
-For enterprise deployments, the \texttt{tempfile}-based Layer 3 sandbox will be upgraded to enforce true kernel-level isolation. By implementing eBPF (Extended Berkeley Packet Filter) or leveraging microVMs (e.g., Firecracker), Skill Doctor will intercept and block raw network egress and unauthorized system calls. Furthermore, cryptographic provenance will be established using Sigstore/Cosign (Ed25519 signing), ensuring agent runtimes execute only certified skills, accompanied by SOC2 and EU AI Act compliance dashboards.
+Skill Doctor is published under the Apache 2.0 license to democratize agentic security. The malicious corpora (SD-01 through SD-10) provided in the repository are strictly synthetic fixtures designed exclusively for defensive CI/CD testing. We adhere to standard responsible disclosure practices and encourage the community to report novel agentic vulnerabilities via our security advisories.
 
 \section{Conclusion}
 
-Skill Doctor represents a paradigm shift in autonomous agent security infrastructure. By abandoning legacy interpreted languages in favor of a memory-safe, hyper-performant Rust architecture, it enables real-time security gating for the agentic web. Through its bundle-first analysis philosophy, proactive canary sandboxing, and seamless integration paths via GitHub Actions, Skill Doctor provides the foundational security layer necessary to safely scale multi-agent ecosystems.
+Skill Doctor represents a paradigm shift in autonomous agent security infrastructure. By abandoning legacy interpreted languages in favor of a memory-safe, hyper-performant Rust architecture, it enables real-time security gating for the agentic web. Through its bundle-first analysis philosophy and seamless integration paths via GitHub Actions, Skill Doctor provides the foundational security layer necessary to safely scale multi-agent ecosystems.
 
-\begin{thebibliography}{9}
-
-\bibitem{owasp2026}
-OWASP Foundation. \textit{Agentic Skills Top 10}. 2026.
-
-\bibitem{owaspmcp2026}
-OWASP Foundation. \textit{MCP Top 10}. 2026.
-
-\bibitem{nvidia2026}
-NVIDIA Research. \textit{SkillSpector: Static and Semantic Analysis of AI Agent Skill Files.} arXiv, 2026.
-
-\bibitem{cisco2026}
-Cisco AI Defense. \textit{Skill Scanner: Open-Source Skill Security for AI Agents.} GitHub, 2026.
-
-\bibitem{bluerock2026}
-BlueRock Security. \textit{SSRF in the Wild: A Survey of 7,000 MCP Servers.} 2026.
-
-\bibitem{alice2026}
-Alice.io. \textit{Caterpillar: Scanning the Top 50 Skills on Skills.sh.} 2026.
-
-\end{thebibliography}
+\bibliographystyle{plainnat}
+\bibliography{research}
 
 \end{document}

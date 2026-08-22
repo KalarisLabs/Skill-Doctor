@@ -32,3 +32,5 @@ tar.workspace = true
 flate2.workspace = true
 rust-embed.workspace = true
 microsandbox.workspace = true
+rusqlite.workspace = true
+dirs.workspace = true

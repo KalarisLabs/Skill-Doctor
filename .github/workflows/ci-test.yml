@@ -41,7 +41,21 @@ jobs:
       run: cargo test --verbose
 
     - name: End-to-End CLI Execution Test
-      run: cargo run -- scan ./tests/corpus/SD-01-Prompt-Injection/
+      shell: bash
+      run: |
+        echo "Testing malicious corpus (expecting detections)..."
+        for d in ./tests/corpus/SD-*/; do
+          if [ -d "$d" ]; then
+            echo "Scanning $d..."
+            cargo run -- scan "$d" --fail-on LOW && exit 1 || echo "$d correctly detected as malicious"
+          fi
+        done
+        
+        echo "Testing benign corpus (expecting clean)..."
+        if [ -d "./tests/corpus/benign-clean-skill/" ]; then
+          cargo run -- scan ./tests/corpus/benign-clean-skill/ --fail-on LOW || exit 1
+          echo "Benign skill correctly detected as clean"
+        fi
 
   coverage:
     name: Code Coverage

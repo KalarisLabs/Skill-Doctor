@@ -67,6 +67,40 @@ if (-not (Test-Path "$TempPath") -or ((Get-Item "$TempPath").Length -lt 100000))
     exit 1
 }
 
+$ChecksumUrl = "$DownloadUrl.sha256"
+$ChecksumPath = Join-Path $env:TEMP "skill-doctor.sha256"
+
+Write-Host "Downloading SHA256 checksum..." -ForegroundColor DarkGray
+$ChecksumDownloaded = $false
+try {
+    if ($HasCurl) {
+        & curl.exe -fSL -s "$ChecksumUrl" -o "$ChecksumPath"
+        if ($LASTEXITCODE -eq 0 -and (Test-Path "$ChecksumPath")) {
+            $ChecksumDownloaded = $true
+        }
+    } else {
+        Invoke-WebRequest -Uri $ChecksumUrl -OutFile "$ChecksumPath" -UseBasicParsing -ErrorAction Stop
+        $ChecksumDownloaded = $true
+    }
+} catch {
+    Write-Host "Warning: Could not download checksum file. Skipping verification." -ForegroundColor Yellow
+}
+
+if ($ChecksumDownloaded) {
+    Write-Host "Verifying checksum..." -ForegroundColor DarkGray
+    $ExpectedChecksum = (Get-Content "$ChecksumPath" -Raw).Split(" ")[0].Trim()
+    $ActualChecksum = (Get-FileHash -Path "$TempPath" -Algorithm SHA256).Hash.ToLower()
+    
+    if ($ExpectedChecksum -ne $ActualChecksum) {
+        Write-Error "Checksum verification failed! Expected $ExpectedChecksum but got $ActualChecksum"
+        Remove-Item "$TempPath" -Force -ErrorAction SilentlyContinue
+        Remove-Item "$ChecksumPath" -Force -ErrorAction SilentlyContinue
+        exit 1
+    }
+    Write-Host "Checksum verified successfully." -ForegroundColor Green
+    Remove-Item "$ChecksumPath" -Force -ErrorAction SilentlyContinue
+}
+
 Move-Item -Path "$TempPath" -Destination "$DestPath" -Force
 
 # Add to User PATH persistently (prepended so it takes highest priority)

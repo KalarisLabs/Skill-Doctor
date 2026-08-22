@@ -47,7 +47,7 @@ If you discover a security vulnerability in Skill Doctor, please report it respo
 Skill Doctor is a security tool itself, so we follow strict security practices:
 
 - **Dependencies**: Regularly audited with `cargo audit`
-- **Binary distribution**: All releases are signed with GPG signatures
+- **Binary distribution**: Checksum verification is active (GPG signatures planned for future releases)
 - **Supply chain**: Dependencies are pinned and verified
 - **Code review**: All changes undergo peer review
 - **Testing**: Comprehensive test coverage including malicious corpus
@@ -57,7 +57,7 @@ Skill Doctor is a security tool itself, so we follow strict security practices:
 Skill Doctor includes several security-focused features:
 
 - **YARA-X**: Fast, memory-safe pattern matching engine
-- **Sandboxing**: Behavioral analysis in isolated environments
+- **Sandboxing**: Subprocess/TempDir Honeypot (Behavioral isolation)
 - **AST taint analysis**: Detects command injection patterns
 - **Community threat database**: Hash-based malware detection
 - **Provenance verification**: Cryptographic signing support (planned)

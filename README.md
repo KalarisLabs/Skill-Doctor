@@ -19,7 +19,7 @@
 
 <p align="center">
   <strong>Multi-layer security platform for AI agent skill files.</strong><br/>
-  Detect malicious, deceptive, or vulnerable skills before they reach your agent runtime.
+  Advanced LLM security, threat detection, and AI agent sandboxing. Detect malicious prompt injections, Copilot security flaws, and MCP vulnerabilities before they reach your agent runtime. Built in Rust for maximum performance.
 </p>
 
 <p align="center">

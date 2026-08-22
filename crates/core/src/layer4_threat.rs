@@ -176,7 +176,6 @@ pub fn threat_db_stats() -> Option<(usize, String)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::TempDir;
 
     /// Override db_path for tests by using an in-memory database.
     fn test_db() -> rusqlite::Connection {

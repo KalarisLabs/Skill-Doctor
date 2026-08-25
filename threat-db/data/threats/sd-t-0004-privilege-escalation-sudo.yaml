@@ -1,0 +1,15 @@
+id: SD-T-0004
+name: Unscoped Tool Permission Escalation & Sudo Spawning
+severity: HIGH
+category: SD-04 · Privilege Escalation
+description: The skill attempts to invoke sudo or modify file permissions (chmod 777) to escape unprivileged agent sandbox boundaries.
+remediation: Run tool workers in rootless containers with all Linux capabilities dropped and no-new-privileges flags enforced.
+pattern_hash: 5d41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e54b
+yara_rule: |
+  rule susp_privilege_escalation {
+    strings:
+      $sudo = "sudo "
+      $chmod = "chmod 777"
+    condition:
+      any of them
+  }

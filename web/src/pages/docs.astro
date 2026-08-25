@@ -1,0 +1,111 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Documentation & CLI Reference">
+  <div class="container mx-auto px-4 sm:px-6 py-8 max-w-6xl space-y-8">
+    <!-- Header -->
+    <div class="border-b border-border pb-6">
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+        Platform Architecture & Integration
+      </h1>
+      <p class="text-xs sm:text-sm text-slate-400 mt-1.5 max-w-3xl leading-relaxed">
+        Technical reference for the 4-layer inspection pipeline, CLI commands, and Cloudflare Edge REST endpoints.
+      </p>
+    </div>
+
+    <!-- 4 Layers -->
+    <div class="space-y-3">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">
+        4-Layer Security Engine Pipeline
+      </h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="console-panel p-5 space-y-2">
+          <div class="flex items-center justify-between font-mono text-xs">
+            <span class="font-bold text-primary">LAYER 1 · STATIC</span>
+            <span class="text-slate-500">&lt; 15ms</span>
+          </div>
+          <h3 class="text-sm font-bold text-foreground">YARA-X Rules & Tree-Sitter AST Traversal</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Deterministic static parsing detecting unconstrained subprocess calls, dynamic eval sinks, raw socket creation, and Shannon entropy anomalies.
+          </p>
+        </div>
+
+        <div class="console-panel p-5 space-y-2">
+          <div class="flex items-center justify-between font-mono text-xs">
+            <span class="font-bold text-primary">LAYER 2 · SEMANTIC</span>
+            <span class="text-slate-500">BYOK Enabled</span>
+          </div>
+          <h3 class="text-sm font-bold text-foreground">Adversarial Prompt Injection Detection</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Provider-agnostic inference layer evaluating instruction hijacking, system prompt override attempts, and covert data exfiltration intents in natural language tool definitions.
+          </p>
+        </div>
+
+        <div class="console-panel p-5 space-y-2">
+          <div class="flex items-center justify-between font-mono text-xs">
+            <span class="font-bold text-primary">LAYER 3 · BEHAVIORAL</span>
+            <span class="text-slate-500">eBPF Sandbox</span>
+          </div>
+          <h3 class="text-sm font-bold text-foreground">Ephemeral Microsandbox Isolation</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Execution inside unprivileged Linux containers with all capabilities dropped, strict RFC-1918 private network blocking, and cloud metadata (169.254.169.254) denial.
+          </p>
+        </div>
+
+        <div class="console-panel p-5 space-y-2">
+          <div class="flex items-center justify-between font-mono text-xs">
+            <span class="font-bold text-primary">LAYER 4 · THREATDB</span>
+            <span class="text-slate-500">SDTM-v1 Standard</span>
+          </div>
+          <h3 class="text-sm font-bold text-foreground">Canonical Threat Matrix Synchronization</h3>
+          <p class="text-xs text-slate-400 leading-relaxed">
+            Continuous real-time correlation against 10 canonical threat indicators (SD-T-0001 to SD-T-0010) synced from Git YAML declarations into Cloudflare D1.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLI & API Quickstart -->
+    <div class="space-y-4">
+      <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300">
+        Integration Quickstart
+      </h2>
+
+      <div class="space-y-3 font-mono text-xs">
+        <div class="console-panel overflow-hidden">
+          <div class="px-4 py-2 bg-secondary border-b border-border text-slate-400 font-semibold">
+            CLI Execution
+          </div>
+          <div class="p-4 space-y-2 text-slate-300 bg-background">
+            <div class="text-slate-500"># Install from Cargo repository</div>
+            <div class="text-foreground font-bold">cargo install skilldoctor-cli</div>
+            <div class="text-slate-500 pt-2"># Run security audit on local directory</div>
+            <div class="text-foreground">skilldoctor scan ./my-skill --strict</div>
+            <div class="text-slate-500 pt-2"># Audit public repository</div>
+            <div class="text-foreground">skilldoctor scan https://github.com/anthropics/skills --output report.json</div>
+          </div>
+        </div>
+
+        <div class="console-panel overflow-hidden">
+          <div class="px-4 py-2 bg-secondary border-b border-border text-slate-400 font-semibold">
+            HTTP REST API
+          </div>
+          <div class="p-4 space-y-2 text-slate-300 bg-background overflow-x-auto">
+            <div class="text-slate-500"># Dispatch scan job to Cloudflare Edge</div>
+            <div class="text-foreground">
+              curl -X POST https://doctor.kalarislabs.com/api/scans \<br />
+              &nbsp;&nbsp;-H "Content-Type: application/json" \<br />
+              &nbsp;&nbsp;-d '&#123;"source": "import os\nos.system(\"id\")"&#125;'
+            </div>
+            <div class="text-slate-500 pt-2"># Retrieve executive report</div>
+            <div class="text-foreground">
+              curl -s https://doctor.kalarislabs.com/api/scans/&#123;scanId&#125;/report | jq .
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>

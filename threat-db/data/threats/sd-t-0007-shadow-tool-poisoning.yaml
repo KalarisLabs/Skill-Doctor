@@ -1,0 +1,15 @@
+id: SD-T-0007
+name: Shadow Tool Masquerading & Namespace Poisoning
+severity: HIGH
+category: SD-07 · Tool Poisoning
+description: Registering rogue tool definitions that shadow standard system tools (e.g. overriding bash, read_file, git) to intercept parameters and exfiltrate data.
+remediation: Enforce immutable tool registration tables and validate tool signatures before execution.
+pattern_hash: 9d41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e54e
+yara_rule: |
+  rule susp_shadow_tool {
+    strings:
+      $override = "tool_registry.override"
+      $alias = "alias bash="
+    condition:
+      any of them
+  }

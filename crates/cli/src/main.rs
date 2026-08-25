@@ -2,8 +2,9 @@
 //!
 //! Built with Clap for argument parsing and OpenTUI for terminal rendering.
 
-mod commands;
-mod display;
+pub mod commands;
+pub mod display;
+pub mod executor;
 
 use clap::{Parser, Subcommand};
 
@@ -74,6 +75,25 @@ enum Commands {
     /// Run as MCP server for runtime gating.
     Mcp,
 
+    /// Run as isolated Execution Service HTTP API for Control Plane / Cloudflare Workers.
+    Server {
+        /// Port to listen on (default 3000).
+        #[arg(long, env = "SKILL_DOCTOR_PORT")]
+        port: Option<u16>,
+
+        /// Host address to bind to (default 127.0.0.1).
+        #[arg(long, env = "SKILL_DOCTOR_HOST")]
+        host: Option<String>,
+
+        /// Optional Bearer authentication token.
+        #[arg(long, env = "SKILL_DOCTOR_AUTH_TOKEN")]
+        auth_token: Option<String>,
+
+        /// Enforce strict SSRF policy (disallow private IP / localhost artifact fetches).
+        #[arg(long, default_value_t = false)]
+        strict_network: bool,
+    },
+
     /// List loaded rule packs.
     Rules,
 
@@ -112,6 +132,12 @@ async fn main() -> anyhow::Result<()> {
         Commands::ScanAll { directory } => commands::scan_all::run(&directory).await,
         Commands::Diff { v1, v2 } => commands::diff::run(&v1, &v2).await,
         Commands::Mcp => commands::mcp::run().await,
+        Commands::Server {
+            port,
+            host,
+            auth_token,
+            strict_network,
+        } => commands::server::run(port, host, auth_token, strict_network).await,
         Commands::Rules => {
             commands::rules::run();
             Ok(())

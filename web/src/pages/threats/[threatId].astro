@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ThreatDetail } from '../../components/threats/ThreatDetail';
+
+const { threatId } = Astro.params;
+
+if (!threatId) {
+  return Astro.redirect('/threats');
+}
+---
+
+<BaseLayout title={`Threat ${threatId}`}>
+  <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="mb-6">
+      <a href="/threats" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+        ← Back to ThreatDB
+      </a>
+    </div>
+    
+    <ThreatDetail client:load threatId={threatId} />
+  </div>
+</BaseLayout>

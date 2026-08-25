@@ -1,0 +1,136 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* High-contrast security console dark theme */
+  --background: #090c15;
+  --foreground: #f1f5f9;
+  
+  /* Dense card & panel layer */
+  --card: #0f1422;
+  --card-foreground: #f1f5f9;
+  
+  --popover: #0f1422;
+  --popover-foreground: #f1f5f9;
+  
+  /* Precision Action Accent */
+  --primary: #0284c7;
+  --primary-foreground: #ffffff;
+  
+  /* Secondary & neutral panels */
+  --secondary: #161e31;
+  --secondary-foreground: #e2e8f0;
+  
+  /* Muted elements & borders */
+  --muted: #161e31;
+  --muted-foreground: #818cf8;
+  
+  --accent: #161e31;
+  --accent-foreground: #38bdf8;
+  
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  
+  --border: #1e293b;
+  --input: #111726;
+  --ring: #0284c7;
+  
+  --radius: 0.5rem;
+  
+  /* Standardized Security Severity Tokens */
+  --severity-critical: #ef4444;
+  --severity-high: #f97316;
+  --severity-medium: #eab308;
+  --severity-low: #10b981;
+  --severity-info: #38bdf8;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 4px);
+  
+  --color-critical: var(--severity-critical);
+  --color-high: var(--severity-high);
+  --color-medium: var(--severity-medium);
+  --color-low: var(--severity-low);
+  --color-info: var(--severity-info);
+  
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/30 selection:text-white;
+    color-scheme: dark;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Monospaced numerals in data surfaces */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Operational Console Panel Styles */
+.console-panel {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.console-panel-interactive {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.console-panel-interactive:hover {
+  background-color: var(--secondary);
+  border-color: #334155;
+}
+
+/* Custom minimal scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #090c15;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}

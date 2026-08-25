@@ -1,0 +1,16 @@
+id: SD-T-0002
+name: System Prompt Override & Instruction Hijacking
+severity: CRITICAL
+category: SD-01 · System Prompt Override
+description: Adversarial prompt injection sequences designed to force the LLM to ignore preceding system guidelines, bypass guardrails, and execute unauthorized actions.
+remediation: Use strict XML isolation delimiters for user inputs, perform Layer 2 semantic inference checks, and enforce tool confirmation gates.
+pattern_hash: a8006737be1d1df52d7655f94ea816c55b1a1f4d35d1b6932ef0418446b88476
+yara_rule: |
+  rule susp_prompt_injection {
+    strings:
+      $s1 = "ignore all previous instructions" nocase
+      $s2 = "system override" nocase
+      $s3 = "developer mode enabled" nocase
+    condition:
+      any of them
+  }

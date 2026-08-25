@@ -14,6 +14,10 @@ description = "Multi-layer security scanner for AI agent skill files"
 name = "skill-doctor"
 path = "src/main.rs"
 
+[lib]
+name = "skill_doctor_cli"
+path = "src/lib.rs"
+
 [dependencies]
 skill-doctor-core = { path = "../core", version = "1.0.0" }
 skill-doctor-report = { path = "../report", version = "1.0.0" }
@@ -28,6 +32,17 @@ indicatif.workspace = true
 console.workspace = true
 chrono.workspace = true
 walkdir.workspace = true
+axum.workspace = true
+tower.workspace = true
+tower-http.workspace = true
+reqwest.workspace = true
+sha2.workspace = true
+hex.workspace = true
+tempfile.workspace = true
+url.workspace = true
+
+[dev-dependencies]
+http-body-util.workspace = true
 
 [target.'cfg(unix)'.dependencies]
 opentui_rust.workspace = true

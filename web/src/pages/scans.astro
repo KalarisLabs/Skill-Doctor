@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ScanHistory } from '../components/scans/ScanHistory';
+---
+
+<BaseLayout title="Audit Log">
+  <div className="container mx-auto px-4 py-12 max-w-5xl">
+    <div className="mb-8 pb-6 border-b border-border/40">
+      <h1 className="text-3xl font-bold tracking-tight">Audit Log & Scan History</h1>
+      <p className="text-sm text-muted-foreground mt-1">
+        Persistent immutable record of all agent skill analyses executed across Cloudflare edge workers.
+      </p>
+    </div>
+
+    <ScanHistory client:load />
+  </div>
+</BaseLayout>

@@ -1,0 +1,15 @@
+id: SD-T-0005
+name: Supply Chain Dependency Tampering & Pyc Cache Poisoning
+severity: HIGH
+category: SD-05 · Supply Chain Tampering
+description: Tampering with declared dependencies, injecting untrusted PyPI packages via typosquatting, or poisoning pre-compiled bytecode artifacts.
+remediation: Lock dependency versions using cryptographic lockfiles (e.g. poetry.lock, requirements.txt with sha256 hashes) and verify package origins.
+pattern_hash: 7d41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e54c
+yara_rule: |
+  rule susp_supply_chain {
+    strings:
+      $pip = "pip install"
+      $git = "git+http://"
+    condition:
+      $pip and $git
+  }

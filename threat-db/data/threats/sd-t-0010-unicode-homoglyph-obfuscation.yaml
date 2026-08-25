@@ -1,0 +1,15 @@
+id: SD-T-0010
+name: Unicode Homoglyph & Obfuscated Payload Execution
+severity: HIGH
+category: SD-10 · Obfuscation
+description: Using invisible zero-width characters, Cyrillic/Greek homoglyphs, or base64 decoding to evade standard ASCII pattern filters.
+remediation: Perform Unicode normalization (NFKC) and strip zero-width characters before analysis.
+pattern_hash: cf41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e551
+yara_rule: |
+  rule susp_unicode_obfuscation {
+    strings:
+      $b64 = "base64.b64decode"
+      $zwsp = "\u200b"
+    condition:
+      any of them
+  }

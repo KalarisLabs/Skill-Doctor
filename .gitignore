@@ -68,3 +68,18 @@ target/
 
 # Threat DB (local state)
 threat_db.sqlite
+
+# Node & Web
+node_modules/
+.astro/
+.wrangler/
+
+# Local Toolchain
+.toolchain/
+
+# Secrets & MCP Configuration
+.env
+.env.*
+*.env
+mcp_config.json
+.agents/mcp_config.json

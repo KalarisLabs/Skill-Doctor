@@ -1,0 +1,17 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SettingsView } from '../components/settings/SettingsView';
+---
+
+<BaseLayout title="Settings & BYOK">
+  <div className="container mx-auto px-4 py-12 max-w-4xl">
+    <div className="mb-8 pb-6 border-b border-border/40">
+      <h1 className="text-3xl font-bold tracking-tight">Security & Engine Settings</h1>
+      <p className="text-sm text-muted-foreground mt-1">
+        Configure custom inference providers (BYOK), manage edge models, and establish webhook notifications.
+      </p>
+    </div>
+
+    <SettingsView client:load />
+  </div>
+</BaseLayout>

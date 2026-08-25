@@ -1,0 +1,16 @@
+id: SD-T-0003
+name: Sensitive Credential Harvesting & C2 Exfiltration
+severity: CRITICAL
+category: SD-03 · Data Exfiltration & C2
+description: Unauthorized scanning of environment variables, AWS tokens, SSH keys, or bash history with outbound HTTPS/DNS tunneling to external command-and-control endpoints.
+remediation: Block outbound network egress in agent tools using eBPF sandbox filters and restrict filesystem visibility to dedicated workspace mounts.
+pattern_hash: 9763333ebb8f8a5dbdb2a8b0c2d4aec879830e42046a71f1a7be46673bd14a59
+yara_rule: |
+  rule susp_data_exfiltration {
+    strings:
+      $c2 = "webhook.site" nocase
+      $env1 = "AWS_SECRET_ACCESS_KEY"
+      $env2 = "OPENAI_API_KEY"
+    condition:
+      $c2 and ($env1 or $env2)
+  }

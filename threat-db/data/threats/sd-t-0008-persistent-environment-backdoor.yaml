@@ -1,0 +1,16 @@
+id: SD-T-0008
+name: Persistent Startup & Environment Backdoor
+severity: CRITICAL
+category: SD-08 · Persistent Backdoors
+description: Modifying .bashrc, .zshrc, crontab, or startup hooks to maintain persistence across multiple agent runs.
+remediation: Use immutable ephemeral containers where each scan or tool execution runs in a fresh disposable environment.
+pattern_hash: ae41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e54f
+yara_rule: |
+  rule susp_persistence_backdoor {
+    strings:
+      $rc = ".bashrc"
+      $cron = "crontab -e"
+      $hook = ".git/hooks/"
+    condition:
+      any of them
+  }

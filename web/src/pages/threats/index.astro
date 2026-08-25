@@ -1,0 +1,22 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { ThreatList } from '../../components/threats/ThreatList';
+---
+
+<BaseLayout title="ThreatDB">
+  <div className="container mx-auto px-4 py-12 max-w-5xl">
+    <div className="mb-8 border-b border-border/40 pb-8">
+      <h1 className="text-4xl font-bold tracking-tight mb-2">Threat Intelligence DB</h1>
+      <p className="text-xl text-muted-foreground max-w-[42rem]">
+        A curated, canonical database of AI agent skill vulnerabilities, signatures, and behavioral indicators.
+      </p>
+    </div>
+    
+    <div className="mb-6 flex justify-between items-center">
+      <h2 className="text-2xl font-semibold tracking-tight">Known Threats</h2>
+      <div className="text-sm text-muted-foreground">Source: Git Repository</div>
+    </div>
+    
+    <ThreatList client:load />
+  </div>
+</BaseLayout>

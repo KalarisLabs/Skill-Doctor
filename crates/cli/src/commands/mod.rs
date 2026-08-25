@@ -3,4 +3,5 @@ pub mod mcp;
 pub mod rules;
 pub mod scan;
 pub mod scan_all;
+pub mod server;
 pub mod version;

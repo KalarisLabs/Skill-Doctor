@@ -1,0 +1,13 @@
+id: SD-T-0001
+name: OS Command Injection via Subprocess
+description: The skill executes OS commands using untrusted inputs without proper sanitization.
+severity: CRITICAL
+category: Command Injection
+remediation: Use safe APIs that do not invoke a shell, and strictly validate or parameterize all inputs passed to system commands.
+indicators:
+  - type: YARA
+    rule_name: susp_subprocess_shell_true
+    description: Python subprocess call with shell=True
+  - type: AST
+    pattern: "(call function: (attribute object: (identifier) attribute: (identifier)) arguments: (argument_list (keyword_argument name: (identifier) value: (true))))"
+    language: python

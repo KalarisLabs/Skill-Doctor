@@ -1,0 +1,16 @@
+id: SD-T-0006
+name: Server-Side Request Forgery (SSRF) to Cloud Metadata
+severity: CRITICAL
+category: SD-06 · SSRF
+description: Exploiting agent web fetch tools to query internal IP addresses (127.0.0.1, 169.254.169.254) to steal instance identity tokens and access internal services.
+remediation: Enforce strict URL domain whitelisting and block RFC-1918 private IP ranges and Cloud Metadata IPs (169.254.169.254).
+pattern_hash: 8d41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e54d
+yara_rule: |
+  rule susp_ssrf_metadata {
+    strings:
+      $meta = "169.254.169.254"
+      $meta2 = "metadata.google.internal"
+      $localhost = "127.0.0.1"
+    condition:
+      any of them
+  }

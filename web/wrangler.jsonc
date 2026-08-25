@@ -1,0 +1,37 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"compatibility_date": "2026-08-25",
+	"compatibility_flags": ["nodejs_compat"],
+	"name": "skill-doctor-web",
+	"main": "@astrojs/cloudflare/entrypoints/server",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS"
+	},
+	"routes": [
+		{
+			"pattern": "doctor.kalarislabs.com",
+			"custom_domain": true
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "skill-doctor-db",
+			"database_id": "4c3c661c-9775-466a-bf04-d64d52d2dd10"
+		}
+	],
+	"kv_namespaces": [
+		{
+			"binding": "ARTIFACTS_KV",
+			"id": "6a02e53b8dca4b898fc380c6876dddb7"
+		},
+		{
+			"binding": "SESSION",
+			"id": "6f66c8cc2a6746b3b51629afd3941a05"
+		}
+	],
+	"observability": {
+		"enabled": true
+	}
+}

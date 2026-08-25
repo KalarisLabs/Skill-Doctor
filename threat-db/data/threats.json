@@ -1,0 +1,112 @@
+[
+  {
+    "id": "SD-T-0001",
+    "name": "OS Command Injection via Subprocess",
+    "description": "The skill executes OS commands using untrusted inputs without proper sanitization.",
+    "severity": "CRITICAL",
+    "category": "Command Injection",
+    "remediation": "Use safe APIs that do not invoke a shell, and strictly validate or parameterize all inputs passed to system commands.",
+    "indicators": [
+      {
+        "type": "YARA",
+        "rule_name": "susp_subprocess_shell_true",
+        "description": "Python subprocess call with shell=True"
+      },
+      {
+        "type": "AST",
+        "pattern": "(call function: (attribute object: (identifier) attribute: (identifier)) arguments: (argument_list (keyword_argument name: (identifier) value: (true))))",
+        "language": "python"
+      }
+    ]
+  },
+  {
+    "id": "SD-T-0002",
+    "name": "System Prompt Override & Instruction Hijacking",
+    "severity": "CRITICAL",
+    "category": "SD-01 · System Prompt Override",
+    "description": "Adversarial prompt injection sequences designed to force the LLM to ignore preceding system guidelines, bypass guardrails, and execute unauthorized actions.",
+    "remediation": "Use strict XML isolation delimiters for user inputs, perform Layer 2 semantic inference checks, and enforce tool confirmation gates.",
+    "pattern_hash": "a8006737be1d1df52d7655f94ea816c55b1a1f4d35d1b6932ef0418446b88476",
+    "yara_rule": "rule susp_prompt_injection {\n  strings:\n    $s1 = \"ignore all previous instructions\" nocase\n    $s2 = \"system override\" nocase\n    $s3 = \"developer mode enabled\" nocase\n  condition:\n    any of them\n}\n"
+  },
+  {
+    "id": "SD-T-0003",
+    "name": "Sensitive Credential Harvesting & C2 Exfiltration",
+    "severity": "CRITICAL",
+    "category": "SD-03 · Data Exfiltration & C2",
+    "description": "Unauthorized scanning of environment variables, AWS tokens, SSH keys, or bash history with outbound HTTPS/DNS tunneling to external command-and-control endpoints.",
+    "remediation": "Block outbound network egress in agent tools using eBPF sandbox filters and restrict filesystem visibility to dedicated workspace mounts.",
+    "pattern_hash": "9763333ebb8f8a5dbdb2a8b0c2d4aec879830e42046a71f1a7be46673bd14a59",
+    "yara_rule": "rule susp_data_exfiltration {\n  strings:\n    $c2 = \"webhook.site\" nocase\n    $env1 = \"AWS_SECRET_ACCESS_KEY\"\n    $env2 = \"OPENAI_API_KEY\"\n  condition:\n    $c2 and ($env1 or $env2)\n}\n"
+  },
+  {
+    "id": "SD-T-0004",
+    "name": "Unscoped Tool Permission Escalation & Sudo Spawning",
+    "severity": "HIGH",
+    "category": "SD-04 · Privilege Escalation",
+    "description": "The skill attempts to invoke sudo or modify file permissions (chmod 777) to escape unprivileged agent sandbox boundaries.",
+    "remediation": "Run tool workers in rootless containers with all Linux capabilities dropped and no-new-privileges flags enforced.",
+    "pattern_hash": "5d41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e54b",
+    "yara_rule": "rule susp_privilege_escalation {\n  strings:\n    $sudo = \"sudo \"\n    $chmod = \"chmod 777\"\n  condition:\n    any of them\n}\n"
+  },
+  {
+    "id": "SD-T-0005",
+    "name": "Supply Chain Dependency Tampering & Pyc Cache Poisoning",
+    "severity": "HIGH",
+    "category": "SD-05 · Supply Chain Tampering",
+    "description": "Tampering with declared dependencies, injecting untrusted PyPI packages via typosquatting, or poisoning pre-compiled bytecode artifacts.",
+    "remediation": "Lock dependency versions using cryptographic lockfiles (e.g. poetry.lock, requirements.txt with sha256 hashes) and verify package origins.",
+    "pattern_hash": "7d41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e54c",
+    "yara_rule": "rule susp_supply_chain {\n  strings:\n    $pip = \"pip install\"\n    $git = \"git+http://\"\n  condition:\n    $pip and $git\n}\n"
+  },
+  {
+    "id": "SD-T-0006",
+    "name": "Server-Side Request Forgery (SSRF) to Cloud Metadata",
+    "severity": "CRITICAL",
+    "category": "SD-06 · SSRF",
+    "description": "Exploiting agent web fetch tools to query internal IP addresses (127.0.0.1, 169.254.169.254) to steal instance identity tokens and access internal services.",
+    "remediation": "Enforce strict URL domain whitelisting and block RFC-1918 private IP ranges and Cloud Metadata IPs (169.254.169.254).",
+    "pattern_hash": "8d41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e54d",
+    "yara_rule": "rule susp_ssrf_metadata {\n  strings:\n    $meta = \"169.254.169.254\"\n    $meta2 = \"metadata.google.internal\"\n    $localhost = \"127.0.0.1\"\n  condition:\n    any of them\n}\n"
+  },
+  {
+    "id": "SD-T-0007",
+    "name": "Shadow Tool Masquerading & Namespace Poisoning",
+    "severity": "HIGH",
+    "category": "SD-07 · Tool Poisoning",
+    "description": "Registering rogue tool definitions that shadow standard system tools (e.g. overriding bash, read_file, git) to intercept parameters and exfiltrate data.",
+    "remediation": "Enforce immutable tool registration tables and validate tool signatures before execution.",
+    "pattern_hash": "9d41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e54e",
+    "yara_rule": "rule susp_shadow_tool {\n  strings:\n    $override = \"tool_registry.override\"\n    $alias = \"alias bash=\"\n  condition:\n    any of them\n}\n"
+  },
+  {
+    "id": "SD-T-0008",
+    "name": "Persistent Startup & Environment Backdoor",
+    "severity": "CRITICAL",
+    "category": "SD-08 · Persistent Backdoors",
+    "description": "Modifying .bashrc, .zshrc, crontab, or startup hooks to maintain persistence across multiple agent runs.",
+    "remediation": "Use immutable ephemeral containers where each scan or tool execution runs in a fresh disposable environment.",
+    "pattern_hash": "ae41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e54f",
+    "yara_rule": "rule susp_persistence_backdoor {\n  strings:\n    $rc = \".bashrc\"\n    $cron = \"crontab -e\"\n    $hook = \".git/hooks/\"\n  condition:\n    any of them\n}\n"
+  },
+  {
+    "id": "SD-T-0009",
+    "name": "Agent Context Window Flooding & Denial of Service",
+    "severity": "MEDIUM",
+    "category": "SD-09 · Context Flooding",
+    "description": "Generating massive, repetitive, or cyclic text outputs to overflow context windows and erase system security guidelines from active LLM context.",
+    "remediation": "Implement strict stream size limits and truncate tool outputs before returning them to the model context.",
+    "pattern_hash": "bf41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e550",
+    "yara_rule": "rule susp_context_flood {\n  strings:\n    $flood = \"A\" * 50000\n  condition:\n    $flood\n}\n"
+  },
+  {
+    "id": "SD-T-0010",
+    "name": "Unicode Homoglyph & Obfuscated Payload Execution",
+    "severity": "HIGH",
+    "category": "SD-10 · Obfuscation",
+    "description": "Using invisible zero-width characters, Cyrillic/Greek homoglyphs, or base64 decoding to evade standard ASCII pattern filters.",
+    "remediation": "Perform Unicode normalization (NFKC) and strip zero-width characters before analysis.",
+    "pattern_hash": "cf41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e551",
+    "yara_rule": "rule susp_unicode_obfuscation {\n  strings:\n    $b64 = \"base64.b64decode\"\n    $zwsp = \"\\u200b\"\n  condition:\n    any of them\n}\n"
+  }
+]

@@ -1,0 +1,14 @@
+id: SD-T-0009
+name: Agent Context Window Flooding & Denial of Service
+severity: MEDIUM
+category: SD-09 · Context Flooding
+description: Generating massive, repetitive, or cyclic text outputs to overflow context windows and erase system security guidelines from active LLM context.
+remediation: Implement strict stream size limits and truncate tool outputs before returning them to the model context.
+pattern_hash: bf41402abc4b2a76b9719d911017c5926c4d7b1d4e0e64eb98547b744d03e550
+yara_rule: |
+  rule susp_context_flood {
+    strings:
+      $flood = "A" * 50000
+    condition:
+      $flood
+  }

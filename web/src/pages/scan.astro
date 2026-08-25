@@ -1,0 +1,19 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { ScannerApp } from '../components/scanner/ScannerApp';
+---
+
+<BaseLayout title="Diagnostic Studio">
+  <div class="container mx-auto px-4 sm:px-6 py-8 max-w-6xl">
+    <div class="mb-8 border-b border-border pb-6">
+      <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+        Diagnostic Studio
+      </h1>
+      <p class="text-sm text-slate-400 mt-1.5 max-w-3xl leading-relaxed">
+        Submit a repository URL, skills.sh package link, or inspect raw skill source code directly against the multi-layer security engine.
+      </p>
+    </div>
+    
+    <ScannerApp client:load />
+  </div>
+</BaseLayout>

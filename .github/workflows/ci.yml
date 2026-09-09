@@ -1,0 +1,83 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --workspace
+
+      - name: Build release
+        run: cargo build --release
+
+      - name: CLI smoke — scan benign fixture
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            ./target/release/skill-doctor.exe scan tests/fixtures/benign \
+              --fail-on HIGH --offline --deterministic
+          else
+            ./target/release/skill-doctor scan tests/fixtures/benign \
+              --fail-on HIGH --offline --deterministic
+          fi
+
+  reproducibility:
+    needs: lint-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Build
+        run: cargo build --release
+      - name: Verdict must be bit-identical across two runs
+        run: |
+          ./target/release/skill-doctor scan tests/fixtures/benign \
+            --output json --deterministic --offline > run1.json
+          ./target/release/skill-doctor scan tests/fixtures/benign \
+            --output json --deterministic --offline > run2.json
+          sha1=$(sha256sum run1.json | cut -d' ' -f1)
+          sha2=$(sha256sum run2.json | cut -d' ' -f1)
+          echo "Run 1 SHA-256: $sha1"
+          echo "Run 2 SHA-256: $sha2"
+          [ "$sha1" = "$sha2" ] && echo "deterministic OK" || (echo "FAIL: non-deterministic" && exit 1)
+
+  supply-chain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo-deny (licenses + advisories + bans)
+        uses: EmbarkStudios/cargo-deny-action@v2
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}

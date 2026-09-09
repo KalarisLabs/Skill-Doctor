@@ -1,0 +1,13 @@
+[package]
+name = "skill-doctor-sandbox"
+description = "Behavioral sandbox (microVM) for Skill Doctor L3 analysis"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Sandbox dependencies will be added when this crate is implemented.
+# Feature-gated: only built with `--features sandbox`.

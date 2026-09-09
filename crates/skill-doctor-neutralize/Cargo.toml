@@ -1,0 +1,11 @@
+[package]
+name = "skill-doctor-neutralize"
+description = "SD-11 content neutralization — sanitize before any model sees bytes"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]

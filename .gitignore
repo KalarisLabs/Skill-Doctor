@@ -1,0 +1,9 @@
+/target
+**/*.rs.bk
+Cargo.lock.bak
+/dist
+/sd-bench/results-raw
+/corpora/real_malware
+*.sarif
+.DS_Store
+node_modules

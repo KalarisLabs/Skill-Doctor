@@ -1,0 +1,24 @@
+[package]
+name = "skill-doctor"
+description = "Security scanner for AI agent skill files — CLI"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[[bin]]
+name = "skill-doctor"
+path = "src/main.rs"
+
+[dependencies]
+skill-doctor-core = { path = "../skill-doctor-core" }
+skill-doctor-rules = { path = "../skill-doctor-rules" }
+skill-doctor-neutralize = { path = "../skill-doctor-neutralize" }
+clap = { workspace = true }
+anyhow = { workspace = true }
+serde_json = { workspace = true }
+serde = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }

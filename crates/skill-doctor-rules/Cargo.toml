@@ -1,0 +1,16 @@
+[package]
+name = "skill-doctor-rules"
+description = "Compiled rule packs for Skill Doctor (YARA-X rules compiled at build time)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+# Rules are embedded at build time; runtime has no YARA dependency.
+# The compiled rules are included as byte arrays.
+
+# [build-dependencies]
+# yara-x = { workspace = true }

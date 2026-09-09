@@ -1,0 +1,24 @@
+[package]
+name = "skill-doctor-core"
+description = "Core analysis engine for Skill Doctor — L0 intake, L1 static engines, L5 scoring"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+walkdir = { workspace = true }
+thiserror = { workspace = true }
+rayon = { workspace = true }
+regex = { workspace = true }
+memchr = { workspace = true }
+base64 = { workspace = true }
+hex = { workspace = true }
+
+[dev-dependencies]
+tempfile = "3"

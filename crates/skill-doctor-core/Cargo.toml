@@ -22,3 +22,8 @@ hex = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"
+criterion = { workspace = true }
+
+[[bench]]
+name = "engine_bench"
+harness = false

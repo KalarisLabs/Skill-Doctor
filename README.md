@@ -81,7 +81,7 @@ skill-doctor/
 │  ├─ skill-doctor-rules/     # YARA-X rule packs, compiled at build time and embedded
 │  ├─ skill-doctor-neutralize/# SD-11 neutralization protocol (isolated, auditable)
 │  ├─ skill-doctor-mcp/       # MCP server + host-delegated L2 envelope/verdict contract
-│  └─ skill-doctor-sandbox/   # L3 microVM behavioral analysis + differential replay (feature: sandbox)
+│  └─ skill-doctor-sandbox/   # L3 behavioral process harness + differential replay (feature: sandbox)
 ├─ rules/                     # source YARA-X rules (compiled into skill-doctor-rules)
 ├─ corpora/                   # seeded corpus generator + fixtures (real_malware/ is access-gated)
 ├─ sd-bench/                  # benchmark harness (pinned competitor images, RESULTS.md)
@@ -95,7 +95,7 @@ skill-doctor/
 | L0 | intake, normalize, canonical digest, cache | nothing | deterministic |
 | L1 | static analysis (YARA-X, taint, entropy, Unicode, capability differ) | nothing | **deterministic** |
 | L2 | semantic analysis | host agent / local model / key | additive-only, nondeterministic |
-| L3 | behavioral sandbox + differential replay | microVM runtime (`--features sandbox`) | mostly deterministic |
+| L3 | behavioral process harness + differential replay | isolated process execution (`--features sandbox`) | mostly deterministic |
 | L4 | threat intelligence | network (opt-in) | deterministic |
 | L5 | scoring, coverage, reporting | nothing | deterministic |
 
@@ -104,5 +104,5 @@ lower structural-coverage number instead of an error.
 
 ## License
 
-AGPL-3.0-or-later. The real-malware corpus is access-controlled research material and is **not**
+Apache-2.0. The real-malware corpus is access-controlled research material and is **not**
 in this repository. See `CONTEXT.md` § Ethics.

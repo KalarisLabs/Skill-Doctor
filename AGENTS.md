@@ -27,7 +27,7 @@ Each folder under `skills/` is an Agent Skill (`SKILL.md`). Load the matching on
 | `skills/cli-sarif` | clap, exit codes, SARIF |
 | `skills/release-publish` | crates.io, npm, tags |
 | `skills/review-bots` | CodeRabbit / Greptile / Intelligence AI |
-| `skills/unsafe-sandbox` | `unsafe`, L3 microVM |
+| `skills/unsafe-sandbox` | `unsafe`, L3 process harness |
 
 ## Non-negotiable invariants (do not violate; PRs that break these are rejected)
 
@@ -58,7 +58,7 @@ cargo test --workspace                    # all tests except access-gated real_m
 cargo clippy --workspace -- -D warnings    # lint gate (must be clean)
 cargo fmt --all --check                    # formatting gate
 cargo run -p skill-doctor-cli -- scan ./examples/hello-skill
-cargo build --release --features sandbox   # include L3 microVM behavioral layer
+cargo build --release --features sandbox   # include L3 behavioral process harness
 ./sd-bench/run.sh --pinned                  # reproduce the benchmark against pinned competitors
 ```
 

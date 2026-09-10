@@ -47,7 +47,7 @@ feeds untrusted skill content to a model. Mitigated by architecture, not by prom
 input -> [L0 intake/normalize/digest/cache] (skill-doctor-core::l0)
       -> [L1 static engines]                 (skill-doctor-core::l1)  <- rules from skill-doctor-rules
       -> [L2 semantic, host-delegated]        (skill-doctor-mcp)       <- via skill-doctor-neutralize
-      -> [L3 behavioral microVM + replay]     (skill-doctor-sandbox, feature-gated)
+      -> [L3 behavioral process harness + replay]     (skill-doctor-sandbox, feature-gated)
       -> [L4 threat intel]                    (skill-doctor-core::l4, network opt-in)
       -> [L5 scoring/coverage/report]         (skill-doctor-core::l5 -> skill-doctor-cli::report)
 ```
@@ -72,7 +72,7 @@ the host agent's own model returns a schema-constrained verdict. Modes: `none` (
 `host` (default MCP), `local` (Ollama/socket), `remote` (explicit key). Always additive-only.
 
 ### L3 — behavioral sandbox (feature `sandbox`)
-microVM with pre-warmed pool, mock agent runtime snapshot, hard execution ceiling, host-injected
+Process harness with environment isolation, mock agent runtime snapshot, hard execution ceiling, host-injected
 **canary credentials**. **Differential replay**: run under varied clock/hostname/CI-env/canary
 conditions; behavioral divergence = conditional payload / logic bomb.
 

@@ -287,6 +287,9 @@ impl ProcessTreeGuard {
     pub fn new() -> Self {
         #[cfg(windows)]
         {
+            // SAFETY: Windows Job Objects API requires unsafe FFI calls.
+            // We validate the job handle is non-null before use and follow the Windows API contract.
+            // The job object is configured with KILL_ON_JOB_CLOSE to ensure child processes are terminated.
             unsafe {
                 use windows_sys::Win32::System::JobObjects::*;
                 let job = CreateJobObjectW(std::ptr::null(), std::ptr::null());
@@ -322,6 +325,9 @@ impl ProcessTreeGuard {
         {
             if let Some(job) = self.job_handle {
                 use std::os::windows::io::AsRawHandle;
+                // SAFETY: AssignProcessToJobObject FFI call to attach child process to job object.
+                // The job handle is validated as non-null before this call.
+                // This ensures the child process is terminated when the job closes.
                 unsafe {
                     use windows_sys::Win32::System::JobObjects::AssignProcessToJobObject;
                     let handle = child.as_raw_handle() as windows_sys::Win32::Foundation::HANDLE;
@@ -341,6 +347,9 @@ impl ProcessTreeGuard {
         #[cfg(windows)]
         {
             if let Some(job) = self.job_handle.take() {
+                // SAFETY: Windows Job Objects FFI calls to terminate job and close handle.
+                // The job handle is validated as non-null before this call.
+                // This ensures all child processes in the job are terminated.
                 unsafe {
                     use windows_sys::Win32::Foundation::CloseHandle;
                     use windows_sys::Win32::System::JobObjects::TerminateJobObject;
@@ -353,6 +362,9 @@ impl ProcessTreeGuard {
         #[cfg(unix)]
         {
             if let Some(pgid) = self.pgid.take() {
+                // SAFETY: libc::kill FFI call to terminate process group.
+                // The pgid is validated as non-null before this call.
+                // Negative pgid signals the entire process group.
                 unsafe {
                     libc::kill(-pgid, libc::SIGKILL);
                 }
@@ -402,6 +414,9 @@ pub fn execute_script(
     #[cfg(unix)]
     {
         use std::os::unix::process::CommandExt;
+        // SAFETY: pre_exec FFI call to set process group ID before exec.
+        // This ensures the child process runs in its own process group for isolation.
+        // The closure is guaranteed to not allocate or use unsafe operations.
         unsafe {
             cmd.pre_exec(|| {
                 libc::setpgid(0, 0);

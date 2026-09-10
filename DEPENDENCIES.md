@@ -63,9 +63,10 @@ interpreter. Prefer pure-Rust crates so the static (musl) build stays clean.
 
 | Crate | Purpose |
 |-------|---------|
-| microVM SDK — native Rust, in-process, ~100 ms boot (e.g. a Firecracker/Cloud-Hypervisor or microsandbox Rust SDK) | L3 isolated execution. Pin the exact SDK in `Cargo.lock`; must be pure-Rust-embeddable with no daemon. |
 | `nix` | Low-level process/namespace controls for monitoring. |
 | `serde`, `serde_json` | Behavior trace records. |
+
+Note: L3 is currently implemented as a process harness with environment isolation and differential replay, not as a microVM. Future versions may integrate microVM isolation.
 
 ## Threat intel & provenance (opt-in / release)
 

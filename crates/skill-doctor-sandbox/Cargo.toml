@@ -1,6 +1,6 @@
 [package]
 name = "skill-doctor-sandbox"
-description = "Behavioral sandbox (microVM) for Skill Doctor L3 analysis"
+description = "Behavioral process harness (L3-lite) for Skill Doctor analysis"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -9,5 +9,22 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-# Sandbox dependencies will be added when this crate is implemented.
-# Feature-gated: only built with `--features sandbox`.
+tempfile = "3"
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+uuid = { version = "1", features = ["v4"] }
+walkdir = { workspace = true }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_System_JobObjects",
+    "Win32_Security",
+    "Win32_Foundation",
+    "Win32_System_Threading",
+] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"

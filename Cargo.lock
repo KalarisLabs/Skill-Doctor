@@ -1516,6 +1516,7 @@ dependencies = [
  "skill-doctor-mcp",
  "skill-doctor-neutralize",
  "skill-doctor-rules",
+ "skill-doctor-sandbox",
  "tokio",
  "walkdir",
 ]
@@ -1578,6 +1579,18 @@ version = "0.1.0"
 [[package]]
 name = "skill-doctor-sandbox"
 version = "0.1.0"
+dependencies = [
+ "hex",
+ "libc",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tempfile",
+ "thiserror 1.0.69",
+ "uuid",
+ "walkdir",
+ "windows-sys 0.59.0",
+]
 
 [[package]]
 name = "slab"

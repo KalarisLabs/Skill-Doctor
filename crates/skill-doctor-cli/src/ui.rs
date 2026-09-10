@@ -288,9 +288,25 @@ impl UiContext {
             &report.bundle_digest
         };
 
+        let mut layers_active = vec!["L0", "L1"];
+        if report.layers.l2 != skill_doctor_core::report::LayerRunState::Skipped {
+            layers_active.push("L2");
+        }
+        if report.layers.l3 != skill_doctor_core::report::LayerRunState::Skipped {
+            layers_active.push("L3");
+        }
+        if report.layers.l4 != skill_doctor_core::report::LayerRunState::Skipped {
+            layers_active.push("L4");
+        }
+        let layers_str = layers_active.join(",");
+
         println!(
-            "{bold}skill-doctor{bold:#} {} digest={dim}{}{dim:#} layers=L0,L1 coverage={}/{}",
-            report.scanner_version, digest_short, report.coverage.evaluable, report.coverage.total
+            "{bold}skill-doctor{bold:#} {} digest={dim}{}{dim:#} layers={} coverage={}/{}",
+            report.scanner_version,
+            digest_short,
+            layers_str,
+            report.coverage.evaluable,
+            report.coverage.total
         );
 
         // 2. Coverage Strip

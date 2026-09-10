@@ -179,6 +179,83 @@ pub fn merge_l1_and_l2(
     }
 }
 
+/// Merge L3 behavioral sandbox findings additively into an existing report.
+///
+/// Invariants enforced:
+/// - L3 can NEVER remove any existing L1 or L2 finding.
+/// - L3 can NEVER downgrade the severity of an existing finding.
+/// - L3 can NEVER alter the threat class of an existing finding.
+/// - If L3 matches an existing finding, it may only raise confidence or add evidence.
+/// - Duplicate findings take max(confidence) and max(severity).
+/// - An L3 verdict of "benign" or empty findings leaves all previous findings unchanged.
+/// - Sort order is preserved if deterministic mode was requested.
+/// - L1 structural coverage is strictly preserved (unchanged).
+pub fn merge_l3_findings(
+    report: &Report,
+    l3_findings: &[Finding],
+    l3_state: LayerRunState,
+) -> Report {
+    let mut merged = report.findings.clone();
+
+    for l3 in l3_findings {
+        let matched = merged.iter_mut().find(|f| {
+            f.rule_id == l3.rule_id
+                && f.path == l3.path
+                && (f.byte_span == l3.byte_span
+                    || (f.byte_span.is_none() && l3.byte_span.is_none()))
+        });
+
+        if let Some(existing) = matched {
+            existing.severity = existing.severity.max(l3.severity);
+            existing.confidence = existing.confidence.max(l3.confidence);
+            for ev in &l3.evidence {
+                if !existing.evidence.contains(ev) {
+                    existing.evidence.push(ev.clone());
+                }
+            }
+            if existing.remediation.is_none() {
+                existing.remediation = l3.remediation.clone();
+            }
+        } else {
+            let mut new_finding = l3.clone();
+            new_finding.layer = AnalysisLayer::L3;
+            merged.push(new_finding);
+        }
+    }
+
+    if report.deterministic {
+        merged.sort_by(|a, b| {
+            a.rule_id
+                .cmp(&b.rule_id)
+                .then_with(|| a.path.cmp(&b.path))
+                .then_with(|| {
+                    let a_start = a.byte_span.as_ref().map_or(0, |s| s.start);
+                    let b_start = b.byte_span.as_ref().map_or(0, |s| s.start);
+                    a_start.cmp(&b_start)
+                })
+        });
+    }
+
+    let threshold = report.fail_on.unwrap_or(Severity::High);
+    let verdict = Report::compute_verdict(&merged, threshold);
+    let would_fail = verdict == crate::report::Verdict::Fail;
+
+    let mut layers = report.layers.clone();
+    layers.l3 = l3_state;
+
+    Report {
+        bundle_digest: report.bundle_digest.clone(),
+        findings: merged,
+        coverage: report.coverage.clone(),
+        verdict,
+        deterministic: report.deterministic,
+        scanner_version: report.scanner_version.clone(),
+        would_fail,
+        fail_on: report.fail_on,
+        layers,
+    }
+}
+
 /// Merge L2 findings into L1 findings, enforcing the additive-only invariant.
 ///
 /// Returns the merged finding set. Errors if L2 would remove an L1 finding.
@@ -469,5 +546,42 @@ mod tests {
                 "l2 semantic confirmation".to_string()
             ]
         );
+    }
+
+    #[test]
+    fn merge_l3_findings_preserves_l1_and_adds_l3() {
+        let l1_report = Report {
+            bundle_digest: "digest1".to_string(),
+            findings: vec![make_l1_finding("SD-02-cmd-eval")],
+            coverage: crate::report::Coverage::from_evaluable(&[]),
+            verdict: crate::report::Verdict::Fail,
+            deterministic: true,
+            scanner_version: "0.1.0".to_string(),
+            would_fail: true,
+            fail_on: Some(Severity::High),
+            layers: crate::report::LayerStatus::default(),
+        };
+
+        let l3_finding = Finding {
+            rule_id: "SD-03-behavioral-canary-leak".to_string(),
+            class: ThreatClass::DataExfiltration,
+            severity: Severity::Critical,
+            confidence: Confidence::High,
+            path: PathBuf::from("scripts/install.py"),
+            byte_span: None,
+            evidence: vec!["Canary secret 'AWS_SECRET_ACCESS_KEY' leaked".to_string()],
+            remediation: Some("Remove credential access".to_string()),
+            layer: AnalysisLayer::L3,
+        };
+
+        let merged = merge_l3_findings(&l1_report, &[l3_finding], LayerRunState::Ran);
+
+        assert_eq!(merged.findings.len(), 2);
+        assert_eq!(merged.findings[0].rule_id, "SD-02-cmd-eval");
+        assert_eq!(merged.findings[0].layer, AnalysisLayer::L1);
+        assert_eq!(merged.findings[1].rule_id, "SD-03-behavioral-canary-leak");
+        assert_eq!(merged.findings[1].layer, AnalysisLayer::L3);
+        assert_eq!(merged.findings[1].severity, Severity::Critical);
+        assert_eq!(merged.layers.l3, LayerRunState::Ran);
     }
 }

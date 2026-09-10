@@ -16,9 +16,15 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
 use progress::ScanProgress;
 use skill_doctor_core::finding::Severity;
+#[cfg(feature = "sandbox")]
+use skill_doctor_core::finding::{AnalysisLayer, Confidence, Finding};
 use skill_doctor_core::l0;
 use skill_doctor_core::l5::{self, ReportOptions};
-use skill_doctor_core::report::Verdict;
+#[cfg(feature = "sandbox")]
+use skill_doctor_core::report::LayerRunState;
+use skill_doctor_core::report::{Report, Verdict};
+#[cfg(feature = "sandbox")]
+use skill_doctor_core::taxonomy::ThreatClass;
 use std::path::{Path, PathBuf};
 use std::process;
 use ui::{ColorChoice, ProgressStyleChoice, ThemeMode, UiContext};
@@ -81,6 +87,10 @@ enum Commands {
         /// Run fully offline (no network, no LLM).
         #[arg(long)]
         offline: bool,
+
+        /// Run L3 behavioral sandbox on companion scripts (opt-in feature).
+        #[arg(long)]
+        sandbox: bool,
     },
 
     /// Scan all skill directories under a root path.
@@ -107,6 +117,10 @@ enum Commands {
         /// Run fully offline.
         #[arg(long)]
         offline: bool,
+
+        /// Run L3 behavioral sandbox on companion scripts (opt-in feature).
+        #[arg(long)]
+        sandbox: bool,
     },
 
     /// Compare scan results against a baseline.
@@ -211,7 +225,16 @@ fn main() {
             output,
             deterministic,
             offline: _,
+            sandbox,
         } => {
+            if sandbox {
+                #[cfg(not(feature = "sandbox"))]
+                {
+                    eprintln!("Error: The behavioral sandbox is not compiled into this binary.");
+                    eprintln!("To enable sandbox support, rebuild with: cargo build -p skill-doctor --features sandbox");
+                    process::exit(1);
+                }
+            }
             if !cli.quiet && output == OutputFormat::Text && !cli.tui && !deterministic {
                 ui.print_banner_if_tty();
             }
@@ -224,6 +247,7 @@ fn main() {
                 cli.tui,
                 cli.quiet,
                 cli.progress,
+                sandbox,
                 &ui,
             )
         }
@@ -235,7 +259,16 @@ fn main() {
             output,
             deterministic,
             offline: _,
+            sandbox,
         } => {
+            if sandbox {
+                #[cfg(not(feature = "sandbox"))]
+                {
+                    eprintln!("Error: The behavioral sandbox is not compiled into this binary.");
+                    eprintln!("To enable sandbox support, rebuild with: cargo build -p skill-doctor --features sandbox");
+                    process::exit(1);
+                }
+            }
             if !cli.quiet && output == OutputFormat::Text && !deterministic {
                 ui.print_banner_if_tty();
             }
@@ -247,6 +280,7 @@ fn main() {
                 deterministic,
                 cli.quiet,
                 cli.progress,
+                sandbox,
                 &ui,
             )
         }
@@ -275,6 +309,7 @@ fn main() {
             false,
             cli.quiet,
             cli.progress,
+            false,
             &ui,
         ),
 
@@ -315,6 +350,79 @@ fn main() {
     }
 }
 
+/// Run L3 behavioral sandbox analysis and additively merge findings.
+///
+/// Invariant: --deterministic skips L3 unconditionally to preserve byte-identical determinism.
+/// If feature `sandbox` is not enabled, returns unchanged report.
+#[allow(unused_variables)]
+fn apply_sandbox_analysis(path: &Path, report: &Report, progress: &ScanProgress) -> Report {
+    #[cfg(feature = "sandbox")]
+    {
+        progress.set_status("L3 behavioral sandbox & differential replay...");
+        let sb_options = skill_doctor_sandbox::SandboxOptions::default();
+        let sb_res = skill_doctor_sandbox::run_sandbox(path, &sb_options);
+
+        let mut l3_findings = Vec::new();
+
+        // 1. Map canary leaks -> SD-03 Critical findings (key names ONLY, never raw tokens)
+        for leak in sb_res.leaks {
+            let source_desc = match &leak.source {
+                skill_doctor_sandbox::LeakSource::Stdout => "stdout".to_string(),
+                skill_doctor_sandbox::LeakSource::Stderr => "stderr".to_string(),
+                skill_doctor_sandbox::LeakSource::CreatedOrModifiedFile(p) => {
+                    format!("file '{}'", p.display())
+                }
+            };
+            l3_findings.push(Finding {
+                rule_id: "SD-03-behavioral-canary-leak".to_string(),
+                class: ThreatClass::DataExfiltration,
+                severity: Severity::Critical,
+                confidence: Confidence::High,
+                path: path.to_path_buf(),
+                byte_span: None,
+                evidence: vec![format!(
+                    "Canary secret '{}' exfiltrated via {}",
+                    leak.secret_name, source_desc
+                )],
+                remediation: Some("Remove credential access and exfiltration code".to_string()),
+                layer: AnalysisLayer::L3,
+            });
+        }
+
+        // 2. Map behavioral divergences -> SD-10 Critical findings
+        for div in sb_res.divergences {
+            l3_findings.push(Finding {
+                rule_id: "SD-10-differential-replay-logic-bomb".to_string(),
+                class: ThreatClass::ObfuscationEvasion,
+                severity: Severity::Critical,
+                confidence: Confidence::High,
+                path: div.script_path,
+                byte_span: None,
+                evidence: vec![format!(
+                    "Behavioral divergence detected under profile '{}': {}",
+                    div.triggered_profile, div.reason
+                )],
+                remediation: Some(
+                    "Remove environment-conditional execution logic and time bombs".to_string(),
+                ),
+                layer: AnalysisLayer::L3,
+            });
+        }
+
+        let l3_state = match sb_res.state {
+            skill_doctor_sandbox::SandboxRunState::Ran => LayerRunState::Ran,
+            skill_doctor_sandbox::SandboxRunState::Reduced => LayerRunState::Reduced,
+            skill_doctor_sandbox::SandboxRunState::Skipped => LayerRunState::Skipped,
+        };
+
+        skill_doctor_core::scoring::merge_l3_findings(report, &l3_findings, l3_state)
+    }
+    #[cfg(not(feature = "sandbox"))]
+    {
+        report.clone()
+    }
+}
+
 /// Run a scan on a single skill directory or archive.
 #[allow(clippy::too_many_arguments)]
 fn run_scan(
@@ -326,6 +434,7 @@ fn run_scan(
     use_tui: bool,
     quiet: bool,
     progress_choice: ProgressStyleChoice,
+    sandbox: bool,
     ui: &UiContext,
 ) -> Result<i32> {
     let progress = ScanProgress::new(ui, deterministic, quiet, progress_choice);
@@ -334,13 +443,18 @@ fn run_scan(
     let bundle = l0::intake(path).context("L0 intake failed")?;
 
     progress.set_status("L1 static analysis engines...");
-    let report = l5::analyze(
+    let mut report = l5::analyze(
         &bundle,
         &ReportOptions {
             fail_on,
             deterministic,
         },
     );
+
+    // Rule: --deterministic skips L3 unconditionally to preserve byte-identical determinism
+    if sandbox && !deterministic {
+        report = apply_sandbox_analysis(path, &report, &progress);
+    }
 
     progress.finish_and_clear();
 
@@ -394,6 +508,7 @@ fn run_scan_all(
     deterministic: bool,
     quiet: bool,
     progress_choice: ProgressStyleChoice,
+    sandbox: bool,
     ui: &UiContext,
 ) -> Result<i32> {
     if !root.exists() {
@@ -438,6 +553,7 @@ fn run_scan_all(
             false,
             quiet,
             progress_choice,
+            sandbox,
             ui,
         );
     }
@@ -455,13 +571,18 @@ fn run_scan_all(
         progress.set_item_progress(idx + 1, total_dirs, &dir_name);
 
         let bundle = l0::intake(dir).context("L0 intake failed")?;
-        let report = l5::analyze(
+        let mut report = l5::analyze(
             &bundle,
             &ReportOptions {
                 fail_on,
                 deterministic,
             },
         );
+
+        // Rule: --deterministic skips L3 unconditionally
+        if sandbox && !deterministic {
+            report = apply_sandbox_analysis(dir, &report, &progress);
+        }
 
         match output {
             OutputFormat::Text => {

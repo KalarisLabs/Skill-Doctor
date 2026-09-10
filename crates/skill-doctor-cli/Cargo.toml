@@ -37,7 +37,11 @@ crossterm = { workspace = true, optional = true }
 skill-doctor-mcp = { path = "../skill-doctor-mcp", optional = true }
 tokio = { version = "1", default-features = false, features = ["rt", "macros", "io-std"], optional = true }
 
+# L3 Behavioral Sandbox dependencies (opt-in feature)
+skill-doctor-sandbox = { path = "../skill-doctor-sandbox", optional = true }
+
 [features]
 default = []
 tui = ["dep:ratatui", "dep:crossterm"]
 mcp = ["dep:skill-doctor-mcp", "dep:tokio"]
+sandbox = ["dep:skill-doctor-sandbox"]

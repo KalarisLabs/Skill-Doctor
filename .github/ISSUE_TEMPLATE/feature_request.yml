@@ -1,0 +1,27 @@
+name: "Feature Request"
+description: "Suggest an idea, new threat detector, or improvement for Skill Doctor"
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please note that detector contributions must adhere to the 11 SDTM-v1 threat classes.
+  - type: textarea
+    id: problem
+    attributes:
+      label: "Problem / Motivation"
+      description: "Is your feature request related to a problem or missing detection capability?"
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: "Proposed Solution"
+      description: "Describe how you envision this working within the deterministic L1 / L2 architecture."
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: "Alternatives Considered"

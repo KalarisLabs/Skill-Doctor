@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: "Report a Security Vulnerability"
+    url: "https://github.com/KalarisLabs/Skill-Doctor/security/advisories/new"
+    about: "Report vulnerabilities privately through GitHub Security Advisories or security@kalarislabs.com. Do not open public issues for security vulnerabilities."

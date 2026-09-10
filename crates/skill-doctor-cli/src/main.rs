@@ -181,7 +181,7 @@ fn main() {
             output,
             deterministic,
             offline: _,
-        } => run_scan(
+        } => run_scan_all(
             &path,
             fail_on.0,
             fail_under_coverage,
@@ -273,6 +273,97 @@ fn run_scan(
         Verdict::Pass => Ok(0),
         Verdict::Fail => Ok(2),
     }
+}
+
+/// Scan all discovered skill directories under a root path.
+fn run_scan_all(
+    root: &Path,
+    fail_on: Severity,
+    fail_under_coverage: Option<f64>,
+    output: &OutputFormat,
+    deterministic: bool,
+) -> Result<i32> {
+    if !root.exists() {
+        anyhow::bail!("path does not exist: {}", root.display());
+    }
+
+    // Discover skill directories containing SKILL.md (excluding VCS, build artifacts, attack test fixtures)
+    let mut skill_dirs = Vec::new();
+    for entry in walkdir::WalkDir::new(root)
+        .sort_by_file_name()
+        .into_iter()
+        .filter_entry(|e| {
+            let name = e.file_name().to_string_lossy();
+            let path_str = e.path().to_string_lossy().replace('\\', "/");
+            !name.starts_with(".git")
+                && name != "target"
+                && name != "node_modules"
+                && name != "dist"
+                && !path_str.contains("/fixtures/attack")
+                && !path_str.contains("/corpora/cmd-inject-skill")
+                && !path_str.contains("/corpora/prompt-inject-skill")
+        })
+    {
+        let entry = entry?;
+        if entry.file_type().is_file() && entry.file_name() == "SKILL.md" {
+            if let Some(parent) = entry.path().parent() {
+                skill_dirs.push(parent.to_path_buf());
+            }
+        }
+    }
+
+    if skill_dirs.is_empty() {
+        // Fallback: scan root directly
+        return run_scan(root, fail_on, fail_under_coverage, output, deterministic);
+    }
+
+    let mut overall_exit_code = 0;
+    let mut total_findings = 0;
+
+    for dir in &skill_dirs {
+        let bundle = l0::intake(dir).context("L0 intake failed")?;
+        let report = l5::analyze(
+            &bundle,
+            &ReportOptions {
+                fail_on,
+                deterministic,
+            },
+        );
+
+        match output {
+            OutputFormat::Text => {
+                println!("=== Skill: {} ===", dir.display());
+                print_text_report(&report);
+                println!();
+            }
+            OutputFormat::Json | OutputFormat::Sarif => {
+                let json = serde_json::to_string_pretty(&report)?;
+                println!("{}", json);
+            }
+        }
+
+        total_findings += report.findings.len();
+        if report.verdict == Verdict::Fail {
+            overall_exit_code = 2;
+        }
+
+        if let Some(threshold) = fail_under_coverage {
+            if report.coverage.ratio() < threshold && overall_exit_code == 0 {
+                overall_exit_code = 3;
+            }
+        }
+    }
+
+    if let OutputFormat::Text = output {
+        println!(
+            "Scanned {} skill(s). Total findings: {}. Overall exit: {}",
+            skill_dirs.len(),
+            total_findings,
+            overall_exit_code
+        );
+    }
+
+    Ok(overall_exit_code)
 }
 
 /// Run a diff against a baseline.

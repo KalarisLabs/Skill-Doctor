@@ -1,0 +1,12 @@
+# Global repository owners
+* @KalarisLabs @saynchowdhury
+
+# Analysis rules and engines
+/rules/ @KalarisLabs @saynchowdhury
+/crates/skill-doctor-core/ @KalarisLabs @saynchowdhury
+/crates/skill-doctor-rules/ @KalarisLabs @saynchowdhury
+/crates/skill-doctor-neutralize/ @KalarisLabs @saynchowdhury
+
+# CI and Security
+/.github/workflows/ @KalarisLabs @saynchowdhury
+/deny.toml @KalarisLabs @saynchowdhury

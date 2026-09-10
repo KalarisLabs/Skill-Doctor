@@ -1,0 +1,45 @@
+name: "Bug Report"
+description: "Report a bug, unexpected scan verdict, or crash in Skill Doctor"
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue!
+        Please ensure your issue does NOT contain active malicious payloads or sensitive credentials.
+  - type: input
+    id: version
+    attributes:
+      label: "Skill Doctor Version"
+      description: "Run `skill-doctor --version`"
+      placeholder: "e.g. skill-doctor 0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: "Operating System"
+      placeholder: "e.g. Linux x86_64 / macOS ARM64 / Windows 11"
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "Reproduction Steps"
+      description: "Exact CLI command and sanitized input"
+      placeholder: "skill-doctor scan ./my-skill --fail-on HIGH"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected Behavior"
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: "Actual Output / Exit Code"
+    validations:
+      required: true

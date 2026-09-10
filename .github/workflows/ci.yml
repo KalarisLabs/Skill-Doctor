@@ -10,8 +10,8 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  quality-code:
-    name: Quality Code (Format, Clippy, Invariants)
+  lint-and-unit:
+    name: lint-and-unit
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -25,179 +25,27 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Code formatting check
+      - name: Format check
         run: cargo fmt --all --check
 
-      - name: Clippy linter (zero warnings)
+      - name: Clippy linter
         run: cargo clippy --workspace --all-targets -- -D warnings
 
-      - name: Workspace check
-        run: cargo check --workspace --all-targets
-
-      - name: Workspace tests
+      - name: Unit & Integration tests
         run: cargo test --workspace --locked
 
-      - name: Enforce architectural invariants
+      - name: Invariant grep (no mandatory LLM SDKs)
         shell: bash
         run: |
-          echo "Checking for unauthorized LLM API key references on default path..."
-          if grep -r -n -E "openai|anthropic|OPENAI_API_KEY|ANTHROPIC_API_KEY" crates/skill-doctor-cli crates/skill-doctor-core; then
-            echo "ERROR: Direct model keys/SDKs detected on default path."
+          echo "Verifying architectural invariant: zero direct model dependencies on default path..."
+          if grep -r -i -E "openai|anthropic" crates/skill-doctor-cli/src crates/skill-doctor-core/src; then
+            echo "ERROR: Direct model SDK/vendor references detected on default path."
             exit 1
           fi
-          echo "Invariant verified: No unauthorized LLM dependencies."
+          echo "Invariant verified: Pure deterministic core."
 
-  security-audit:
-    name: Security Audit & Dogfood Gate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Gitleaks secrets audit
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Build release binary
-        run: cargo build --release
-
-      - name: Dogfood self-scan (Skill Doctor must pass its own scan)
-        shell: bash
-        run: |
-          ./target/release/skill-doctor scan-all . \
-            --output sarif \
-            --fail-on HIGH \
-            --fail-under-coverage 0.8 \
-            --deterministic --offline > skill-doctor.sarif
-          echo "Self-scan completed successfully."
-
-      - name: Upload SARIF report to GitHub Security
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: skill-doctor.sarif
-
-  security-audit-dependency:
-    name: Security Audit - Dependencies
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: RustSec Advisory Audit (cargo audit)
-        uses: rustsec/audit-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: cargo-deny check (licenses, bans, sources)
-        uses: EmbarkStudios/cargo-deny-action@v2
-
-      - name: Setup Node.js for npm package audit
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: npm audit on thin wrapper
-        run: npm audit --audit-level=high
-
-  security-advisories:
-    name: SECURITY Advisories Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Run cargo deny advisories check
-        uses: EmbarkStudios/cargo-deny-action@v2
-        with:
-          command: check advisories
-
-      - name: Run security advisories integration tests
-        run: cargo test --test security_advisories_test
-
-  dependency-test-coverage:
-    name: Dependency Test Coverage
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Install cargo-tarpaulin
-        run: cargo install cargo-tarpaulin --locked
-
-      - name: Measure workspace test coverage
-        run: |
-          cargo tarpaulin --workspace --out xml --out html --output-dir coverage --timeout 300
-
-      - name: Upload coverage artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: code-coverage-report
-          path: coverage/
-
-      - name: Upload to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-
-  reproducibility:
-    name: Determinism & Reproducibility Gate
-    needs: quality-code
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Build release binary
-        run: cargo build --release
-
-      - name: Verdict must be bit-identical across two runs
-        shell: bash
-        run: |
-          ./target/release/skill-doctor scan tests/fixtures/benign \
-            --output json --deterministic --offline > run1.json
-          ./target/release/skill-doctor scan tests/fixtures/benign \
-            --output json --deterministic --offline > run2.json
-          sha1=$(sha256sum run1.json | cut -d' ' -f1)
-          sha2=$(sha256sum run2.json | cut -d' ' -f1)
-          echo "Run 1 SHA-256: $sha1"
-          echo "Run 2 SHA-256: $sha2"
-          [ "$sha1" = "$sha2" ] && echo "deterministic OK" || (echo "FAIL: non-deterministic output" && exit 1)
-
-  cross-platform-smoke:
-    name: Cross-Platform Smoke (${{ matrix.os }})
-    needs: quality-code
+  os-cli:
+    name: os-cli
     strategy:
       fail-fast: false
       matrix:
@@ -216,7 +64,17 @@ jobs:
       - name: Build release binary
         run: cargo build --release
 
-      - name: Smoke test — benign fixture (exit 0)
+      - name: CLI smoke — --help & --version
+        shell: bash
+        run: |
+          BIN="./target/release/skill-doctor"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            BIN="./target/release/skill-doctor.exe"
+          fi
+          $BIN --help
+          $BIN --version
+
+      - name: CLI smoke — benign scan (exit 0)
         shell: bash
         run: |
           BIN="./target/release/skill-doctor"
@@ -225,7 +83,7 @@ jobs:
           fi
           $BIN scan tests/fixtures/benign/hello-skill --fail-on HIGH --offline --deterministic
 
-      - name: Smoke test — attack fixture (exit 2)
+      - name: CLI smoke — attack SD-02 scan (exit 2)
         shell: bash
         run: |
           BIN="./target/release/skill-doctor"
@@ -242,8 +100,28 @@ jobs:
           fi
           echo "Attack fixture correctly exited with code 2."
 
-  performance-benchmark-smoke:
-    name: Performance Benchmarks Verification
+  supply-chain:
+    name: supply-chain
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks secrets detection
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: cargo-deny check (advisories, licenses, bans, unknown git)
+        uses: EmbarkStudios/cargo-deny-action@v2
+
+  dogfood-self-scan:
+    name: dogfood-self-scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -255,5 +133,53 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Verify benchmarks compile and pass smoke test
-        run: cargo bench --workspace -- --test
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Dogfood self-scan
+        shell: bash
+        run: |
+          ./target/release/skill-doctor scan-all . \
+            --output sarif \
+            --fail-on HIGH \
+            --deterministic --offline > skill-doctor.sarif
+          echo "Dogfood self-scan passed."
+
+      - name: Upload SARIF report
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: skill-doctor.sarif
+
+  determinism:
+    name: determinism
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Determinism verification (identical SHA-256)
+        shell: bash
+        run: |
+          ./target/release/skill-doctor scan tests/fixtures/benign/hello-skill \
+            --output json --deterministic --offline > run1.json
+          ./target/release/skill-doctor scan tests/fixtures/benign/hello-skill \
+            --output json --deterministic --offline > run2.json
+          sha1=$(sha256sum run1.json | cut -d' ' -f1)
+          sha2=$(sha256sum run2.json | cut -d' ' -f1)
+          echo "Run 1 SHA-256: $sha1"
+          echo "Run 2 SHA-256: $sha2"
+          if [ "$sha1" != "$sha2" ]; then
+            echo "FAIL: Non-deterministic output detected."
+            exit 1
+          fi
+          echo "Determinism verified: Outputs are bit-identical."

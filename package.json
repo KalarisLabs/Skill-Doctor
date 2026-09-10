@@ -2,7 +2,7 @@
   "name": "@kalarislabs/skill-doctor",
   "version": "0.1.0",
   "description": "Deterministic, multi-layer security analysis for AI agent skill files. Thin installer for the prebuilt Rust binary (no Node required at scan time).",
-  "license": "AGPL-3.0-or-later",
+  "license": "Apache-2.0",
   "repository": { "type": "git", "url": "https://github.com/kalarislabs/skill-doctor.git" },
   "bin": { "skill-doctor": "bin/skill-doctor.js" },
   "scripts": {

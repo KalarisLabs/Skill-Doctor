@@ -62,7 +62,18 @@ pub fn intake(root: &Path) -> Result<Bundle, L0Error> {
             content,
         });
     } else {
-        for entry in WalkDir::new(root).sort_by_file_name().into_iter() {
+        for entry in WalkDir::new(root)
+            .sort_by_file_name()
+            .into_iter()
+            .filter_entry(|e| {
+                let name = e.file_name().to_string_lossy();
+                !name.starts_with(".git")
+                    && name != "target"
+                    && name != "node_modules"
+                    && name != "dist"
+                    && name != ".DS_Store"
+            })
+        {
             let entry = entry?;
             if entry.file_type().is_file() {
                 let relative_path = entry

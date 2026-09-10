@@ -22,12 +22,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Execute on LambdaTest HyperExecute
-        uses: lambdatest/hyperexecute-github-action@v1.4.0
-        with:
-          username: ${{ secrets.LT_USERNAME }}
-          accessKey: ${{ secrets.LT_ACCESS_KEY }}
-          yamlPath: hyperexecute.yaml
+      - name: Download and Run LambdaTest HyperExecute CLI
+        shell: bash
+        env:
+          LT_USERNAME: ${{ secrets.LT_USERNAME }}
+          LT_ACCESS_KEY: ${{ secrets.LT_ACCESS_KEY }}
+          CONCURRENCY: ${{ github.event.inputs.concurrency || '4' }}
+        run: |
+          if [ -z "$LT_USERNAME" ] || [ -z "$LT_ACCESS_KEY" ]; then
+            echo "::error::LT_USERNAME and LT_ACCESS_KEY secrets must be configured in GitHub Secrets to execute HyperExecute benchmarks."
+            exit 1
+          fi
+
+          echo "Downloading LambdaTest HyperExecute CLI..."
+          curl -sSf https://downloads.lambdatest.com/hyperexecute/linux/hyperexecute -o hyperexecute
+          chmod +x hyperexecute
+
+          echo "Triggering HyperExecute distributed benchmark execution..."
+          ./hyperexecute --user "$LT_USERNAME" --key "$LT_ACCESS_KEY" --config hyperexecute.yaml --concurrency "$CONCURRENCY"
 
       - name: Upload Artifacts Summary
         uses: actions/upload-artifact@v4

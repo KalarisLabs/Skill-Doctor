@@ -112,7 +112,7 @@ jobs:
       - name: Gitleaks secrets detection
         uses: gitleaks/gitleaks-action@v2
         env:
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable

@@ -1,7 +1,8 @@
-﻿use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use skill_doctor_core::finding::Severity;
 use skill_doctor_core::l0;
 use skill_doctor_core::l5::{self, ReportOptions};
+use std::hint::black_box;
 use std::path::PathBuf;
 
 fn fixtures_path() -> PathBuf {

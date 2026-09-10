@@ -1,0 +1,40 @@
+name: HyperExecute Benchmark Grid
+
+on:
+  workflow_dispatch:
+    inputs:
+      concurrency:
+        description: "Number of parallel shards/nodes"
+        required: false
+        default: "4"
+  schedule:
+    # Run nightly benchmark at 02:00 UTC
+    - cron: "0 2 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  hyperexecute-benchmark:
+    name: Run Distributed Benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Execute on LambdaTest HyperExecute
+        uses: lambdatest/hyperexecute-github-action@v1.4.0
+        with:
+          username: ${{ secrets.LT_USERNAME }}
+          accessKey: ${{ secrets.LT_ACCESS_KEY }}
+          yamlPath: hyperexecute.yaml
+
+      - name: Upload Artifacts Summary
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hyperexecute-benchmarks
+          path: |
+            sd-bench/results-raw/
+            hyperexecute.log
+          if-no-files-found: ignore

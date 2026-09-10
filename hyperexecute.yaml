@@ -1,0 +1,40 @@
+---
+version: "0.1"
+globalTimeout: 90
+testSuiteTimeout: 90
+testSuiteStep: 90
+
+runson: linux
+autosplit: true
+concurrency: 4
+
+pre:
+  - sudo apt-get update -y && sudo apt-get install -y build-essential
+  - curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+  - source "$HOME/.cargo/env"
+  - cargo build --release --workspace
+
+cacheKey: '{{ checksum "Cargo.lock" }}'
+cacheDirectories:
+  - target
+  - ~/.cargo/registry
+  - ~/.cargo/git
+
+testDiscovery:
+  type: raw
+  mode: dynamic
+  command: find ./sd-bench/corpora -mindepth 1 -maxdepth 1 -type d
+
+testRunnerCommand: cargo run --release -p skill-doctor -- scan "$test" --output json --offline --deterministic
+
+post:
+  - cargo bench -p skill-doctor-core -- --output-format bencher || true
+  - bash ./sd-bench/aggregate.sh
+
+uploadArtefacts:
+  - name: benchmark-results
+    path:
+      - sd-bench/results-raw
+      - target/criterion
+
+jobLabel: ['skill-doctor', 'sd-bench', 'v2']

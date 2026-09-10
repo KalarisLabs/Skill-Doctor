@@ -81,4 +81,3 @@ criterion = "0.5"
 lto = "thin"
 codegen-units = 1
 strip = true
-panic = "abort"

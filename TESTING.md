@@ -4,24 +4,25 @@
 
 Every push to `main` and every pull request runs the following **required** gates:
 
-| Step | Command | Purpose |
-|------|---------|---------|
-| Format | `cargo fmt --all --check` | Code style consistency |
-| Clippy | `cargo clippy --workspace --all-targets -- -D warnings` | Lint gate, zero warnings |
-| Test | `cargo test --workspace --locked` | All unit + integration tests |
-| Supply-chain | `cargo deny check` | License, advisory, duplicate deps |
-| Secrets scan | `gitleaks detect --source .` | No committed secrets |
-| CLI smoke (Linux) | `./target/release/skill-doctor scan tests/fixtures/benign --fail-on HIGH --offline --deterministic` | Binary works, exit 0 |
-| CLI smoke (Windows) | Same command via `.\target\release\skill-doctor.exe` | Cross-platform |
-| CLI smoke (macOS) | Same command | Cross-platform |
+| Gate | Command / Action | Purpose |
+|------|------------------|---------|
+| Quality code | `cargo fmt --all --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace --locked` | Code formatting, zero warnings, and unit/integration correctness |
+| Architectural invariants | Grep check for forbidden LLM API keys / direct model dependencies | Ensure SD-11 and offline invariants hold |
+| Security audit | `gitleaks detect`, `skill-doctor scan-all . --output sarif --fail-on HIGH` | Secrets audit, self-scan dogfood gate, SARIF upload |
+| Security audit dependency | `cargo audit`, `cargo deny check`, `npm audit` | RustSec advisory audit, license/bans/sources policy, npm wrapper audit |
+| Security advisories tests | `cargo deny check advisories`, `cargo test --test security_advisories_test` | Vulnerability advisory tests and supply-chain (SD-05) rule verification |
+| Dependency test coverage | `cargo tarpaulin --workspace` | Workspace and dependency test coverage reporting and artifacts |
+| Reproducibility | Two `--deterministic --output json` scans compared via SHA-256 | Bit-identical output determinism verification |
+| Cross-platform smoke | CLI scan of benign (exit 0) and attack SD-02 (exit 2) on Ubuntu, macOS, Windows | Cross-platform binary verification |
+| Performance smoke | `cargo bench --workspace -- --test` | Benchmark verification smoke test |
 
-## What is NOT on every-commit
+## Specialized CI Pipelines
 
-- TestMu, mutation testing — not used.
-- musl static build — release pipeline only, not every commit.
-- crates.io publish — manual release step, never automated on commit.
-- npm publish — release pipeline only.
-- Real malware corpus — access-gated, never in fork CI.
+| Pipeline | Workflow | Triggers | Purpose |
+|----------|----------|----------|---------|
+| **TEST mulambda E2E** | `.github/workflows/testmu.yml` | label `e2e`, nightly (`02:00 UTC`), `main`, `workflow_dispatch` | Comprehensive end-to-end testing matrix across OSs, fixture suites, SARIF schema, baseline diff, npm wrapper, and LambdaTest/TestMu Kane cloud integration with `LT_USERNAME`/`LT_ACCESS_KEY` |
+| **Performance benchmarks** | `.github/workflows/bench.yml` | label `bench`, nightly (`03:00 UTC`), tags `v*`, `workflow_dispatch` | Criterion micro-benchmarks, §7.3 throughput (≥2,000 skills/min), and peak RSS (<40 MB) metrics reporting |
+
 
 ## Reproducibility gate
 

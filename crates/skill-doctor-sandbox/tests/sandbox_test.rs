@@ -46,6 +46,13 @@ print("Stolen credential: " + key)
         // Verify secret_name is never raw canary value
         assert!(!leak.secret_name.contains("AKIA_CANARY"));
     }
+
+    // Invariant: Raw secret bytes must never appear in serialized JSON reports
+    let leaks_json = serde_json::to_string(&result.leaks).unwrap();
+    assert!(!leaks_json.contains("AKIA_CANARY"));
+    assert!(!leaks_json.contains("ghp_canary"));
+    assert!(!leaks_json.contains("sk-proj-canary"));
+    assert!(leaks_json.contains("AWS_SECRET_ACCESS_KEY"));
 }
 
 #[test]

@@ -193,9 +193,12 @@ impl CanaryManager {
 
             if is_new_or_modified {
                 let abs_path = self.mock_home.join(rel_path);
-                if let Ok(content) = fs::read_to_string(&abs_path) {
+                if let Ok(bytes) = fs::read(&abs_path) {
                     for (name, val) in secret_defs {
-                        if content.contains(val) {
+                        let val_bytes = val.as_bytes();
+                        if val_bytes.len() <= bytes.len()
+                            && bytes.windows(val_bytes.len()).any(|w| w == val_bytes)
+                        {
                             leaks.push(CanaryLeak {
                                 secret_name: name,
                                 source: LeakSource::CreatedOrModifiedFile(rel_path.clone()),

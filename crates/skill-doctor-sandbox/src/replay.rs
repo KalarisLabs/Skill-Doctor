@@ -180,41 +180,60 @@ pub fn replay_script(
     outcome
 }
 
-/// Checks if execution under a modified profile diverged significantly from baseline.
+/// Checks if execution under a modified profile diverged from baseline.
+///
+/// Policy: Divergence if stdout/stderr/exit/leaks differ from Baseline.
+/// Same "42" on A/B/C = clean.
 fn check_divergence(
     baseline: &ExecutionResult,
     modified: &ExecutionResult,
     baseline_leaks: &[CanaryLeak],
     modified_leaks: &[CanaryLeak],
 ) -> Option<String> {
-    // 1. Canary leak divergence: leaked under modified profile but not baseline
-    if baseline_leaks.is_empty() && !modified_leaks.is_empty() {
-        return Some(format!(
-            "Canary credentials leaked conditionally under profile ({} leak(s) observed, 0 in baseline)",
-            modified_leaks.len()
-        ));
+    // 1. Canary leak divergence
+    if baseline_leaks != modified_leaks {
+        if baseline_leaks.is_empty() && !modified_leaks.is_empty() {
+            return Some(format!(
+                "Canary credentials leaked conditionally under profile ({} leak(s) observed, 0 in baseline)",
+                modified_leaks.len()
+            ));
+        } else {
+            return Some(format!(
+                "Canary leak count diverged: baseline had {} leaks, modified profile had {}",
+                baseline_leaks.len(),
+                modified_leaks.len()
+            ));
+        }
     }
 
-    // 2. Exit code divergence: dormant/silent in baseline, but failed or altered in profile
-    if baseline.exit_code != modified.exit_code && !modified.stdout.trim().is_empty() {
+    // 2. Exit code divergence
+    if baseline.exit_code != modified.exit_code {
         return Some(format!(
-            "Exit code diverged from {:?} to {:?}",
+            "Exit code diverged from {:?} (Baseline) to {:?} (Profile)",
             baseline.exit_code, modified.exit_code
         ));
     }
 
-    // 3. Output divergence: baseline produced no trigger output, but modified profile produced distinct activation payload
-    let b_out = baseline.stdout.trim();
-    let m_out = modified.stdout.trim();
-    if b_out != m_out && !m_out.is_empty() {
-        // Only consider divergence if the modified output is meaningfully different
-        if b_out.is_empty() || (b_out == "DORMANT_BASELINE" && m_out.contains("ACTIVATED")) {
-            return Some(format!(
-                "Output diverged: baseline produced '{}', modified profile produced '{}'",
-                truncate_str(b_out, 60),
-                truncate_str(m_out, 60)
-            ));
-        }
+    // 3. stdout divergence
+    let b_stdout = baseline.stdout.trim();
+    let m_stdout = modified.stdout.trim();
+    if b_stdout != m_stdout {
+        return Some(format!(
+            "stdout diverged: baseline produced '{}', modified profile produced '{}'",
+            truncate_str(b_stdout, 60),
+            truncate_str(m_stdout, 60)
+        ));
+    }
+
+    // 4. stderr divergence
+    let b_stderr = baseline.stderr.trim();
+    let m_stderr = modified.stderr.trim();
+    if b_stderr != m_stderr {
+        return Some(format!(
+            "stderr diverged: baseline produced '{}', modified profile produced '{}'",
+            truncate_str(b_stderr, 60),
+            truncate_str(m_stderr, 60)
+        ));
     }
 
     None
@@ -274,6 +293,43 @@ else:
         let outcome = replay_script(&script, &mock_home, &workspace, &manager, 3000);
         assert_eq!(outcome.divergences.len(), 1);
         assert_eq!(outcome.divergences[0].triggered_profile, "CI/Automation");
-        assert!(outcome.divergences[0].reason.contains("Output diverged"));
+        assert!(outcome.divergences[0].reason.contains("stdout diverged"));
+    }
+
+    #[test]
+    fn test_no_divergence_when_identical_output_across_profiles() {
+        let temp = tempfile::tempdir().unwrap();
+        let mock_home = temp.path().join("mock_home");
+        let workspace = mock_home.join("workspace");
+        fs::create_dir_all(&workspace).unwrap();
+
+        let secrets = CanarySecrets::fixed_for_testing();
+        let manager = CanaryManager::plant(&mock_home, secrets).unwrap();
+
+        let py = if check_command_exists("python3") {
+            "python3"
+        } else if check_command_exists("python") {
+            "python"
+        } else {
+            return;
+        };
+
+        let script_file = workspace.join("benign_math.py");
+        fs::write(&script_file, "print(42)\n").unwrap();
+
+        let script = CompanionScript {
+            rel_path: PathBuf::from("benign_math.py"),
+            abs_path: script_file,
+            interpreter: py.to_string(),
+            interpreter_args: vec![],
+        };
+
+        let outcome = replay_script(&script, &mock_home, &workspace, &manager, 3000);
+        assert_eq!(
+            outcome.divergences.len(),
+            0,
+            "Identical '42' across A/B/C must be clean"
+        );
+        assert_eq!(outcome.leaks.len(), 0);
     }
 }

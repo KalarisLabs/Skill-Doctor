@@ -57,10 +57,36 @@ pub struct ProfileEnv {
     pub env_vars: HashMap<String, String>,
 }
 
+/// Environment variable categories stripped from all baseline executions.
+///
+/// Constructed environment is from scratch + isolation table, NOT "inherit then overlay".
+/// System essentials (`PATH`, `SYSTEMROOT`, `WINDIR`) are the only inherited variables.
+pub const STRIP_CI_CD_PREFIXES: &[&str] = &["GITHUB_", "RUNNER_"];
+pub const STRIP_CI_CD_EXACT: &[&str] = &[
+    "CI",
+    "CONTINUOUS_INTEGRATION",
+    "GITHUB_ACTIONS",
+    "TRAVIS",
+    "CIRCLECI",
+    "BUILDKITE",
+    "JENKINS_URL",
+    "TF_BUILD",
+];
+pub const STRIP_HOST_IDENTITY: &[&str] = &["HOSTNAME", "COMPUTERNAME"];
+pub const STRIP_INJECTION_VARS: &[&str] = &[
+    "LD_PRELOAD",
+    "DYLD_INSERT_LIBRARIES",
+    "PYTHONUSERBASE",
+    "PYTHONPATH",
+    "NODE_PATH",
+];
+
 /// Builds the clean, isolated environment for a sandboxed child.
 ///
 /// Policy:
 /// - Baseline: Strips host identity, CI/CD markers, and cloud credentials.
+///   Starts from scratch (`cmd.env_clear()`). Baseline explicitly sets HOSTNAME=skill-doctor-l3
+///   and leaves COMPUTERNAME unset.
 /// - Injects: Mock home, synthetic canaries, and profile overrides.
 /// - Inherits: Only system essentials (PATH, SYSTEMROOT, WINDIR).
 pub fn build_isolated_env(
@@ -117,7 +143,7 @@ pub fn build_isolated_env(
     env.insert("AWS_CONFIG_FILE".to_string(), aws_conf);
     env.insert("SSH_AUTH_SOCK".to_string(), "".to_string());
 
-    // 4. Default host identity for baseline
+    // 4. Default host identity for baseline (HOSTNAME=skill-doctor-l3; COMPUTERNAME is stripped)
     env.insert("HOSTNAME".to_string(), "skill-doctor-l3".to_string());
 
     // 5. Injected synthetic canary environment variables
@@ -128,16 +154,16 @@ pub fn build_isolated_env(
     env.insert("GITHUB_TOKEN".to_string(), canaries.github_token.clone());
     env.insert("OPENAI_API_KEY".to_string(), canaries.openai_key.clone());
 
-    // 6. Inherit system essentials ONLY
+    // 6. Inherit system essentials ONLY (PATH, SYSTEMROOT, WINDIR)
     if let Ok(path) = std::env::var("PATH") {
         env.insert("PATH".to_string(), path);
     }
     #[cfg(windows)]
     {
-        if let Ok(sysroot) = std::env::var("SYSTEMROOT") {
+        if let Ok(sysroot) = std::env::var("SYSTEMROOT").or_else(|_| std::env::var("SystemRoot")) {
             env.insert("SYSTEMROOT".to_string(), sysroot);
         }
-        if let Ok(windir) = std::env::var("WINDIR") {
+        if let Ok(windir) = std::env::var("WINDIR").or_else(|_| std::env::var("windir")) {
             env.insert("WINDIR".to_string(), windir);
         }
     }
@@ -529,6 +555,77 @@ mod tests {
         assert_eq!(
             canonical_reported, expected_home,
             "Child process must see mock_home as '~', not host HOME"
+        );
+    }
+
+    #[test]
+    fn test_isolated_env_strips_ci_cd_and_host_identity() {
+        let temp = tempfile::tempdir().unwrap();
+        let mock_home = temp.path().join("mock_home");
+        let workspace = mock_home.join("workspace");
+        fs::create_dir_all(&workspace).unwrap();
+
+        let canaries = CanarySecrets::fixed_for_testing();
+        let env_vars = build_isolated_env(&mock_home, &canaries, &HashMap::new());
+
+        // 1. Assert isolated env map does not contain stripped keys
+        for key in STRIP_CI_CD_EXACT {
+            assert!(
+                !env_vars.contains_key(*key),
+                "Baseline environment must not contain {key}"
+            );
+        }
+        for key in STRIP_INJECTION_VARS {
+            assert!(
+                !env_vars.contains_key(*key),
+                "Baseline environment must not contain injection var {key}"
+            );
+        }
+        assert!(
+            !env_vars.contains_key("COMPUTERNAME"),
+            "Baseline environment must not contain COMPUTERNAME"
+        );
+        assert_eq!(
+            env_vars.get("HOSTNAME"),
+            Some(&"skill-doctor-l3".to_string()),
+            "Baseline must set HOSTNAME=skill-doctor-l3"
+        );
+
+        // 2. Execute a child process verifying child sees stripped variables
+        let py = if check_command_exists("python3") {
+            "python3"
+        } else if check_command_exists("python") {
+            "python"
+        } else {
+            return;
+        };
+
+        let script_path = workspace.join("check_identity.py");
+        fs::write(
+            &script_path,
+            r#"import os
+ci = os.environ.get("CI")
+host = os.environ.get("HOSTNAME")
+comp = os.environ.get("COMPUTERNAME")
+py_path = os.environ.get("PYTHONPATH")
+print(f"CI={ci},HOSTNAME={host},COMP={comp},PP={py_path}")
+"#,
+        )
+        .unwrap();
+
+        let script = CompanionScript {
+            rel_path: PathBuf::from("check_identity.py"),
+            abs_path: script_path,
+            interpreter: py.to_string(),
+            interpreter_args: vec![],
+        };
+
+        let result = execute_script(&script, &workspace, &env_vars, 3000).unwrap();
+        assert_eq!(result.exit_code, Some(0));
+        let out = result.stdout.trim();
+        assert_eq!(
+            out, "CI=None,HOSTNAME=skill-doctor-l3,COMP=None,PP=None",
+            "Child process must not inherit CI, COMPUTERNAME, or PYTHONPATH; HOSTNAME must be skill-doctor-l3"
         );
     }
 }

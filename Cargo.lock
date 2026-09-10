@@ -2017,6 +2017,7 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "skill-doctor-neutralize",
+ "skill-doctor-rules",
  "tar",
  "tempfile",
  "thiserror 1.0.69",

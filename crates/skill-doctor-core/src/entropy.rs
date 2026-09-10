@@ -45,11 +45,69 @@ pub fn calculate_shannon_entropy(data: &[u8]) -> f64 {
     entropy
 }
 
+/// Maximum decoded byte size to prevent memory exhaustion / bomb attacks.
+const MAX_DECODED_BYTES: usize = 64 * 1024;
+
+/// Returns true if entry is a text-ish skill file subject to entropy & decoding analysis.
+fn is_analyzable_skill_file(path: &std::path::Path) -> bool {
+    let path_str = path.to_string_lossy();
+    let lower = path_str.to_lowercase();
+
+    // Skip lockfiles, node_modules, minified assets, and package directories
+    if lower.contains("node_modules")
+        || lower.ends_with("package-lock.json")
+        || lower.ends_with("cargo.lock")
+        || lower.ends_with("yarn.lock")
+        || lower.ends_with("pnpm-lock.yaml")
+        || lower.ends_with(".min.js")
+        || lower.ends_with(".min.css")
+    {
+        return false;
+    }
+
+    // Skip binary extensions
+    if lower.ends_with(".wasm")
+        || lower.ends_with(".png")
+        || lower.ends_with(".jpg")
+        || lower.ends_with(".jpeg")
+        || lower.ends_with(".gif")
+        || lower.ends_with(".ico")
+        || lower.ends_with(".exe")
+        || lower.ends_with(".so")
+        || lower.ends_with(".dylib")
+        || lower.ends_with(".dll")
+        || lower.ends_with(".bin")
+        || lower.ends_with(".pdf")
+        || lower.ends_with(".zip")
+        || lower.ends_with(".tar.gz")
+    {
+        return false;
+    }
+
+    // Must be a text-ish file
+    lower.ends_with("skill.md")
+        || lower.ends_with(".md")
+        || lower.ends_with(".py")
+        || lower.ends_with(".js")
+        || lower.ends_with(".ts")
+        || lower.ends_with(".sh")
+        || lower.ends_with(".bash")
+        || lower.ends_with(".txt")
+        || lower.ends_with(".json")
+        || lower.ends_with(".yaml")
+        || lower.ends_with(".yml")
+}
+
 /// Analyze all bundle entries for entropy and encoded payloads.
 pub fn analyze_entropy(entries: &[BundleEntry]) -> Vec<Finding> {
     let mut findings = Vec::new();
 
     for entry in entries {
+        // Restrict entropy and decode scanning to text-ish skill files
+        if !is_analyzable_skill_file(&entry.relative_path) {
+            continue;
+        }
+
         // Check overall block entropy if file is larger than 128 bytes
         if entry.content.len() >= 128 {
             let entropy = calculate_shannon_entropy(&entry.content);
@@ -139,11 +197,20 @@ fn scan_for_encoded_payloads(
             let decoded_bytes = STANDARD.decode(token).or_else(|_| URL_SAFE.decode(token));
 
             if let Ok(bytes) = decoded_bytes {
-                if let Ok(decoded_text) = String::from_utf8(bytes.clone()) {
-                    // If decoded text is readable and contains dangerous patterns
-                    check_decoded_payload(&decoded_text, token, path, "base64", depth, findings);
-                    // Recursively scan in case of double-encoding
-                    scan_for_encoded_payloads(&decoded_text, path, depth + 1, findings);
+                if bytes.len() <= MAX_DECODED_BYTES {
+                    if let Ok(decoded_text) = String::from_utf8(bytes) {
+                        // If decoded text is readable and contains dangerous patterns
+                        check_decoded_payload(
+                            &decoded_text,
+                            token,
+                            path,
+                            "base64",
+                            depth,
+                            findings,
+                        );
+                        // Recursively scan in case of double-encoding
+                        scan_for_encoded_payloads(&decoded_text, path, depth + 1, findings);
+                    }
                 }
             }
 
@@ -153,9 +220,18 @@ fn scan_for_encoded_payloads(
                 && token.len() % 2 == 0
             {
                 if let Ok(bytes) = hex::decode(token) {
-                    if let Ok(decoded_text) = String::from_utf8(bytes) {
-                        check_decoded_payload(&decoded_text, token, path, "hex", depth, findings);
-                        scan_for_encoded_payloads(&decoded_text, path, depth + 1, findings);
+                    if bytes.len() <= MAX_DECODED_BYTES {
+                        if let Ok(decoded_text) = String::from_utf8(bytes) {
+                            check_decoded_payload(
+                                &decoded_text,
+                                token,
+                                path,
+                                "hex",
+                                depth,
+                                findings,
+                            );
+                            scan_for_encoded_payloads(&decoded_text, path, depth + 1, findings);
+                        }
                     }
                 }
             }

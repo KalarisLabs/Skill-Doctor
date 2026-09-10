@@ -12,5 +12,4 @@ authors.workspace = true
 # Rules are embedded at build time; runtime has no YARA dependency.
 # The compiled rules are included as byte arrays.
 
-# [build-dependencies]
-# yara-x = { workspace = true }
+# Rules are compiled from rules/*.yar at build time by build.rs into embedded rule tables.

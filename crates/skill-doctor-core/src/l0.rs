@@ -115,21 +115,93 @@ pub fn intake(root: &Path) -> Result<Bundle, L0Error> {
     Ok(Bundle { entries, digest })
 }
 
-/// Read all files from a ZIP archive.
+/// Maximum number of files allowed in an archive.
+const MAX_ARCHIVE_FILES: usize = 1_000;
+
+/// Maximum single uncompressed file size (10 MB).
+const MAX_ARCHIVE_FILE_BYTES: usize = 10 * 1024 * 1024;
+
+/// Maximum total uncompressed archive size (50 MB).
+const MAX_ARCHIVE_TOTAL_BYTES: usize = 50 * 1024 * 1024;
+
+/// Maximum directory depth in archive path.
+const MAX_PATH_DEPTH: usize = 10;
+
+/// Validate archive path: reject absolute paths, `..` path traversal, drive letters, and excessive depth.
+/// Returns normalized forward-slash PathBuf.
+fn validate_archive_path(raw_name: &str) -> Result<PathBuf, L0Error> {
+    let normalized = raw_name.replace('\\', "/");
+    let trimmed = normalized.trim_start_matches('/');
+
+    if trimmed.is_empty() {
+        return Err(L0Error::Zip("empty file path in archive".to_string()));
+    }
+
+    let components: Vec<&str> = trimmed.split('/').collect();
+
+    if components.len() > MAX_PATH_DEPTH {
+        return Err(L0Error::Zip(format!(
+            "archive path exceeds max depth of {}: {}",
+            MAX_PATH_DEPTH, raw_name
+        )));
+    }
+
+    for comp in &components {
+        if *comp == ".." || comp.contains(':') {
+            return Err(L0Error::Zip(format!(
+                "path traversal detected in archive entry: {}",
+                raw_name
+            )));
+        }
+    }
+
+    Ok(PathBuf::from(trimmed))
+}
+
+/// Read all files from a ZIP archive with zip-bomb and path traversal defenses.
 fn read_zip_archive(path: &Path) -> Result<Vec<BundleEntry>, L0Error> {
     let file = std::fs::File::open(path)?;
     let mut archive = ZipArchive::new(file).map_err(|e| L0Error::Zip(e.to_string()))?;
     let mut entries = Vec::new();
+    let mut total_bytes: usize = 0;
 
     for i in 0..archive.len() {
+        if entries.len() >= MAX_ARCHIVE_FILES {
+            return Err(L0Error::Zip(format!(
+                "archive exceeds max file count ({})",
+                MAX_ARCHIVE_FILES
+            )));
+        }
+
         let mut file = archive
             .by_index(i)
             .map_err(|e| L0Error::Zip(e.to_string()))?;
+
         if file.is_file() {
+            let relative_path = validate_archive_path(file.name())?;
+
             let mut content = Vec::new();
-            file.read_to_end(&mut content)?;
+            let mut handle = std::io::Read::take(&mut file, (MAX_ARCHIVE_FILE_BYTES + 1) as u64);
+            handle.read_to_end(&mut content)?;
+
+            if content.len() > MAX_ARCHIVE_FILE_BYTES {
+                return Err(L0Error::Zip(format!(
+                    "archive entry '{}' exceeds max file size ({} bytes)",
+                    relative_path.display(),
+                    MAX_ARCHIVE_FILE_BYTES
+                )));
+            }
+
+            total_bytes += content.len();
+            if total_bytes > MAX_ARCHIVE_TOTAL_BYTES {
+                return Err(L0Error::Zip(format!(
+                    "archive exceeds total uncompressed byte limit ({} bytes)",
+                    MAX_ARCHIVE_TOTAL_BYTES
+                )));
+            }
+
             entries.push(BundleEntry {
-                relative_path: PathBuf::from(file.name()),
+                relative_path,
                 content,
             });
         }
@@ -137,23 +209,54 @@ fn read_zip_archive(path: &Path) -> Result<Vec<BundleEntry>, L0Error> {
     Ok(entries)
 }
 
-/// Read all files from a tar.gz archive.
+/// Read all files from a tar.gz archive with zip-bomb and path traversal defenses.
 fn read_tar_gz_archive(path: &Path) -> Result<Vec<BundleEntry>, L0Error> {
     let file = std::fs::File::open(path)?;
     let decoder = GzDecoder::new(file);
     let mut archive = TarArchive::new(decoder);
     let mut entries = Vec::new();
+    let mut total_bytes: usize = 0;
 
     for entry in archive.entries().map_err(|e| L0Error::Tar(e.to_string()))? {
+        if entries.len() >= MAX_ARCHIVE_FILES {
+            return Err(L0Error::Tar(format!(
+                "archive exceeds max file count ({})",
+                MAX_ARCHIVE_FILES
+            )));
+        }
+
         let mut entry = entry.map_err(|e| L0Error::Tar(e.to_string()))?;
         let header = entry.header();
         if header.entry_type().is_file() {
-            let relative_path = entry
+            let raw_path = entry
                 .path()
                 .map_err(|e| L0Error::Tar(e.to_string()))?
-                .to_path_buf();
+                .to_string_lossy()
+                .into_owned();
+
+            let relative_path =
+                validate_archive_path(&raw_path).map_err(|e| L0Error::Tar(e.to_string()))?;
+
             let mut content = Vec::new();
-            entry.read_to_end(&mut content)?;
+            let mut handle = std::io::Read::take(&mut entry, (MAX_ARCHIVE_FILE_BYTES + 1) as u64);
+            handle.read_to_end(&mut content)?;
+
+            if content.len() > MAX_ARCHIVE_FILE_BYTES {
+                return Err(L0Error::Tar(format!(
+                    "archive entry '{}' exceeds max file size ({} bytes)",
+                    relative_path.display(),
+                    MAX_ARCHIVE_FILE_BYTES
+                )));
+            }
+
+            total_bytes += content.len();
+            if total_bytes > MAX_ARCHIVE_TOTAL_BYTES {
+                return Err(L0Error::Tar(format!(
+                    "archive exceeds total uncompressed byte limit ({} bytes)",
+                    MAX_ARCHIVE_TOTAL_BYTES
+                )));
+            }
+
             entries.push(BundleEntry {
                 relative_path,
                 content,

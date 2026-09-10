@@ -26,6 +26,7 @@ zip = { workspace = true }
 tar = { workspace = true }
 flate2 = { workspace = true }
 skill-doctor-neutralize = { path = "../skill-doctor-neutralize", version = "0.1.0" }
+skill-doctor-rules = { path = "../skill-doctor-rules", version = "0.1.0" }
 reqwest = { workspace = true, optional = true }
 
 [features]

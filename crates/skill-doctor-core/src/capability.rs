@@ -78,6 +78,11 @@ pub fn analyze_capabilities(entries: &[BundleEntry]) -> Vec<Finding> {
         .map(|s| s.to_lowercase())
         .collect();
 
+    let has_declarations = !declared_tools.is_empty()
+        || !declared_permissions.is_empty()
+        || !declared_commands.is_empty()
+        || !declared_domains.is_empty();
+
     // 2. Scan each entry for observed actions
     for entry in entries {
         let content = String::from_utf8_lossy(&entry.content);
@@ -110,12 +115,31 @@ pub fn analyze_capabilities(entries: &[BundleEntry]) -> Vec<Finding> {
                 }
             };
 
-            // If an observed dangerous action is NOT declared, flag SD-04
+            // If an observed dangerous action is NOT declared:
+            // When frontmatter has explicit declarations: violation is HIGH severity.
+            // When frontmatter has NO declarations: only high-sensitivity sinks (~/.ssh, ~/.aws) flag HIGH;
+            // general shell/network operations are LOW informational so benign skills don't fail --fail-on HIGH.
             if !is_authorized {
+                let is_high_sensitivity_sink = matches!(
+                    cap,
+                    ObservedCapability::SensitiveFileAccess(_)
+                        | ObservedCapability::SecretEnvAccess(_)
+                );
+
+                let severity = if has_declarations || is_high_sensitivity_sink {
+                    Severity::High
+                } else {
+                    Severity::Low
+                };
+
                 findings.push(Finding {
-                    rule_id: "SD-04-undeclared-capability".to_string(),
+                    rule_id: if is_high_sensitivity_sink {
+                        "SD-04-undeclared-sensitive-sink".to_string()
+                    } else {
+                        "SD-04-undeclared-capability".to_string()
+                    },
                     class: ThreatClass::PrivilegeEscalation,
-                    severity: Severity::High,
+                    severity,
                     confidence: Confidence::High,
                     path: entry.relative_path.clone(),
                     byte_span: Some(ByteSpan {

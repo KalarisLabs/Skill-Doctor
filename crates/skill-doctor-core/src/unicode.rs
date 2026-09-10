@@ -35,12 +35,6 @@ const BIDI_OVERRIDE_CHARS: &[(char, &str)] = &[
     ('\u{2069}', "Pop Directional Isolate (PDI)"),
 ];
 
-/// Known sensitive tokens to check for confusable homoglyph spoofing.
-const SENSITIVE_TOKENS: &[&str] = &[
-    "curl", "wget", "eval", "exec", "system", "password", "secret", "token", "apikey", "sudo",
-    "bash", "sh",
-];
-
 /// Run Unicode analysis across all bundle entries.
 pub fn analyze_unicode(entries: &[BundleEntry]) -> Vec<Finding> {
     let mut findings = Vec::new();
@@ -118,42 +112,62 @@ pub fn analyze_unicode(entries: &[BundleEntry]) -> Vec<Finding> {
         // 3. Scan for Confusables / Homoglyphs (UTS #39)
         for word in content.split(|c: char| !c.is_alphanumeric() && c != '_' && c != '-') {
             let clean_word = word.trim();
-            if clean_word.len() < 3 || clean_word.len() > 30 {
+            if clean_word.len() < 3 || clean_word.len() > 50 {
                 continue;
             }
 
-            // If the word contains non-ASCII characters, check if its skeleton matches a sensitive ASCII token
+            // Detect any non-ASCII word where skeleton differs from original (UTS #39)
             if !clean_word.is_ascii() {
-                // Skeleton normalization via unicode-security
                 let word_skeleton: String = skeleton(clean_word).collect();
-
-                for sensitive in SENSITIVE_TOKENS {
-                    let sensitive_skeleton: String = skeleton(sensitive).collect();
-                    if word_skeleton == sensitive_skeleton && clean_word != *sensitive {
-                        if let Some(pos) = content.find(clean_word) {
-                            findings.push(Finding {
-                                rule_id: "SD-10-homoglyph-confusable".to_string(),
-                                class: ThreatClass::ObfuscationEvasion,
-                                severity: Severity::High,
-                                confidence: Confidence::High,
-                                path: entry.relative_path.clone(),
-                                byte_span: Some(ByteSpan {
-                                    start: pos,
-                                    end: pos + clean_word.len(),
-                                }),
-                                evidence: vec![format!(
-                                    "Homoglyph spoofing detected: '{}' uses mixed-script unicode visually confusable with '{}'",
-                                    clean_word, sensitive
-                                )],
-                                remediation: Some(
-                                    "Replace visually confusable homoglyphs with standard ASCII identifiers".to_string(),
-                                ),
-                                layer: AnalysisLayer::L1,
-                            });
-                        }
-                        break;
+                if word_skeleton != clean_word {
+                    if let Some(pos) = content.find(clean_word) {
+                        findings.push(Finding {
+                            rule_id: "SD-10-homoglyph-confusable".to_string(),
+                            class: ThreatClass::ObfuscationEvasion,
+                            severity: Severity::High,
+                            confidence: Confidence::High,
+                            path: entry.relative_path.clone(),
+                            byte_span: Some(ByteSpan {
+                                start: pos,
+                                end: pos + clean_word.len(),
+                            }),
+                            evidence: vec![format!(
+                                "Homoglyph confusable detected: '{}' (skeleton: '{}')",
+                                clean_word, word_skeleton
+                            )],
+                            remediation: Some(
+                                "Replace visually confusable homoglyphs with standard ASCII characters".to_string(),
+                            ),
+                            layer: AnalysisLayer::L1,
+                        });
                     }
                 }
+            }
+        }
+
+        // 4. Scan for Unicode Tag Characters (U+E0001..U+E007F) -> SD-11 Scanner-Mediated Injection
+        for (idx, ch) in content.char_indices() {
+            if ('\u{E0001}'..='\u{E007F}').contains(&ch) {
+                findings.push(Finding {
+                    rule_id: "SD-11-unicode-tag-injection".to_string(),
+                    class: ThreatClass::ScannerMediatedInjection,
+                    severity: Severity::High,
+                    confidence: Confidence::High,
+                    path: entry.relative_path.clone(),
+                    byte_span: Some(ByteSpan {
+                        start: idx,
+                        end: idx + ch.len_utf8(),
+                    }),
+                    evidence: vec![format!(
+                        "Unicode tag character detected: U+{:04X}",
+                        ch as u32
+                    )],
+                    remediation: Some(
+                        "Remove hidden Unicode tag characters used to smuggle scanner injection payloads".to_string(),
+                    ),
+                    layer: AnalysisLayer::L1,
+                });
+                break; // Report once per file to avoid flooding
             }
         }
     }

@@ -166,10 +166,11 @@ fn scan_sd_01_encoded_injection_produces_fail() {
 
 #[test]
 fn scan_complex_declared_benign_produces_pass() {
-    let benign_path = fixtures_dir()
-        .join("benign")
-        .join("complex-declared-skill");
-    assert!(benign_path.exists(), "Complex benign fixture path must exist");
+    let benign_path = fixtures_dir().join("benign").join("complex-declared-skill");
+    assert!(
+        benign_path.exists(),
+        "Complex benign fixture path must exist"
+    );
 
     let bundle = l0::intake(&benign_path).expect("L0 intake should succeed");
     let report = l5::analyze(

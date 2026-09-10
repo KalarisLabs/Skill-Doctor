@@ -9,6 +9,26 @@ Skill Doctor is a **Rust** security scanner for AI agent skill files. The produc
 statically linked binary whose **deterministic L1 layer is the shippable core**. Everything else is
 elective and must degrade to reduced coverage, never to an error.
 
+## Skills — load before acting
+
+Each folder under `skills/` is an Agent Skill (`SKILL.md`). Load the matching one instead of improvising. If two apply, load both.
+
+| Skill | Load when |
+|-------|-----------|
+| `skills/project-context` | start of a session, architecture, where code lives |
+| `skills/rust-workspace` | crates, Cargo.toml, deps |
+| `skills/rust-invariants` | defaults, scoring, LLM/MCP, features |
+| `skills/rust-idioms` | everyday Rust: errors, ownership, clippy |
+| `skills/rust-perf` | speed, RSS, binary size, rayon/mmap, §7.3 targets |
+| `skills/rust-testing` | tests, fixtures, determinism |
+| `skills/ci-cd` | GitHub Actions, required checks, TestMu, OS matrix |
+| `skills/yara-rules` | detectors, YARA-X, SDTM IDs |
+| `skills/neutralize-sd11` | L2, MCP, envelopes |
+| `skills/cli-sarif` | clap, exit codes, SARIF |
+| `skills/release-publish` | crates.io, npm, tags |
+| `skills/review-bots` | CodeRabbit / Greptile / Intelligence AI |
+| `skills/unsafe-sandbox` | `unsafe`, L3 microVM |
+
 ## Non-negotiable invariants (do not violate; PRs that break these are rejected)
 
 1. **Rust only.** No Python, no Node, no shell interpreter in the product runtime. (npm is only a

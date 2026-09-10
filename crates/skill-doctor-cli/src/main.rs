@@ -6,25 +6,52 @@
 //!   2 — findings at or above --fail-on threshold
 //!   3 — structural coverage below --fail-under-coverage threshold
 
+mod progress;
+mod sarif;
+mod tui;
+mod ui;
+mod watch;
+
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
-use sha2::{Digest, Sha256};
+use progress::ScanProgress;
 use skill_doctor_core::finding::Severity;
 use skill_doctor_core::l0;
 use skill_doctor_core::l5::{self, ReportOptions};
 use skill_doctor_core::report::Verdict;
 use std::path::{Path, PathBuf};
 use std::process;
+use ui::{ColorChoice, ProgressStyleChoice, ThemeMode, UiContext};
 
 /// Skill Doctor — security scanner for AI agent skill files.
 ///
-/// Deterministic, offline-first, zero-dependency static analysis of skill files
+/// Deterministic, offline-first static analysis of skill files
 /// for the 11 SDTM-v1 threat classes.
 #[derive(Parser)]
 #[command(name = "skill-doctor", version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
+
+    /// Output colorization.
+    #[arg(long, global = true, default_value = "auto")]
+    color: ColorChoice,
+
+    /// Color theme palette.
+    #[arg(long, global = true, default_value = "vivid")]
+    theme: ThemeMode,
+
+    /// Progress indicator style (TTY only).
+    #[arg(long, global = true, default_value = "auto")]
+    progress: ProgressStyleChoice,
+
+    /// Launch interactive full-screen dashboard (requires feature `tui`).
+    #[arg(long, global = true)]
+    tui: bool,
+
+    /// Suppress informational headers and non-essential progress output.
+    #[arg(short, long, global = true)]
+    quiet: bool,
 }
 
 #[derive(Subcommand)]
@@ -129,6 +156,20 @@ enum Commands {
         #[arg(long)]
         offline: bool,
     },
+
+    /// Watch a skill directory for changes and rescan continuously.
+    Watch {
+        /// Path to the skill directory or file to watch.
+        path: PathBuf,
+
+        /// Minimum severity to report.
+        #[arg(long, default_value = "high")]
+        fail_on: SeverityArg,
+
+        /// Run in deterministic mode.
+        #[arg(long)]
+        deterministic: bool,
+    },
 }
 
 /// Wrapper for severity argument parsing.
@@ -148,7 +189,7 @@ impl std::str::FromStr for SeverityArg {
 }
 
 /// Output format for scan results.
-#[derive(Clone, Debug, ValueEnum)]
+#[derive(Clone, Debug, PartialEq, Eq, ValueEnum)]
 enum OutputFormat {
     Text,
     Json,
@@ -157,6 +198,7 @@ enum OutputFormat {
 
 fn main() {
     let cli = Cli::parse();
+    let ui = UiContext::new(cli.color, cli.theme, cli.progress);
 
     let result = match cli.command {
         Commands::Scan {
@@ -166,13 +208,22 @@ fn main() {
             output,
             deterministic,
             offline: _,
-        } => run_scan(
-            &path,
-            fail_on.0,
-            fail_under_coverage,
-            &output,
-            deterministic,
-        ),
+        } => {
+            if !cli.quiet && output == OutputFormat::Text && !cli.tui && !deterministic {
+                ui.print_banner_if_tty();
+            }
+            run_scan(
+                &path,
+                fail_on.0,
+                fail_under_coverage,
+                &output,
+                deterministic,
+                cli.tui,
+                cli.quiet,
+                cli.progress,
+                &ui,
+            )
+        }
 
         Commands::ScanAll {
             path,
@@ -181,13 +232,21 @@ fn main() {
             output,
             deterministic,
             offline: _,
-        } => run_scan_all(
-            &path,
-            fail_on.0,
-            fail_under_coverage,
-            &output,
-            deterministic,
-        ),
+        } => {
+            if !cli.quiet && output == OutputFormat::Text && !deterministic {
+                ui.print_banner_if_tty();
+            }
+            run_scan_all(
+                &path,
+                fail_on.0,
+                fail_under_coverage,
+                &output,
+                deterministic,
+                cli.quiet,
+                cli.progress,
+                &ui,
+            )
+        }
 
         Commands::Diff {
             path,
@@ -210,7 +269,17 @@ fn main() {
             Some(fail_under_coverage),
             &output,
             deterministic,
+            false,
+            cli.quiet,
+            cli.progress,
+            &ui,
         ),
+
+        Commands::Watch {
+            path,
+            fail_on,
+            deterministic,
+        } => watch::run_watch(&path, fail_on.0, deterministic, &ui).map(|_| 0),
     };
 
     match result {
@@ -222,16 +291,25 @@ fn main() {
     }
 }
 
-/// Run a scan and return the appropriate exit code.
+/// Run a scan on a single skill directory or archive.
+#[allow(clippy::too_many_arguments)]
 fn run_scan(
     path: &Path,
     fail_on: Severity,
     fail_under_coverage: Option<f64>,
     output: &OutputFormat,
     deterministic: bool,
+    use_tui: bool,
+    quiet: bool,
+    progress_choice: ProgressStyleChoice,
+    ui: &UiContext,
 ) -> Result<i32> {
+    let progress = ScanProgress::new(ui, deterministic, quiet, progress_choice);
+    progress.set_status("L0 intake & canonical hashing...");
+
     let bundle = l0::intake(path).context("L0 intake failed")?;
 
+    progress.set_status("L1 static analysis engines...");
     let report = l5::analyze(
         &bundle,
         &ReportOptions {
@@ -240,18 +318,25 @@ fn run_scan(
         },
     );
 
-    // Output the report.
+    progress.finish_and_clear();
+
+    // Opt-in TUI
+    if use_tui && *output == OutputFormat::Text {
+        return tui::run_tui(&report);
+    }
+
+    // Output formatting (Layer A, JSON, SARIF)
     match output {
         OutputFormat::Text => {
-            print_text_report(&report);
+            ui.print_report(&report);
         }
         OutputFormat::Json => {
             let json = serde_json::to_string_pretty(&report)?;
             println!("{}", json);
         }
         OutputFormat::Sarif => {
-            // SARIF stub: output JSON for now, SARIF conversion comes later.
-            let json = serde_json::to_string_pretty(&report)?;
+            let sarif_val = sarif::report_to_sarif(&report);
+            let json = serde_json::to_string_pretty(&sarif_val)?;
             println!("{}", json);
         }
     }
@@ -276,18 +361,23 @@ fn run_scan(
 }
 
 /// Scan all discovered skill directories under a root path.
+#[allow(clippy::too_many_arguments)]
 fn run_scan_all(
     root: &Path,
     fail_on: Severity,
     fail_under_coverage: Option<f64>,
     output: &OutputFormat,
     deterministic: bool,
+    quiet: bool,
+    progress_choice: ProgressStyleChoice,
+    ui: &UiContext,
 ) -> Result<i32> {
     if !root.exists() {
         anyhow::bail!("path does not exist: {}", root.display());
     }
 
-    // Discover skill directories containing SKILL.md (excluding VCS, build artifacts, attack test fixtures)
+    // Discover skill directories containing SKILL.md
+    // Filter out VCS, build artifacts, internal agent skills, and test attack fixtures
     let mut skill_dirs = Vec::new();
     for entry in walkdir::WalkDir::new(root)
         .sort_by_file_name()
@@ -299,6 +389,8 @@ fn run_scan_all(
                 && name != "target"
                 && name != "node_modules"
                 && name != "dist"
+                && name != "skills"
+                && !path_str.contains("/skills/")
                 && !path_str.contains("/fixtures/attack")
                 && !path_str.contains("/corpora/cmd-inject-skill")
                 && !path_str.contains("/corpora/prompt-inject-skill")
@@ -313,14 +405,31 @@ fn run_scan_all(
     }
 
     if skill_dirs.is_empty() {
-        // Fallback: scan root directly
-        return run_scan(root, fail_on, fail_under_coverage, output, deterministic);
+        return run_scan(
+            root,
+            fail_on,
+            fail_under_coverage,
+            output,
+            deterministic,
+            false,
+            quiet,
+            progress_choice,
+            ui,
+        );
     }
 
+    let progress = ScanProgress::new(ui, deterministic, quiet, progress_choice);
     let mut overall_exit_code = 0;
     let mut total_findings = 0;
+    let total_dirs = skill_dirs.len();
 
-    for dir in &skill_dirs {
+    for (idx, dir) in skill_dirs.iter().enumerate() {
+        let dir_name = dir
+            .file_name()
+            .map(|n| n.to_string_lossy())
+            .unwrap_or_default();
+        progress.set_item_progress(idx + 1, total_dirs, &dir_name);
+
         let bundle = l0::intake(dir).context("L0 intake failed")?;
         let report = l5::analyze(
             &bundle,
@@ -333,11 +442,16 @@ fn run_scan_all(
         match output {
             OutputFormat::Text => {
                 println!("=== Skill: {} ===", dir.display());
-                print_text_report(&report);
+                ui.print_report(&report);
                 println!();
             }
-            OutputFormat::Json | OutputFormat::Sarif => {
+            OutputFormat::Json => {
                 let json = serde_json::to_string_pretty(&report)?;
+                println!("{}", json);
+            }
+            OutputFormat::Sarif => {
+                let sarif_val = sarif::report_to_sarif(&report);
+                let json = serde_json::to_string_pretty(&sarif_val)?;
                 println!("{}", json);
             }
         }
@@ -348,38 +462,42 @@ fn run_scan_all(
         }
 
         if let Some(threshold) = fail_under_coverage {
-            if report.coverage.ratio() < threshold && overall_exit_code == 0 {
+            if report.coverage.ratio() < threshold {
+                eprintln!(
+                    "Skill '{}': Coverage {:.1}% is below threshold {:.1}%",
+                    dir.display(),
+                    report.coverage.ratio() * 100.0,
+                    threshold * 100.0,
+                );
                 overall_exit_code = 3;
             }
         }
     }
 
-    if let OutputFormat::Text = output {
+    progress.finish_and_clear();
+
+    if *output == OutputFormat::Text {
         println!(
             "Scanned {} skill(s). Total findings: {}. Overall exit: {}",
-            skill_dirs.len(),
-            total_findings,
-            overall_exit_code
+            total_dirs, total_findings, overall_exit_code
         );
     }
 
     Ok(overall_exit_code)
 }
 
-/// Run a diff against a baseline.
+/// Compare scan results against a baseline.
 fn run_diff(
     path: &Path,
     baseline: &Path,
     output: &OutputFormat,
     deterministic: bool,
 ) -> Result<i32> {
-    // Load baseline report.
-    let baseline_json =
-        std::fs::read_to_string(baseline).context("Failed to read baseline report")?;
+    let baseline_json = std::fs::read_to_string(baseline)
+        .with_context(|| format!("Failed to read baseline report: {}", baseline.display()))?;
     let baseline_report: skill_doctor_core::report::Report =
         serde_json::from_str(&baseline_json).context("Failed to parse baseline report")?;
 
-    // Run current scan.
     let bundle = l0::intake(path).context("L0 intake failed")?;
     let current_report = l5::analyze(
         &bundle,
@@ -389,7 +507,6 @@ fn run_diff(
         },
     );
 
-    // Compute diff: new findings not in baseline.
     let new_findings: Vec<_> = current_report
         .findings
         .iter()
@@ -429,49 +546,4 @@ fn run_diff(
     } else {
         Ok(2)
     }
-}
-
-/// Print a human-readable text report.
-fn print_text_report(report: &skill_doctor_core::report::Report) {
-    println!("Skill Doctor v{}", report.scanner_version);
-    println!("Bundle digest: {}", report.bundle_digest);
-    println!(
-        "Coverage: {}/{} classes ({:.0}%)",
-        report.coverage.evaluable,
-        report.coverage.total,
-        report.coverage.ratio() * 100.0,
-    );
-    println!();
-
-    if report.findings.is_empty() {
-        println!("No findings.");
-    } else {
-        println!("{} finding(s):", report.findings.len());
-        for f in &report.findings {
-            println!(
-                "  {} [{}] {} in {}",
-                f.severity,
-                f.class.id(),
-                f.rule_id,
-                f.path.display(),
-            );
-            for ev in &f.evidence {
-                println!("    evidence: {}", ev);
-            }
-            if let Some(ref rem) = f.remediation {
-                println!("    fix: {}", rem);
-            }
-        }
-    }
-
-    println!();
-    println!("Verdict: {:?}", report.verdict);
-}
-
-/// Compute SHA-256 of a string (used for determinism verification).
-#[allow(dead_code)]
-fn sha256_of(data: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(data.as_bytes());
-    hex::encode(hasher.finalize())
 }

@@ -23,3 +23,16 @@ serde = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
 walkdir = { workspace = true }
+anstream = { workspace = true }
+anstyle = { workspace = true }
+is-terminal = { workspace = true }
+indicatif = { workspace = true }
+notify = { workspace = true }
+
+# Layer C TUI dependencies (opt-in feature)
+ratatui = { workspace = true, optional = true }
+crossterm = { workspace = true, optional = true }
+
+[features]
+default = []
+tui = ["dep:ratatui", "dep:crossterm"]

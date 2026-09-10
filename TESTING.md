@@ -17,7 +17,7 @@ These are the non-negotiable gates that keep `npx`, `cargo install`, and the Git
 | **`os-cli`** (Ubuntu / macOS / Windows) | `--help`, `--version`, scan benign → `0`, scan SD-02 → `2` (`--offline --deterministic`) | Adoption is "does the CLI work on my laptop." |
 | **`determinism`** | Two JSON/SARIF runs produce identical SHA-256 | Core product claim. Without this, CI users will not trust `--fail-on`. |
 | **`lint-and-unit`** (`additive-only`) | L1 CRITICAL survives an L2 "benign" | SD-11 invariant; one regression and the scanner is unsafe. |
-| **`dogfood-self-scan`** | `skill-doctor scan-all . --fail-on HIGH --offline` | Open-source scanners that cannot scan themselves do not get adopted. |
+| **dogfood-self-scan** | `skill-doctor scan-all . --exclude tests/fixtures/attack --exclude tests/fixtures/evasion --exclude sd-bench/corpora --fail-on HIGH --offline` | Scans all first-party skills and benign fixtures (excluding deliberate malware attack corpora); must exit 0, and asserts attack fixture SD-02 exits 2. |
 | **`supply-chain`** | `cargo deny check` + `gitleaks` | Prevents supply-chain attacks, license violations, and committed credentials. |
 
 ### What is NOT on this Path

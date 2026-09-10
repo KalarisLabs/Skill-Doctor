@@ -63,7 +63,11 @@ jobs:
         shell: bash
         run: |
           echo "=== Measuring throughput and peak RSS on fixtures ==="
-          /usr/bin/time -v ./target/release/skill-doctor scan-all ./tests/fixtures --offline --deterministic 2> perf_stats.txt
+          /usr/bin/time -v ./target/release/skill-doctor scan-all . \
+            --exclude tests/fixtures/attack \
+            --exclude tests/fixtures/evasion \
+            --exclude sd-bench/corpora \
+            --offline --deterministic 2> perf_stats.txt
 
           cat perf_stats.txt
 

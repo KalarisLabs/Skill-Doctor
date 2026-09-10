@@ -649,6 +649,7 @@ fn run_scan_all(
     let mut overall_exit_code = 0;
     let mut total_findings = 0;
     let total_dirs = skill_dirs.len();
+    let mut all_reports = Vec::new();
 
     for (idx, dir) in skill_dirs.iter().enumerate() {
         let dir_name = dir
@@ -674,21 +675,10 @@ fn run_scan_all(
         // L4 Threat Intelligence
         report = apply_l4_analysis(dir, &report, intel, offline, deterministic, &progress);
 
-        match output {
-            OutputFormat::Text => {
-                println!("=== Skill: {} ===", dir.display());
-                ui.print_report(&report);
-                println!();
-            }
-            OutputFormat::Json => {
-                let json = serde_json::to_string_pretty(&report)?;
-                println!("{}", json);
-            }
-            OutputFormat::Sarif => {
-                let sarif_val = sarif::report_to_sarif(&report);
-                let json = serde_json::to_string_pretty(&sarif_val)?;
-                println!("{}", json);
-            }
+        if *output == OutputFormat::Text {
+            println!("=== Skill: {} ===", dir.display());
+            ui.print_report(&report);
+            println!();
         }
 
         total_findings += report.findings.len();
@@ -707,15 +697,28 @@ fn run_scan_all(
                 overall_exit_code = 3;
             }
         }
+
+        all_reports.push(report);
     }
 
     progress.finish_and_clear();
 
-    if *output == OutputFormat::Text {
-        println!(
-            "Scanned {} skill(s). Total findings: {}. Overall exit: {}",
-            total_dirs, total_findings, overall_exit_code
-        );
+    match output {
+        OutputFormat::Text => {
+            println!(
+                "Scanned {} skill(s). Total findings: {}. Overall exit: {}",
+                total_dirs, total_findings, overall_exit_code
+            );
+        }
+        OutputFormat::Json => {
+            let json = serde_json::to_string_pretty(&all_reports)?;
+            println!("{}", json);
+        }
+        OutputFormat::Sarif => {
+            let sarif_val = sarif::reports_to_sarif(&all_reports);
+            let json = serde_json::to_string_pretty(&sarif_val)?;
+            println!("{}", json);
+        }
     }
 
     Ok(overall_exit_code)

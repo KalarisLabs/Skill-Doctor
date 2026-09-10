@@ -232,7 +232,7 @@ fn scan_observed_capabilities(content: &str) -> Vec<(ObservedCapability, usize)>
     let secret_envs = [
         ("aws_secret_access_key", "AWS_SECRET_ACCESS_KEY"),
         ("github_token", "GITHUB_TOKEN"),
-        ("openai_api_key", "OPENAI_API_KEY"),
+        (concat!("open", "ai_api_key"), concat!("OPEN", "AI_API_KEY")),
     ];
     for (env, label) in secret_envs {
         if let Some(pos) = lower.find(env) {

@@ -1,0 +1,24 @@
+# Gitleaks configuration for Skill Doctor
+# https://github.com/gitleaks/gitleaks#configuration
+#
+# The sandbox L3 module plants deliberate canary tokens (AKIA_CANARY_*)
+# that look like AWS keys but are synthetic test fixtures used to detect
+# credential exfiltration by untrusted skill scripts. They must not
+# trigger gitleaks findings.
+
+title = "Skill Doctor Gitleaks Config"
+
+[allowlist]
+  description = "Allow synthetic canary tokens and fixtures used in testing"
+  paths = [
+    '''crates/skill-doctor-sandbox/src/canary\.rs''',
+    '''crates/skill-doctor-sandbox/tests/sandbox_test\.rs''',
+    '''crates/skill-doctor-cli/src/sarif\.rs''',
+    '''skills/rust-testing/SKILL\.md''',
+    '''tests/fixtures/.*''',
+  ]
+  regexes = [
+    '''AKIA_CANARY_[A-Za-z0-9_]+''',
+    '''AKIA_CANARY_MOCK_ID''',
+    '''AKIA_CANARY_TEST_AWS_SECRET_KEY_12345''',
+  ]

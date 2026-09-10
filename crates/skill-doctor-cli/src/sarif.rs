@@ -4,12 +4,16 @@ use serde_json::json;
 use skill_doctor_core::finding::Severity;
 use skill_doctor_core::report::Report;
 
-/// Convert a Skill Doctor Report to a SARIF 2.1.0 JSON value.
-pub fn report_to_sarif(report: &Report) -> serde_json::Value {
-    let results: Vec<serde_json::Value> = report
-        .findings
-        .iter()
-        .map(|f| {
+/// Convert multiple Skill Doctor Reports into a single unified SARIF 2.1.0 JSON value.
+pub fn reports_to_sarif(reports: &[Report]) -> serde_json::Value {
+    let mut all_results = Vec::new();
+    let version = reports
+        .first()
+        .map(|r| r.scanner_version.as_str())
+        .unwrap_or(env!("CARGO_PKG_VERSION"));
+
+    for report in reports {
+        for f in &report.findings {
             let level = match f.severity {
                 Severity::Critical | Severity::High => "error",
                 Severity::Medium => "warning",
@@ -26,9 +30,7 @@ pub fn report_to_sarif(report: &Report) -> serde_json::Value {
                 message_text.push_str(&format!(" (Remediation: {})", fix));
             }
 
-            let start_line = 1;
-
-            json!({
+            all_results.push(json!({
                 "ruleId": f.rule_id,
                 "level": level,
                 "message": {
@@ -41,14 +43,14 @@ pub fn report_to_sarif(report: &Report) -> serde_json::Value {
                                 "uri": path_str
                             },
                             "region": {
-                                "startLine": start_line
+                                "startLine": 1
                             }
                         }
                     }
                 ]
-            })
-        })
-        .collect();
+            }));
+        }
+    }
 
     json!({
         "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
@@ -58,14 +60,19 @@ pub fn report_to_sarif(report: &Report) -> serde_json::Value {
                 "tool": {
                     "driver": {
                         "name": "Skill Doctor",
-                        "version": report.scanner_version,
+                        "version": version,
                         "informationUri": "https://github.com/KalarisLabs/Skill-Doctor"
                     }
                 },
-                "results": results
+                "results": all_results
             }
         ]
     })
+}
+
+/// Convert a single Skill Doctor Report to a SARIF 2.1.0 JSON value.
+pub fn report_to_sarif(report: &Report) -> serde_json::Value {
+    reports_to_sarif(std::slice::from_ref(report))
 }
 
 #[cfg(test)]

@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+  security-events: write
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -110,9 +114,11 @@ jobs:
           fetch-depth: 0
 
       - name: Gitleaks secrets detection
-        uses: gitleaks/gitleaks-action@v3
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          GITLEAKS_VERSION="8.24.0"
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | sudo tar -xz -C /usr/local/bin gitleaks
+          gitleaks detect --source . --verbose --redact
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -123,6 +129,9 @@ jobs:
   dogfood-self-scan:
     name: dogfood-self-scan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -147,6 +156,7 @@ jobs:
 
       - name: Upload SARIF report
         if: always()
+        continue-on-error: true
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: skill-doctor.sarif

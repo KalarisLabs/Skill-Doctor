@@ -15,9 +15,9 @@ mod watch;
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
 use progress::ScanProgress;
-use skill_doctor_core::finding::Severity;
 #[cfg(feature = "sandbox")]
-use skill_doctor_core::finding::{AnalysisLayer, Confidence, Finding};
+use skill_doctor_core::finding::Confidence;
+use skill_doctor_core::finding::{AnalysisLayer, Finding, Severity};
 use skill_doctor_core::l0;
 use skill_doctor_core::l5::{self, ReportOptions};
 #[cfg(feature = "sandbox")]
@@ -91,6 +91,10 @@ enum Commands {
         /// Run L3 behavioral sandbox on companion scripts (opt-in feature).
         #[arg(long)]
         sandbox: bool,
+
+        /// Query L4 community threat intelligence feed (opt-in feature).
+        #[arg(long)]
+        intel: bool,
     },
 
     /// Scan all skill directories under a root path.
@@ -121,6 +125,10 @@ enum Commands {
         /// Run L3 behavioral sandbox on companion scripts (opt-in feature).
         #[arg(long)]
         sandbox: bool,
+
+        /// Query L4 community threat intelligence feed (opt-in feature).
+        #[arg(long)]
+        intel: bool,
     },
 
     /// Compare scan results against a baseline.
@@ -224,14 +232,23 @@ fn main() {
             fail_under_coverage,
             output,
             deterministic,
-            offline: _,
+            offline,
             sandbox,
+            intel,
         } => {
             if sandbox {
                 #[cfg(not(feature = "sandbox"))]
                 {
                     eprintln!("Error: The behavioral sandbox is not compiled into this binary.");
                     eprintln!("To enable sandbox support, rebuild with: cargo build -p skill-doctor --features sandbox");
+                    process::exit(1);
+                }
+            }
+            if intel {
+                #[cfg(not(feature = "intel"))]
+                {
+                    eprintln!("Error: Threat intelligence network client is not compiled into this binary.");
+                    eprintln!("To enable threat intel support, rebuild with: cargo build -p skill-doctor --features intel");
                     process::exit(1);
                 }
             }
@@ -244,10 +261,12 @@ fn main() {
                 fail_under_coverage,
                 &output,
                 deterministic,
+                offline,
                 cli.tui,
                 cli.quiet,
                 cli.progress,
                 sandbox,
+                intel,
                 &ui,
             )
         }
@@ -258,14 +277,23 @@ fn main() {
             fail_under_coverage,
             output,
             deterministic,
-            offline: _,
+            offline,
             sandbox,
+            intel,
         } => {
             if sandbox {
                 #[cfg(not(feature = "sandbox"))]
                 {
                     eprintln!("Error: The behavioral sandbox is not compiled into this binary.");
                     eprintln!("To enable sandbox support, rebuild with: cargo build -p skill-doctor --features sandbox");
+                    process::exit(1);
+                }
+            }
+            if intel {
+                #[cfg(not(feature = "intel"))]
+                {
+                    eprintln!("Error: Threat intelligence network client is not compiled into this binary.");
+                    eprintln!("To enable threat intel support, rebuild with: cargo build -p skill-doctor --features intel");
                     process::exit(1);
                 }
             }
@@ -278,9 +306,11 @@ fn main() {
                 fail_under_coverage,
                 &output,
                 deterministic,
+                offline,
                 cli.quiet,
                 cli.progress,
                 sandbox,
+                intel,
                 &ui,
             )
         }
@@ -299,16 +329,18 @@ fn main() {
             fail_under_coverage,
             output,
             deterministic,
-            offline: _,
+            offline,
         } => run_scan(
             &path,
             fail_on.0,
             Some(fail_under_coverage),
             &output,
             deterministic,
+            offline,
             false,
             cli.quiet,
             cli.progress,
+            false,
             false,
             &ui,
         ),
@@ -423,6 +455,52 @@ fn apply_sandbox_analysis(path: &Path, report: &Report, progress: &ScanProgress)
     }
 }
 
+/// Run L4 community threat intelligence analysis and additively merge findings.
+///
+/// Invariants:
+/// - Local embedded feed is evaluated for all scans (offline, deterministic).
+/// - Remote HTTPS query runs ONLY when `intel` is true AND `!offline` AND `!deterministic`.
+/// - Local findings strictly outrank remote threat intel.
+/// - If network query fails or times out: sets `layers.l4 = Reduced`, records diagnostic, does not crash.
+fn apply_l4_analysis(
+    path: &Path,
+    report: &Report,
+    intel: bool,
+    offline: bool,
+    deterministic: bool,
+    progress: &ScanProgress,
+) -> Report {
+    let query_remote = intel && !offline && !deterministic;
+    if query_remote {
+        progress.set_status("L4 community threat intelligence feed...");
+    }
+
+    let options = skill_doctor_core::l4::L4Options {
+        query_remote,
+        endpoint_url: None,
+        timeout_ms: skill_doctor_core::l4::DEFAULT_INTEL_TIMEOUT_MS,
+    };
+
+    let result = skill_doctor_core::l4::evaluate_l4(&report.bundle_digest, &options);
+
+    let mut l4_findings = Vec::new();
+    if let Some(record) = result.record {
+        l4_findings.push(Finding {
+            rule_id: record.rule_id,
+            class: record.class,
+            severity: record.severity,
+            confidence: record.confidence,
+            path: path.to_path_buf(),
+            byte_span: None,
+            evidence: vec![format!("{}: {}", record.source, record.description)],
+            remediation: Some("Remove compromised or weaponized skill bundle".to_string()),
+            layer: AnalysisLayer::L4,
+        });
+    }
+
+    skill_doctor_core::scoring::merge_l4_findings(report, &l4_findings, result.state)
+}
+
 /// Run a scan on a single skill directory or archive.
 #[allow(clippy::too_many_arguments)]
 fn run_scan(
@@ -431,10 +509,12 @@ fn run_scan(
     fail_under_coverage: Option<f64>,
     output: &OutputFormat,
     deterministic: bool,
+    offline: bool,
     use_tui: bool,
     quiet: bool,
     progress_choice: ProgressStyleChoice,
     sandbox: bool,
+    intel: bool,
     ui: &UiContext,
 ) -> Result<i32> {
     let progress = ScanProgress::new(ui, deterministic, quiet, progress_choice);
@@ -455,6 +535,9 @@ fn run_scan(
     if sandbox && !deterministic {
         report = apply_sandbox_analysis(path, &report, &progress);
     }
+
+    // L4 Threat Intelligence
+    report = apply_l4_analysis(path, &report, intel, offline, deterministic, &progress);
 
     progress.finish_and_clear();
 
@@ -506,9 +589,11 @@ fn run_scan_all(
     fail_under_coverage: Option<f64>,
     output: &OutputFormat,
     deterministic: bool,
+    offline: bool,
     quiet: bool,
     progress_choice: ProgressStyleChoice,
     sandbox: bool,
+    intel: bool,
     ui: &UiContext,
 ) -> Result<i32> {
     if !root.exists() {
@@ -550,10 +635,12 @@ fn run_scan_all(
             fail_under_coverage,
             output,
             deterministic,
+            offline,
             false,
             quiet,
             progress_choice,
             sandbox,
+            intel,
             ui,
         );
     }
@@ -583,6 +670,9 @@ fn run_scan_all(
         if sandbox && !deterministic {
             report = apply_sandbox_analysis(dir, &report, &progress);
         }
+
+        // L4 Threat Intelligence
+        report = apply_l4_analysis(dir, &report, intel, offline, deterministic, &progress);
 
         match output {
             OutputFormat::Text => {

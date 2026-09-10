@@ -33,7 +33,12 @@ if [ "$MODE" = "--full" ]; then
     cargo build --release
     ./target/release/skill-doctor scan tests/fixtures/benign \
         --fail-on HIGH --offline --deterministic
-    echo "CLI smoke: exit $?"
+    echo ""
+    echo "--- packaging dry-runs ---"
+    cargo publish --dry-run -p skill-doctor-neutralize
+    cargo publish --dry-run -p skill-doctor-rules
+    cargo publish --dry-run -p skill-doctor-sandbox
+    npm pack --dry-run
 fi
 
 echo ""

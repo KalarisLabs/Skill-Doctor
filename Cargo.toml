@@ -88,7 +88,8 @@ crossterm = { version = "0.28", default-features = false }
 # crossterm = "0.28"
 # rmcp = "0.1"
 # schemars = "0.8"
-# reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+
 # sigstore = "0.10"
 # nix = "0.29"
 

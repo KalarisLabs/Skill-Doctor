@@ -11,6 +11,6 @@
   "engines": { "node": ">=18" },
   "os": ["darwin", "linux", "win32"],
   "cpu": ["x64", "arm64"],
-  "files": ["bin/", "scripts/"],
+  "files": ["bin/skill-doctor.js", "scripts/download-binary.js"],
   "keywords": ["ai-agents", "security", "mcp", "skill-files", "static-analysis", "sarif", "prompt-injection"]
 }

@@ -12,6 +12,7 @@ pub mod entropy;
 pub mod finding;
 pub mod l0;
 pub mod l1;
+pub mod l4;
 pub mod l5;
 pub mod report;
 pub mod scoring;

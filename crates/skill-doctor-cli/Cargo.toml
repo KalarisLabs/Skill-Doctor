@@ -13,9 +13,9 @@ name = "skill-doctor"
 path = "src/main.rs"
 
 [dependencies]
-skill-doctor-core = { path = "../skill-doctor-core" }
-skill-doctor-rules = { path = "../skill-doctor-rules" }
-skill-doctor-neutralize = { path = "../skill-doctor-neutralize" }
+skill-doctor-core = { path = "../skill-doctor-core", version = "0.1.0" }
+skill-doctor-rules = { path = "../skill-doctor-rules", version = "0.1.0" }
+skill-doctor-neutralize = { path = "../skill-doctor-neutralize", version = "0.1.0" }
 clap = { workspace = true }
 anyhow = { workspace = true }
 serde_json = { workspace = true }
@@ -34,14 +34,15 @@ ratatui = { workspace = true, optional = true }
 crossterm = { workspace = true, optional = true }
 
 # MCP server dependencies (opt-in feature)
-skill-doctor-mcp = { path = "../skill-doctor-mcp", optional = true }
+skill-doctor-mcp = { path = "../skill-doctor-mcp", version = "0.1.0", optional = true }
 tokio = { version = "1", default-features = false, features = ["rt", "macros", "io-std"], optional = true }
 
 # L3 Behavioral Sandbox dependencies (opt-in feature)
-skill-doctor-sandbox = { path = "../skill-doctor-sandbox", optional = true }
+skill-doctor-sandbox = { path = "../skill-doctor-sandbox", version = "0.1.0", optional = true }
 
 [features]
 default = []
 tui = ["dep:ratatui", "dep:crossterm"]
 mcp = ["dep:skill-doctor-mcp", "dep:tokio"]
 sandbox = ["dep:skill-doctor-sandbox"]
+intel = ["skill-doctor-core/intel"]

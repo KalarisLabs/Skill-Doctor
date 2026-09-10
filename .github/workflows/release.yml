@@ -1,0 +1,161 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-release:
+    name: Build Binary (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            archive_ext: tar.gz
+            use_cross: true
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            archive_ext: tar.gz
+            use_cross: true
+          - os: macos-13
+            target: x86_64-apple-darwin
+            archive_ext: tar.gz
+            use_cross: false
+          - os: macos-14
+            target: aarch64-apple-darwin
+            archive_ext: tar.gz
+            use_cross: false
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            archive_ext: zip
+            use_cross: false
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Install cross (if required)
+        if: matrix.use_cross
+        run: cargo install cross --git https://github.com/cross-rs/cross
+
+      - name: Build release binary (default features only)
+        shell: bash
+        run: |
+          if [ "${{ matrix.use_cross }}" = "true" ]; then
+            cross build --release --locked -p skill-doctor --no-default-features --target ${{ matrix.target }}
+          else
+            cargo build --release --locked -p skill-doctor --no-default-features --target ${{ matrix.target }}
+          fi
+
+      - name: Package archive
+        shell: bash
+        run: |
+          BIN_DIR="target/${{ matrix.target }}/release"
+          TAG="${{ github.ref_name }}"
+          PKG_NAME="skill-doctor-${TAG}-${{ matrix.target }}"
+          mkdir -p "dist/${PKG_NAME}"
+          
+          if [ "${{ matrix.archive_ext }}" = "zip" ]; then
+            cp "${BIN_DIR}/skill-doctor.exe" "dist/${PKG_NAME}/"
+            cp LICENSE README.md "dist/${PKG_NAME}/"
+            cd dist
+            7z a "${PKG_NAME}.zip" "${PKG_NAME}"
+          else
+            cp "${BIN_DIR}/skill-doctor" "dist/${PKG_NAME}/"
+            cp LICENSE README.md "dist/${PKG_NAME}/"
+            cd dist
+            tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+          fi
+
+      - name: Upload archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.target }}
+          path: dist/*.${{ matrix.archive_ext }}
+          retention-days: 1
+
+  provenance-and-release:
+    name: Provenance, SBOM, Attestation & Release
+    needs: [build-release]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Node.js (for npm dry-run)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Cosign for Sigstore keyless signing
+        uses: sigstore/cosign-installer@v3.5.0
+
+      - name: Download all binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          pattern: binary-*
+          merge-multiple: true
+
+      - name: Generate SHA256SUMS.txt
+        working-directory: release-assets
+        run: |
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Sign SHA256SUMS.txt with Sigstore Cosign (OIDC Keyless)
+        working-directory: release-assets
+        run: |
+          cosign sign-blob \
+            --yes \
+            --bundle SHA256SUMS.txt.bundle \
+            SHA256SUMS.txt
+
+      - name: Generate CycloneDX SBOM (default features only)
+        run: |
+          cargo install cargo-cyclonedx
+          cargo cyclonedx --format json -p skill-doctor --all-features=false
+          # Copy generated SBOM to release assets
+          if [ -f "crates/skill-doctor-cli/skill-doctor.cdx.json" ]; then
+            cp crates/skill-doctor-cli/skill-doctor.cdx.json release-assets/
+          elif [ -f "skill-doctor.cdx.json" ]; then
+            cp skill-doctor.cdx.json release-assets/
+          else
+            find . -name "*.cdx.json" -exec cp {} release-assets/skill-doctor.cdx.json \;
+          fi
+
+      - name: Dry-run Packaging Verification (Topological Crate Order)
+        run: |
+          echo "Verifying crate packaging without live token..."
+          cargo publish --dry-run -p skill-doctor-neutralize
+          cargo publish --dry-run -p skill-doctor-rules
+          cargo publish --dry-run -p skill-doctor-sandbox
+          echo "Verifying npm thin-wrapper tarball..."
+          npm pack --dry-run
+
+      - name: Create GitHub Release with Provenance Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

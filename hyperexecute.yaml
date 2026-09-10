@@ -25,7 +25,7 @@ testDiscovery:
   mode: dynamic
   command: find ./sd-bench/corpora -mindepth 1 -maxdepth 1 -type d
 
-testRunnerCommand: cargo run --release -p skill-doctor -- scan "$test" --output json --offline --deterministic
+testRunnerCommand: ./target/release/skill-doctor scan "$test" --output json --offline --deterministic
 
 post:
   - cargo bench -p skill-doctor-core -- --output-format bencher || true

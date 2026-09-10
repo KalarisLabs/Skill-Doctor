@@ -256,6 +256,83 @@ pub fn merge_l3_findings(
     }
 }
 
+/// Merge L4 threat intelligence findings additively into an existing report.
+///
+/// Invariants enforced:
+/// - Local findings (L1, L2, L3) strictly outrank remote threat intel.
+/// - L4 can NEVER remove or suppress any existing local finding.
+/// - L4 can NEVER downgrade the severity of an existing finding.
+/// - If an L4 finding matches an existing finding, it may raise confidence and append corroborating evidence.
+/// - A report with 0 L4 findings leaves all previous findings unchanged.
+/// - Preserves sort order if deterministic mode was requested.
+/// - Preserves L1 structural coverage unchanged.
+/// - Sets `report.layers.l4 = l4_state`.
+pub fn merge_l4_findings(
+    report: &Report,
+    l4_findings: &[Finding],
+    l4_state: LayerRunState,
+) -> Report {
+    let mut merged = report.findings.clone();
+
+    for l4 in l4_findings {
+        let matched = merged.iter_mut().find(|f| {
+            f.rule_id == l4.rule_id
+                && f.path == l4.path
+                && (f.byte_span == l4.byte_span
+                    || (f.byte_span.is_none() && l4.byte_span.is_none()))
+        });
+
+        if let Some(existing) = matched {
+            existing.severity = existing.severity.max(l4.severity);
+            existing.confidence = existing.confidence.max(l4.confidence);
+            for ev in &l4.evidence {
+                if !existing.evidence.contains(ev) {
+                    existing.evidence.push(ev.clone());
+                }
+            }
+            if existing.remediation.is_none() {
+                existing.remediation = l4.remediation.clone();
+            }
+        } else {
+            let mut new_finding = l4.clone();
+            new_finding.layer = AnalysisLayer::L4;
+            merged.push(new_finding);
+        }
+    }
+
+    if report.deterministic {
+        merged.sort_by(|a, b| {
+            a.rule_id
+                .cmp(&b.rule_id)
+                .then_with(|| a.path.cmp(&b.path))
+                .then_with(|| {
+                    let a_start = a.byte_span.as_ref().map_or(0, |s| s.start);
+                    let b_start = b.byte_span.as_ref().map_or(0, |s| s.start);
+                    a_start.cmp(&b_start)
+                })
+        });
+    }
+
+    let threshold = report.fail_on.unwrap_or(Severity::High);
+    let verdict = Report::compute_verdict(&merged, threshold);
+    let would_fail = verdict == crate::report::Verdict::Fail;
+
+    let mut layers = report.layers.clone();
+    layers.l4 = l4_state;
+
+    Report {
+        bundle_digest: report.bundle_digest.clone(),
+        findings: merged,
+        coverage: report.coverage.clone(),
+        verdict,
+        deterministic: report.deterministic,
+        scanner_version: report.scanner_version.clone(),
+        would_fail,
+        fail_on: report.fail_on,
+        layers,
+    }
+}
+
 /// Merge L2 findings into L1 findings, enforcing the additive-only invariant.
 ///
 /// Returns the merged finding set. Errors if L2 would remove an L1 finding.
@@ -583,5 +660,45 @@ mod tests {
         assert_eq!(merged.findings[1].layer, AnalysisLayer::L3);
         assert_eq!(merged.findings[1].severity, Severity::Critical);
         assert_eq!(merged.layers.l3, LayerRunState::Ran);
+    }
+
+    #[test]
+    fn merge_l4_findings_preserves_local_and_adds_l4() {
+        let l1_report = Report {
+            bundle_digest: "digest1".to_string(),
+            findings: vec![make_l1_finding("SD-02-cmd-eval")],
+            coverage: crate::report::Coverage::from_evaluable(&[]),
+            verdict: crate::report::Verdict::Fail,
+            deterministic: true,
+            scanner_version: "0.1.0".to_string(),
+            would_fail: true,
+            fail_on: Some(Severity::High),
+            layers: crate::report::LayerStatus::default(),
+        };
+
+        let l4_finding = Finding {
+            rule_id: "SD-05-known-malicious-typosquat".to_string(),
+            class: ThreatClass::SupplyChainTampering,
+            severity: Severity::Critical,
+            confidence: Confidence::High,
+            path: PathBuf::from("SKILL.md"),
+            byte_span: None,
+            evidence: vec!["Community threat intel matched bundle digest".to_string()],
+            remediation: Some("Remove compromised skill".to_string()),
+            layer: AnalysisLayer::L4,
+        };
+
+        let merged = merge_l4_findings(&l1_report, &[l4_finding], LayerRunState::Ran);
+
+        assert_eq!(merged.findings.len(), 2);
+        assert_eq!(merged.findings[0].rule_id, "SD-02-cmd-eval");
+        assert_eq!(merged.findings[0].layer, AnalysisLayer::L1);
+        assert_eq!(
+            merged.findings[1].rule_id,
+            "SD-05-known-malicious-typosquat"
+        );
+        assert_eq!(merged.findings[1].layer, AnalysisLayer::L4);
+        assert_eq!(merged.findings[1].severity, Severity::Critical);
+        assert_eq!(merged.layers.l4, LayerRunState::Ran);
     }
 }

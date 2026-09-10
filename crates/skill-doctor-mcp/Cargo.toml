@@ -13,8 +13,8 @@ rmcp = { version = "3.2", default-features = false, features = ["server", "trans
 tokio = { version = "1", default-features = false, features = ["rt", "macros", "io-std", "sync"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
-skill-doctor-core = { path = "../skill-doctor-core" }
-skill-doctor-neutralize = { path = "../skill-doctor-neutralize" }
+skill-doctor-core = { path = "../skill-doctor-core", version = "0.1.0" }
+skill-doctor-neutralize = { path = "../skill-doctor-neutralize", version = "0.1.0" }
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 hex = { workspace = true }

@@ -24,4 +24,4 @@ description: Nine non-negotiable Skill Doctor product invariants. Use when chang
 
 ## CI grep (keep in ci.yml)
 
-Fail the job if default-path sources match `openai|anthropic|OPENAI_API_KEY|ANTHROPIC_API_KEY`.
+Fail the job if default-path sources match forbidden OpenAI or Anthropic SDK imports.

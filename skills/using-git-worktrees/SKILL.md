@@ -1,4 +1,4 @@
-﻿---
+---
 name: using-git-worktrees
 description: Use when starting feature work that needs isolation from current workspace or before executing implementation plans - ensures an isolated workspace exists via native tools or git worktree fallback
 ---
@@ -26,7 +26,7 @@ BRANCH=$(git branch --show-current)
 **Submodule guard:** `GIT_DIR != GIT_COMMON` is also true inside git submodules. Before concluding "already in a worktree," verify you are not in a submodule:
 
 ```bash
-# If this returns a path, you're in a submodule, not a worktree â€” treat as normal repo
+# If this returns a path, you're in a submodule, not a worktree — treat as normal repo
 git rev-parse --show-superproject-working-tree 2>/dev/null
 ```
 

@@ -1,4 +1,4 @@
-﻿---
+---
 name: rust-best-practices
 description: >
   Guide for writing idiomatic Rust code based on Apollo GraphQL's best practices handbook. Use this skill when:

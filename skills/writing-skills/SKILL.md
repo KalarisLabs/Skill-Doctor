@@ -1,4 +1,4 @@
-﻿---
+---
 name: writing-skills
 description: Use when creating new skills, editing existing skills, or verifying skills work before deployment
 ---
@@ -9,7 +9,7 @@ description: Use when creating new skills, editing existing skills, or verifying
 
 **Writing skills IS Test-Driven Development applied to process documentation.**
 
-**Personal skills live in your runtime's skills directory** (`~/.claude/skills/` on Claude Code) â€” see [codex-tools.md](../using-superpowers/references/codex-tools.md) or [gemini-tools.md](../using-superpowers/references/gemini-tools.md) for the path on those runtimes. Codex, Copilot CLI, and Gemini CLI all also recognize `~/.agents/skills/` as a cross-runtime alias.
+**Personal skills live in your runtime's skills directory** (`~/.claude/skills/` on Claude Code) — see [codex-tools.md](../using-superpowers/references/codex-tools.md) or [gemini-tools.md](../using-superpowers/references/gemini-tools.md) for the path on those runtimes. Codex, Copilot CLI, and Gemini CLI all also recognize `~/.agents/skills/` as a cross-runtime alias.
 
 You write test cases (pressure scenarios with subagents), watch them fail (baseline behavior), write the skill (documentation), watch tests pass (agents comply), and refactor (close loopholes).
 
@@ -40,7 +40,7 @@ A **skill** is a reference guide for proven techniques, patterns, or tools. Skil
 | **Watch it fail** | Document exact rationalizations agent uses |
 | **Minimal code** | Write skill addressing those specific violations |
 | **Watch it pass** | Verify agent now complies |
-| **Refactor cycle** | Find new rationalizations â†’ plug â†’ re-verify |
+| **Refactor cycle** | Find new rationalizations -> plug -> re-verify |
 
 The entire skill creation process follows RED-GREEN-REFACTOR.
 
@@ -56,7 +56,7 @@ The entire skill creation process follows RED-GREEN-REFACTOR.
 - One-off solutions
 - Standard practices well-documented elsewhere
 - Project-specific conventions (put in your instructions file)
-- Mechanical constraints (if it's enforceable with regex/validation, automate itâ€”save documentation for judgment calls)
+- Mechanical constraints (if it's enforceable with regex/validation, automate it—save documentation for judgment calls)
 
 ## Skill Types
 
@@ -164,10 +164,10 @@ description: Use when executing plans - dispatches subagent per task with code r
 # âŒ BAD: Too much process detail
 description: Use for TDD - write test first, watch it fail, write minimal code, refactor
 
-# âœ… GOOD: Just triggering conditions, no workflow summary
+# [GOOD]: Just triggering conditions, no workflow summary
 description: Use when executing implementation plans with independent tasks in the current session
 
-# âœ… GOOD: Triggering conditions only
+# [GOOD]: Triggering conditions only
 description: Use when implementing any feature or bugfix, before writing implementation code
 ```
 
@@ -189,10 +189,10 @@ description: I can help you with async tests when they're flaky
 # âŒ BAD: Mentions technology but skill isn't specific to it
 description: Use when tests use setTimeout/sleep and are flaky
 
-# âœ… GOOD: Starts with "Use when", describes problem, no workflow
+# [GOOD]: Starts with "Use when", describes problem, no workflow
 description: Use when tests have race conditions, timing dependencies, or pass/fail inconsistently
 
-# âœ… GOOD: Technology-specific skill with explicit trigger
+# [GOOD]: Technology-specific skill with explicit trigger
 description: Use when using React Router and handling authentication redirects
 ```
 
@@ -207,8 +207,8 @@ Use words an agent would search for:
 ### 3. Descriptive Naming
 
 **Use active voice, verb-first:**
-- âœ… `creating-skills` not `skill-creation`
-- âœ… `condition-based-waiting` not `async-test-helpers`
+- [PASS] `creating-skills` not `skill-creation`
+- [PASS] `condition-based-waiting` not `async-test-helpers`
 
 ### 4. Token Efficiency (Critical)
 
@@ -226,7 +226,7 @@ Use words an agent would search for:
 # âŒ BAD: Document all flags in SKILL.md
 search-conversations supports --text, --both, --after DATE, --before DATE, --limit N
 
-# âœ… GOOD: Reference --help
+# [GOOD]: Reference --help
 search-conversations supports multiple modes and filters. Run --help for details.
 ```
 
@@ -236,7 +236,7 @@ search-conversations supports multiple modes and filters. Run --help for details
 When searching, dispatch subagent with template...
 [20 lines of repeated instructions]
 
-# âœ… GOOD: Reference other skill
+# [GOOD]: Reference other skill
 Always use subagents (50-100x context savings). REQUIRED: Use [other-skill-name] for workflow.
 ```
 
@@ -247,10 +247,10 @@ your human partner: "How did we handle authentication errors in React Router bef
 You: I'll search past conversations for React Router authentication patterns.
 [Dispatch subagent with search query: "React Router authentication error handling 401"]
 
-# âœ… GOOD: Minimal example (20 words)
+# [GOOD]: Minimal example (20 words)
 Partner: "How did we handle auth errors in React Router?"
 You: Searching...
-[Dispatch subagent â†’ synthesis]
+[Dispatch subagent -> synthesis]
 ```
 
 **Eliminate redundancy:**
@@ -266,8 +266,8 @@ wc -w skills/path/SKILL.md
 ```
 
 **Name by what you DO or core insight:**
-- âœ… `condition-based-waiting` > `async-test-helpers`
-- âœ… `using-skills` not `skill-usage`
-- âœ… `flatten-with-flags` >
+- [PASS] `condition-based-waiting` > `async-test-helpers`
+- [PASS] `using-skills` not `skill-usage`
+- [PASS] `flatten-with-flags` >
 
 

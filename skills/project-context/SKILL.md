@@ -19,7 +19,7 @@ Repo: `KalarisLabs/Skill-Doctor`. Do not create a new GitHub repository.
 input → L0 intake/digest/cache
      → L1 static engines          THE PRODUCT
      → L2 host-delegated MCP      optional, additive-only
-     → L3 microVM + replay        feature sandbox
+     → L3 process harness + replay        feature sandbox
      → L4 threat intel            network opt-in
      → L5 score / coverage / report
 ```

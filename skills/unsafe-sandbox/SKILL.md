@@ -1,6 +1,6 @@
 ---
 name: unsafe-sandbox
-description: Rules for unsafe Rust and the L3 microVM sandbox. Use when adding unsafe blocks, FFI, sandbox features, differential replay, or canary credentials.
+description: Rules for unsafe Rust and the L3 behavioral process harness. Use when adding unsafe blocks, FFI, sandbox features, differential replay, or canary credentials.
 ---
 
 # Unsafe and sandbox

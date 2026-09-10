@@ -1,4 +1,4 @@
-﻿---
+---
 name: finishing-a-development-branch
 description: Use when implementation is complete, all tests pass, and you need to decide how to integrate the work
 ---
@@ -7,7 +7,7 @@ description: Use when implementation is complete, all tests pass, and you need t
 
 ## Overview
 
-**Core principle:** Verify tests â†’ Detect environment â†’ Present options â†’ Execute choice â†’ Clean up.
+**Core principle:** Verify tests -> Detect environment -> Present options -> Execute choice -> Clean up.
 
 **Announce at start:** "I'm using the finishing-a-development-branch skill to complete this work."
 
@@ -15,7 +15,7 @@ description: Use when implementation is complete, all tests pass, and you need t
 
 Run the project's full test suite (`npm test` / `cargo test` / `pytest` / `go test ./...`).
 
-**If tests fail**, report the failures and stop â€” the menu comes after a green suite:
+**If tests fail**, report the failures and stop — the menu comes after a green suite:
 
 ```
 Tests failing (<N> failures). Must fix before completing:
@@ -30,7 +30,7 @@ Tests failing (<N> failures). Must fix before completing:
 ```bash
 GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
 GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
-# Capture now, while still inside the workspace â€” Step 5 changes directory
+# Capture now, while still inside the workspace — Step 5 changes directory
 # before cleanup (Step 6) needs this value
 WORKTREE_PATH=$(git rev-parse --show-toplevel)
 ```
@@ -41,18 +41,18 @@ This determines which menu to show and how cleanup works:
 |-------|------|---------|
 | `GIT_DIR == GIT_COMMON` (normal repo) | Standard 3 options | No worktree to clean up |
 | `GIT_DIR != GIT_COMMON`, named branch | Standard 3 options | Provenance-based (see Step 6) |
-| `GIT_DIR != GIT_COMMON`, detached HEAD | Reduced 2 options (no merge) | Externally managed â€” leave in place |
+| `GIT_DIR != GIT_COMMON`, detached HEAD | Reduced 2 options (no merge) | Externally managed — leave in place |
 
 ## Step 3: Determine Base Branch
 
-The base branch is whatever this work forked from â€” usually named in the
+The base branch is whatever this work forked from — usually named in the
 plan, the conversation, or the branch's upstream. If it is not already
 known, ask: "This branch split from <your best guess> - is that correct?"
 Confirm before merging: merging into the wrong base is expensive to undo.
 
 ## Step 4: Present Options
 
-**Normal repo and named-branch worktree â€” present exactly these 3 options:**
+**Normal repo and named-branch worktree — present exactly these 3 options:**
 
 ```
 Implementation complete. What would you like to do?
@@ -64,7 +64,7 @@ Implementation complete. What would you like to do?
 Which option?
 ```
 
-**Detached HEAD â€” present exactly these 2 options:**
+**Detached HEAD — present exactly these 2 options:**
 
 ```
 Implementation complete. You're on a detached HEAD (externally managed workspace).
@@ -75,7 +75,7 @@ Implementation complete. You're on a detached HEAD (externally managed workspace
 Which option?
 ```
 
-Present the menu exactly as written â€” concise, with every option coming
+Present the menu exactly as written — concise, with every option coming
 from the list above. Discarding the work happens only in response to your
 human partner explicitly asking for it (see "If your human partner asks to
 discard the work" below). Wait for their answer; the integration decision
@@ -90,7 +90,7 @@ is theirs.
 MAIN_ROOT=$(git -C "$(git rev-parse --git-common-dir)/.." rev-parse --show-toplevel)
 cd "$MAIN_ROOT"
 
-# Merge first â€” verify success before removing anything
+# Merge first — verify success before removing anything
 git checkout <base-branch>
 git pull
 git merge <feature-branch>
@@ -100,6 +100,6 @@ git merge <feature-branch>
 ```
 
 If tests fail on the merged result: stop, leave the worktree and branch in
-place, and investigate â€” nothing has been pushed, so the merge 
+place, and investigate — nothing has been pushed, so the merge 
 
 

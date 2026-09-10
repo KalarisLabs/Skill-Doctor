@@ -188,3 +188,40 @@ fn scan_complex_declared_benign_produces_pass() {
         report.findings
     );
 }
+
+#[test]
+fn test_scan_first_party_skills() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..");
+    let skills_dir = root.join("skills");
+    let mut failed_skills = Vec::new();
+    for entry in std::fs::read_dir(&skills_dir).expect("read skills dir") {
+        let entry = entry.unwrap();
+        if entry.file_type().unwrap().is_dir() {
+            let skill_md = entry.path().join("SKILL.md");
+            if skill_md.exists() {
+                let bundle = l0::intake(&entry.path()).expect("L0 intake skill");
+                let report = l5::analyze(
+                    &bundle,
+                    &ReportOptions {
+                        fail_on: Severity::High,
+                        deterministic: true,
+                    },
+                );
+                if report.verdict == Verdict::Fail {
+                    eprintln!("FAIL on skill: {}", entry.file_name().to_string_lossy());
+                    for f in &report.findings {
+                        eprintln!("  Finding: [{:?}] {}", f.severity, f.rule_id);
+                    }
+                    failed_skills.push(entry.file_name().to_string_lossy().to_string());
+                }
+            }
+        }
+    }
+    assert!(
+        failed_skills.is_empty(),
+        "Failed first-party skills: {:?}",
+        failed_skills
+    );
+}

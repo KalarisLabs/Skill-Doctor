@@ -102,6 +102,10 @@ enum Commands {
         /// Root path to scan recursively for skill directories.
         path: PathBuf,
 
+        /// Path patterns to exclude from recursive scanning.
+        #[arg(long = "exclude")]
+        exclude: Vec<String>,
+
         /// Minimum severity to trigger a non-zero exit code.
         #[arg(long, default_value = "high")]
         fail_on: SeverityArg,
@@ -273,6 +277,7 @@ fn main() {
 
         Commands::ScanAll {
             path,
+            exclude,
             fail_on,
             fail_under_coverage,
             output,
@@ -302,6 +307,7 @@ fn main() {
             }
             run_scan_all(
                 &path,
+                &exclude,
                 fail_on.0,
                 fail_under_coverage,
                 &output,
@@ -585,6 +591,7 @@ fn run_scan(
 #[allow(clippy::too_many_arguments)]
 fn run_scan_all(
     root: &Path,
+    exclude: &[String],
     fail_on: Severity,
     fail_under_coverage: Option<f64>,
     output: &OutputFormat,
@@ -601,7 +608,6 @@ fn run_scan_all(
     }
 
     // Discover skill directories containing SKILL.md
-    // Filter out VCS, build artifacts, internal agent skills, and test attack fixtures
     let mut skill_dirs = Vec::new();
     for entry in walkdir::WalkDir::new(root)
         .sort_by_file_name()
@@ -609,15 +615,20 @@ fn run_scan_all(
         .filter_entry(|e| {
             let name = e.file_name().to_string_lossy();
             let path_str = e.path().to_string_lossy().replace('\\', "/");
-            !name.starts_with(".git")
-                && name != "target"
-                && name != "node_modules"
-                && name != "dist"
-                && name != "skills"
-                && !path_str.contains("/skills/")
-                && !path_str.contains("/fixtures/attack")
-                && !path_str.contains("/corpora/cmd-inject-skill")
-                && !path_str.contains("/corpora/prompt-inject-skill")
+            if name.starts_with(".git")
+                || name == "target"
+                || name == "node_modules"
+                || name == "dist"
+            {
+                return false;
+            }
+            for pattern in exclude {
+                let norm = pattern.replace('\\', "/");
+                if path_str.contains(&norm) {
+                    return false;
+                }
+            }
+            true
         })
     {
         let entry = entry?;

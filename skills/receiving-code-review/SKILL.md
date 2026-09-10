@@ -1,4 +1,4 @@
-﻿---
+---
 name: receiving-code-review
 description: Use when receiving code review feedback, before implementing suggestions, especially if feedback seems unclear or technically questionable - requires technical rigor and verification, not performative agreement or blind implementation
 ---
@@ -53,7 +53,7 @@ your human partner: "Fix 1-6"
 You understand 1,2,3,6. Unclear on 4,5.
 
 âŒ WRONG: Implement 1,2,3,6 now, ask about 4,5 later
-âœ… RIGHT: "I understand items 1,2,3,6. Need clarification on 4 and 5 before proceeding."
+[RIGHT]: "I understand items 1,2,3,6. Need clarification on 4 and 5 before proceeding."
 ```
 
 ## Source-Specific Handling

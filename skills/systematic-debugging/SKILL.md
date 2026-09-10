@@ -1,4 +1,4 @@
-﻿---
+---
 name: systematic-debugging
 description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes
 ---
@@ -59,7 +59,7 @@ You MUST complete each phase before proceeding to the next.
    - Can you trigger it reliably?
    - What are the exact steps?
    - Does it happen every time?
-   - If not reproducible â†’ gather more data, don't guess
+   - If not reproducible -> gather more data, don't guess
 
 3. **Check Recent Changes**
    - What changed that could cause this?
@@ -69,7 +69,7 @@ You MUST complete each phase before proceeding to the next.
 
 4. **Gather Evidence in Multi-Component Systems**
 
-   **WHEN system has multiple components (CI â†’ build â†’ signing, API â†’ service â†’ database):**
+   **WHEN system has multiple components (CI -> build -> signing, API -> service -> database):**
 
    **BEFORE proposing fixes, add diagnostic instrumentation:**
    ```
@@ -103,7 +103,7 @@ You MUST complete each phase before proceeding to the next.
    codesign --sign "$IDENTITY" --verbose=4 "$APP"
    ```
 
-   **This reveals:** Which layer fails (secrets â†’ workflow âœ“, workflow â†’ build âœ—)
+   **This reveals:** Which layer fails (secrets -> workflow [OK], workflow -> build [FAIL])
 
 5. **Trace Data Flow**
 

@@ -50,6 +50,42 @@ pub enum Verdict {
     Fail,
 }
 
+/// Execution state of an analysis layer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LayerRunState {
+    /// Layer ran and produced evaluations/findings.
+    Ran,
+    /// Layer was not executed or not enabled.
+    Skipped,
+    /// Layer evaluation was degraded, rejected, or timed out.
+    Reduced,
+}
+
+/// Status of each analysis layer (L0 through L5).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct LayerStatus {
+    pub l0: LayerRunState,
+    pub l1: LayerRunState,
+    pub l2: LayerRunState,
+    pub l3: LayerRunState,
+    pub l4: LayerRunState,
+    pub l5: LayerRunState,
+}
+
+impl Default for LayerStatus {
+    fn default() -> Self {
+        Self {
+            l0: LayerRunState::Ran,
+            l1: LayerRunState::Ran,
+            l2: LayerRunState::Skipped,
+            l3: LayerRunState::Skipped,
+            l4: LayerRunState::Skipped,
+            l5: LayerRunState::Ran,
+        }
+    }
+}
+
 /// The complete scan report.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Report {
@@ -65,6 +101,15 @@ pub struct Report {
     pub deterministic: bool,
     /// Scanner version.
     pub scanner_version: String,
+    /// Whether the scan would fail based on the severity threshold.
+    #[serde(default)]
+    pub would_fail: bool,
+    /// The severity threshold used for failure evaluation.
+    #[serde(default)]
+    pub fail_on: Option<Severity>,
+    /// Execution status across analysis layers.
+    #[serde(default)]
+    pub layers: LayerStatus,
 }
 
 impl Report {
@@ -140,6 +185,9 @@ mod tests {
             verdict: Verdict::Pass,
             deterministic: true,
             scanner_version: "0.1.0".to_string(),
+            would_fail: false,
+            fail_on: Some(Severity::High),
+            layers: LayerStatus::default(),
         };
         let json = serde_json::to_string_pretty(&report).unwrap();
         let back: Report = serde_json::from_str(&json).unwrap();

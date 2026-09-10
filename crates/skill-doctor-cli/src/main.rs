@@ -170,6 +170,9 @@ enum Commands {
         #[arg(long)]
         deterministic: bool,
     },
+
+    /// Launch Model Context Protocol (MCP) server on stdio.
+    Mcp,
 }
 
 /// Wrapper for severity argument parsing.
@@ -280,6 +283,27 @@ fn main() {
             fail_on,
             deterministic,
         } => watch::run_watch(&path, fail_on.0, deterministic, &ui).map(|_| 0),
+
+        Commands::Mcp => {
+            #[cfg(feature = "mcp")]
+            {
+                match tokio::runtime::Builder::new_current_thread()
+                    .enable_all()
+                    .build()
+                {
+                    Ok(rt) => rt
+                        .block_on(async { skill_doctor_mcp::run_stdio_server().await })
+                        .map(|_| 0),
+                    Err(e) => Err(anyhow::anyhow!("failed to start tokio runtime: {e}")),
+                }
+            }
+            #[cfg(not(feature = "mcp"))]
+            {
+                eprintln!("Error: The MCP server is not compiled into this binary.");
+                eprintln!("To enable MCP server support, rebuild with: cargo build -p skill-doctor --features mcp");
+                process::exit(1);
+            }
+        }
     };
 
     match result {

@@ -6,7 +6,7 @@
 use crate::finding::Severity;
 use crate::l0::Bundle;
 use crate::l1;
-use crate::report::{Coverage, Report};
+use crate::report::{Coverage, LayerStatus, Report, Verdict};
 
 /// Options for report generation.
 pub struct ReportOptions {
@@ -41,6 +41,7 @@ pub fn analyze(bundle: &Bundle, options: &ReportOptions) -> Report {
 
     // Compute verdict.
     let verdict = Report::compute_verdict(&findings, options.fail_on);
+    let would_fail = verdict == Verdict::Fail;
 
     Report {
         bundle_digest: bundle.digest.clone(),
@@ -49,6 +50,9 @@ pub fn analyze(bundle: &Bundle, options: &ReportOptions) -> Report {
         verdict,
         deterministic: options.deterministic,
         scanner_version: env!("CARGO_PKG_VERSION").to_string(),
+        would_fail,
+        fail_on: Some(options.fail_on),
+        layers: LayerStatus::default(),
     }
 }
 

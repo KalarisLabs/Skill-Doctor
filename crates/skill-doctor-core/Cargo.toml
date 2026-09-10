@@ -25,6 +25,7 @@ serde_yaml = { workspace = true }
 zip = { workspace = true }
 tar = { workspace = true }
 flate2 = { workspace = true }
+skill-doctor-neutralize = { path = "../skill-doctor-neutralize" }
 
 [dev-dependencies]
 tempfile = "3"

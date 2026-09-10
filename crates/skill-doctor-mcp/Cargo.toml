@@ -9,10 +9,17 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
-# MCP dependencies will be added when this crate is implemented.
-# rmcp = { workspace = true }
-# tokio = { workspace = true }
-# schemars = { workspace = true }
-# serde = { workspace = true }
-# serde_json = { workspace = true }
-# rand = { workspace = true }
+rmcp = { version = "3.2", default-features = false, features = ["server", "transport-io", "schemars", "macros"] }
+tokio = { version = "1", default-features = false, features = ["rt", "macros", "io-std", "sync"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+skill-doctor-core = { path = "../skill-doctor-core" }
+skill-doctor-neutralize = { path = "../skill-doctor-neutralize" }
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+hex = { workspace = true }
+sha2 = { workspace = true }
+uuid = { version = "1", features = ["v4"] }
+
+[dev-dependencies]
+tempfile = "3"

@@ -62,6 +62,13 @@ impl ThreatClass {
         }
     }
 
+    /// Parse a ThreatClass from its stable ID (e.g. "SD-01" or "sd-02").
+    pub fn from_id(id: &str) -> Option<Self> {
+        Self::ALL
+            .into_iter()
+            .find(|c| c.id().eq_ignore_ascii_case(id))
+    }
+
     /// Human-readable description of the threat class.
     pub fn description(&self) -> &'static str {
         match self {

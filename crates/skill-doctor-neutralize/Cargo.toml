@@ -9,3 +9,5 @@ repository.workspace = true
 authors.workspace = true
 
 [dependencies]
+unicode-security = { workspace = true }
+unicode-normalization = { workspace = true }

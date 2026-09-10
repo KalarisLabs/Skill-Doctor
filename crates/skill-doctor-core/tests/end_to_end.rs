@@ -88,3 +88,102 @@ fn deterministic_scans_produce_identical_output() {
         "Deterministic report outputs must be byte-identical"
     );
 }
+
+#[test]
+fn scan_sd_04_undeclared_capability_produces_fail() {
+    let attack_path = fixtures_dir()
+        .join("attack")
+        .join("SD-04")
+        .join("undeclared-capability");
+    assert!(attack_path.exists(), "SD-04 fixture path must exist");
+
+    let bundle = l0::intake(&attack_path).expect("L0 intake should succeed");
+    let report = l5::analyze(
+        &bundle,
+        &ReportOptions {
+            fail_on: Severity::High,
+            deterministic: true,
+        },
+    );
+
+    assert_eq!(report.verdict, Verdict::Fail);
+    let has_sd04 = report
+        .findings
+        .iter()
+        .any(|f| f.class == ThreatClass::PrivilegeEscalation);
+    assert!(has_sd04, "Expected findings in SD-04 class");
+}
+
+#[test]
+fn scan_sd_10_unicode_trojan_produces_fail() {
+    let attack_path = fixtures_dir()
+        .join("attack")
+        .join("SD-10")
+        .join("unicode-trojan");
+    assert!(attack_path.exists(), "SD-10 fixture path must exist");
+
+    let bundle = l0::intake(&attack_path).expect("L0 intake should succeed");
+    let report = l5::analyze(
+        &bundle,
+        &ReportOptions {
+            fail_on: Severity::High,
+            deterministic: true,
+        },
+    );
+
+    assert_eq!(report.verdict, Verdict::Fail);
+    let has_sd10 = report
+        .findings
+        .iter()
+        .any(|f| f.class == ThreatClass::ObfuscationEvasion);
+    assert!(has_sd10, "Expected findings in SD-10 class");
+}
+
+#[test]
+fn scan_sd_01_encoded_injection_produces_fail() {
+    let attack_path = fixtures_dir()
+        .join("attack")
+        .join("SD-01")
+        .join("encoded-injection");
+    assert!(attack_path.exists(), "SD-01 fixture path must exist");
+
+    let bundle = l0::intake(&attack_path).expect("L0 intake should succeed");
+    let report = l5::analyze(
+        &bundle,
+        &ReportOptions {
+            fail_on: Severity::High,
+            deterministic: true,
+        },
+    );
+
+    assert_eq!(report.verdict, Verdict::Fail);
+    let has_sd01 = report
+        .findings
+        .iter()
+        .any(|f| f.class == ThreatClass::PromptInjection);
+    assert!(has_sd01, "Expected findings in SD-01 class");
+}
+
+#[test]
+fn scan_complex_declared_benign_produces_pass() {
+    let benign_path = fixtures_dir()
+        .join("benign")
+        .join("complex-declared-skill");
+    assert!(benign_path.exists(), "Complex benign fixture path must exist");
+
+    let bundle = l0::intake(&benign_path).expect("L0 intake should succeed");
+    let report = l5::analyze(
+        &bundle,
+        &ReportOptions {
+            fail_on: Severity::High,
+            deterministic: true,
+        },
+    );
+
+    assert_eq!(report.verdict, Verdict::Pass);
+    assert!(
+        report.findings.is_empty(),
+        "Complex benign skill should produce zero findings, got: {:?}",
+        report.findings
+    );
+}

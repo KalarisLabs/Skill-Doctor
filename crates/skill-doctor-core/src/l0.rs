@@ -7,10 +7,14 @@
 //! The digest is deterministic: files are visited in sorted order by path,
 //! and the hash covers both paths and contents.
 
+use flate2::read::GzDecoder;
 use sha2::{Digest, Sha256};
+use std::io::Read;
 use std::path::{Path, PathBuf};
+use tar::Archive as TarArchive;
 use thiserror::Error;
 use walkdir::WalkDir;
+use zip::ZipArchive;
 
 /// Errors from L0 intake.
 #[derive(Debug, Error)]
@@ -21,6 +25,10 @@ pub enum L0Error {
     Io(#[from] std::io::Error),
     #[error("walkdir error: {0}")]
     WalkDir(#[from] walkdir::Error),
+    #[error("zip archive error: {0}")]
+    Zip(String),
+    #[error("tar archive error: {0}")]
+    Tar(String),
 }
 
 /// A file entry in the normalized bundle.
@@ -41,9 +49,9 @@ pub struct Bundle {
     pub digest: String,
 }
 
-/// Perform L0 intake on a directory.
+/// Perform L0 intake on a directory, file, or archive (.zip / .tar.gz).
 ///
-/// Walks the directory, reads all files, sorts by relative path,
+/// Walks the directory or unpacks the archive, sorts by relative path,
 /// and computes a canonical SHA-256 digest.
 pub fn intake(root: &Path) -> Result<Bundle, L0Error> {
     if !root.exists() {
@@ -53,14 +61,21 @@ pub fn intake(root: &Path) -> Result<Bundle, L0Error> {
     let mut entries = Vec::new();
 
     if root.is_file() {
-        let content = std::fs::read(root)?;
-        entries.push(BundleEntry {
-            relative_path: root
-                .file_name()
-                .map(PathBuf::from)
-                .unwrap_or_else(|| PathBuf::from("file")),
-            content,
-        });
+        let path_str = root.to_string_lossy().to_lowercase();
+        if path_str.ends_with(".zip") {
+            entries = read_zip_archive(root)?;
+        } else if path_str.ends_with(".tar.gz") || path_str.ends_with(".tgz") {
+            entries = read_tar_gz_archive(root)?;
+        } else {
+            let content = std::fs::read(root)?;
+            entries.push(BundleEntry {
+                relative_path: root
+                    .file_name()
+                    .map(PathBuf::from)
+                    .unwrap_or_else(|| PathBuf::from("file")),
+                content,
+            });
+        }
     } else {
         for entry in WalkDir::new(root)
             .sort_by_file_name()
@@ -98,6 +113,54 @@ pub fn intake(root: &Path) -> Result<Bundle, L0Error> {
     let digest = compute_digest(&entries);
 
     Ok(Bundle { entries, digest })
+}
+
+/// Read all files from a ZIP archive.
+fn read_zip_archive(path: &Path) -> Result<Vec<BundleEntry>, L0Error> {
+    let file = std::fs::File::open(path)?;
+    let mut archive = ZipArchive::new(file).map_err(|e| L0Error::Zip(e.to_string()))?;
+    let mut entries = Vec::new();
+
+    for i in 0..archive.len() {
+        let mut file = archive
+            .by_index(i)
+            .map_err(|e| L0Error::Zip(e.to_string()))?;
+        if file.is_file() {
+            let mut content = Vec::new();
+            file.read_to_end(&mut content)?;
+            entries.push(BundleEntry {
+                relative_path: PathBuf::from(file.name()),
+                content,
+            });
+        }
+    }
+    Ok(entries)
+}
+
+/// Read all files from a tar.gz archive.
+fn read_tar_gz_archive(path: &Path) -> Result<Vec<BundleEntry>, L0Error> {
+    let file = std::fs::File::open(path)?;
+    let decoder = GzDecoder::new(file);
+    let mut archive = TarArchive::new(decoder);
+    let mut entries = Vec::new();
+
+    for entry in archive.entries().map_err(|e| L0Error::Tar(e.to_string()))? {
+        let mut entry = entry.map_err(|e| L0Error::Tar(e.to_string()))?;
+        let header = entry.header();
+        if header.entry_type().is_file() {
+            let relative_path = entry
+                .path()
+                .map_err(|e| L0Error::Tar(e.to_string()))?
+                .to_path_buf();
+            let mut content = Vec::new();
+            entry.read_to_end(&mut content)?;
+            entries.push(BundleEntry {
+                relative_path,
+                content,
+            });
+        }
+    }
+    Ok(entries)
 }
 
 /// Compute the canonical SHA-256 digest of a sorted bundle.
@@ -161,5 +224,47 @@ mod tests {
     fn nonexistent_path_errors() {
         let result = intake(Path::new("/nonexistent/path/xyz"));
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn zip_archive_intake() {
+        use std::io::Write;
+        let dir = tempfile::tempdir().unwrap();
+        let zip_path = dir.path().join("skill.zip");
+        let file = std::fs::File::create(&zip_path).unwrap();
+        let mut zip = zip::ZipWriter::new(file);
+
+        let options = zip::write::SimpleFileOptions::default();
+        zip.start_file("SKILL.md", options).unwrap();
+        zip.write_all(b"# Test Skill in Zip").unwrap();
+        zip.finish().unwrap();
+
+        let bundle = intake(&zip_path).unwrap();
+        assert_eq!(bundle.entries.len(), 1);
+        assert_eq!(bundle.entries[0].relative_path, PathBuf::from("SKILL.md"));
+        assert_eq!(bundle.entries[0].content, b"# Test Skill in Zip");
+    }
+
+    #[test]
+    fn tar_gz_archive_intake() {
+        let dir = tempfile::tempdir().unwrap();
+        let tar_path = dir.path().join("skill.tar.gz");
+        let file = std::fs::File::create(&tar_path).unwrap();
+        let enc = flate2::write::GzEncoder::new(file, flate2::Compression::default());
+        let mut tar = tar::Builder::new(enc);
+
+        let mut header = tar::Header::new_gnu();
+        header.set_size(19);
+        header.set_mode(0o644);
+        header.set_cksum();
+        tar.append_data(&mut header, "SKILL.md", &b"# Test Skill in Tar"[..])
+            .unwrap();
+        let enc = tar.into_inner().unwrap();
+        enc.finish().unwrap();
+
+        let bundle = intake(&tar_path).unwrap();
+        assert_eq!(bundle.entries.len(), 1);
+        assert_eq!(bundle.entries[0].relative_path, PathBuf::from("SKILL.md"));
+        assert_eq!(bundle.entries[0].content, b"# Test Skill in Tar");
     }
 }

@@ -19,6 +19,12 @@ regex = { workspace = true }
 memchr = { workspace = true }
 base64 = { workspace = true }
 hex = { workspace = true }
+unicode-normalization = { workspace = true }
+unicode-security = { workspace = true }
+serde_yaml = { workspace = true }
+zip = { workspace = true }
+tar = { workspace = true }
+flate2 = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"

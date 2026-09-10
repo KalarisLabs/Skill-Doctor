@@ -7,6 +7,8 @@
 //!
 //! The core never performs network I/O or LLM inference.
 
+pub mod capability;
+pub mod entropy;
 pub mod finding;
 pub mod l0;
 pub mod l1;
@@ -14,3 +16,4 @@ pub mod l5;
 pub mod report;
 pub mod scoring;
 pub mod taxonomy;
+pub mod unicode;

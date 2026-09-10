@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Execute on LambdaTest HyperExecute
         uses: lambdatest/hyperexecute-github-action@v1.4.0
@@ -30,7 +30,7 @@ jobs:
           yamlPath: hyperexecute.yaml
 
       - name: Upload Artifacts Summary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: hyperexecute-benchmarks

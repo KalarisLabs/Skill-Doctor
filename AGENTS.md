@@ -57,7 +57,7 @@ cargo build --release                     # build the binary
 cargo test --workspace                    # all tests except access-gated real_malware
 cargo clippy --workspace -- -D warnings    # lint gate (must be clean)
 cargo fmt --all --check                    # formatting gate
-cargo run -p skill-doctor-cli -- scan ./examples/hello-skill
+cargo run -p skill-doctor -- scan ./examples/hello-skill
 cargo build --release --features sandbox   # include L3 behavioral process harness
 ./sd-bench/run.sh --pinned                  # reproduce the benchmark against pinned competitors
 ```

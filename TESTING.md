@@ -77,6 +77,7 @@ os-cli (windows-latest)
 supply-chain
 dogfood-self-scan
 determinism
+docs-smoke
 ```
 
 *Admin bypass should be disabled to ensure all merged code meets these quality criteria.*

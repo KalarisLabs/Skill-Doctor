@@ -29,12 +29,12 @@ platform; there is no Node runtime dependency at scan time.
 ## Quick start (CLI)
 
 ```bash
-skill-doctor scan ./my-skill                # scan one bundle, human-readable report
-skill-doctor scan-all . --output sarif      # scan a whole tree -> SARIF
-skill-doctor diff --baseline main           # only newly introduced findings vs a git ref
-skill-doctor watch ./my-skill               # live feedback while authoring
-skill-doctor serve --mcp                     # run as an MCP server (host-delegated L2)
-skill-doctor explain SD-04                    # describe a threat class and its detectors
+skill-doctor scan ./examples/hello-skill          # scan one bundle, human-readable report
+skill-doctor scan-all . --output sarif           # scan a whole tree -> SARIF
+skill-doctor diff ./examples/hello-skill --baseline report.json # only newly introduced findings vs baseline report (--baseline takes a saved JSON report path, not a git ref)
+skill-doctor watch ./examples/hello-skill         # live feedback while authoring
+skill-doctor mcp                                 # run as an MCP server (host-delegated L2)
+skill-doctor explain SD-04                       # describe a threat class and its detectors
 ```
 
 ### CI gate
@@ -56,7 +56,7 @@ rustup toolchain install stable             # see rust-toolchain.toml for the pi
 git clone https://github.com/kalarislabs/skill-doctor && cd skill-doctor
 cargo build --release                        # produces target/release/skill-doctor
 cargo test --workspace                        # unit + corpus tests (excludes real_malware)
-cargo run -p skill-doctor-cli -- scan ./examples/hello-skill
+cargo run -p skill-doctor -- scan ./examples/hello-skill
 ```
 
 Static musl build (fully static binary):

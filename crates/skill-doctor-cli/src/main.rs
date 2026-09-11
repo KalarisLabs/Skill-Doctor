@@ -197,6 +197,16 @@ enum Commands {
         deterministic: bool,
     },
 
+    /// Describe an SDTM-v1 threat class and its detectors (e.g. SD-01 through SD-11).
+    Explain {
+        /// Threat class ID (e.g. SD-01 through SD-11). If omitted, lists all 11 classes.
+        rule_id: Option<String>,
+
+        /// Output format (text or json).
+        #[arg(long, default_value = "text", value_parser = ["text", "json"])]
+        output: String,
+    },
+
     /// Launch Model Context Protocol (MCP) server on stdio.
     Mcp,
 }
@@ -356,6 +366,8 @@ fn main() {
             fail_on,
             deterministic,
         } => watch::run_watch(&path, fail_on.0, deterministic, &ui).map(|_| 0),
+
+        Commands::Explain { rule_id, output } => run_explain(rule_id.as_deref(), &output, &ui),
 
         Commands::Mcp => {
             #[cfg(feature = "mcp")]
@@ -744,8 +756,11 @@ fn run_diff(
 ) -> Result<i32> {
     let baseline_json = std::fs::read_to_string(baseline)
         .with_context(|| format!("Failed to read baseline report: {}", baseline.display()))?;
+    let json_str = baseline_json
+        .strip_prefix('\u{feff}')
+        .unwrap_or(&baseline_json);
     let baseline_report: skill_doctor_core::report::Report =
-        serde_json::from_str(&baseline_json).context("Failed to parse baseline report")?;
+        serde_json::from_str(json_str).context("Failed to parse baseline report")?;
 
     let bundle = l0::intake(path).context("L0 intake failed")?;
     let current_report = l5::analyze(
@@ -763,36 +778,142 @@ fn run_diff(
             !baseline_report
                 .findings
                 .iter()
-                .any(|b| b.rule_id == f.rule_id && b.path == f.path)
+                .any(|bf| bf.rule_id == f.rule_id && bf.path == f.path)
         })
         .collect();
 
+    let diff_report = skill_doctor_core::report::Report {
+        bundle_digest: current_report.bundle_digest.clone(),
+        findings: new_findings.into_iter().cloned().collect(),
+        coverage: current_report.coverage.clone(),
+        verdict: if current_report.findings.is_empty() {
+            skill_doctor_core::report::Verdict::Pass
+        } else {
+            skill_doctor_core::report::Verdict::Fail
+        },
+        risk_score: current_report.risk_score,
+        deterministic,
+        layers: current_report.layers.clone(),
+        timestamp: current_report.timestamp.clone(),
+    };
+
     match output {
-        OutputFormat::Text => {
-            if new_findings.is_empty() {
-                println!("No new findings compared to baseline.");
-            } else {
-                println!("{} new finding(s):", new_findings.len());
-                for f in &new_findings {
-                    println!(
-                        "  {} [{}] {} in {}",
-                        f.severity,
-                        f.class.id(),
-                        f.rule_id,
-                        f.path.display(),
-                    );
-                }
-            }
+        OutputFormat::Json => {
+            println!("{}", serde_json::to_string_pretty(&diff_report)?);
         }
-        OutputFormat::Json | OutputFormat::Sarif => {
-            let json = serde_json::to_string_pretty(&new_findings)?;
-            println!("{}", json);
+        OutputFormat::Sarif => {
+            let sarif = report::sarif::to_sarif(&diff_report);
+            println!("{}", serde_json::to_string_pretty(&sarif)?);
+        }
+        OutputFormat::Text => {
+            report::text::print_text_report(&diff_report, false, false);
         }
     }
 
-    if new_findings.is_empty() {
+    if diff_report.findings.is_empty() {
         Ok(0)
     } else {
         Ok(2)
+    }
+}
+
+/// Explain an SDTM-v1 threat class or list all threat classes.
+fn run_explain(rule_id: Option<&str>, output_format: &str, ui: &UiContext) -> Result<i32> {
+    use skill_doctor_core::taxonomy::ThreatClass;
+
+    match rule_id {
+        Some(query) => {
+            let tc = ThreatClass::from_id(query).or_else(|| {
+                // Try case-insensitive matching against class name/description keywords
+                ThreatClass::ALL.into_iter().find(|c| {
+                    c.description()
+                        .to_lowercase()
+                        .contains(&query.to_lowercase())
+                })
+            });
+
+            match tc {
+                Some(class) => {
+                    if output_format == "json" {
+                        let obj = serde_json::json!({
+                            "id": class.id(),
+                            "name": class.description(),
+                            "description": class.description(),
+                            "default_severity": class.default_severity(),
+                            "detector": class.primary_detection(),
+                            "remediation": class.remediation(),
+                        });
+                        println!("{}", serde_json::to_string_pretty(&obj)?);
+                    } else {
+                        let bold = ui.style_bold();
+                        let sev_style = ui.severity_style(class.default_severity());
+                        println!(
+                            "{bold}=== {} — {} ==={bold:#}",
+                            class.id(),
+                            class.description()
+                        );
+                        println!();
+                        println!("  {bold}Class ID:{bold:#}          {}", class.id());
+                        println!("  {bold}Description:{bold:#}       {}", class.description());
+                        println!(
+                            "  {bold}Default Severity:{bold:#}  {sev_style}[{}]{sev_style:#}",
+                            class.default_severity()
+                        );
+                        println!(
+                            "  {bold}Primary Detection:{bold:#} {}",
+                            class.primary_detection()
+                        );
+                        println!("  {bold}Remediation:{bold:#}       {}", class.remediation());
+                        println!();
+                    }
+                    Ok(0)
+                }
+                None => {
+                    eprintln!(
+                        "error: Unknown threat class '{}'. Valid classes are SD-01 through SD-11.",
+                        query
+                    );
+                    eprintln!("Run `skill-doctor explain` without arguments to list all classes.");
+                    Ok(1)
+                }
+            }
+        }
+        None => {
+            if output_format == "json" {
+                let list: Vec<_> = ThreatClass::ALL
+                    .into_iter()
+                    .map(|class| {
+                        serde_json::json!({
+                            "id": class.id(),
+                            "name": class.description(),
+                            "description": class.description(),
+                            "default_severity": class.default_severity(),
+                            "detector": class.primary_detection(),
+                            "remediation": class.remediation(),
+                        })
+                    })
+                    .collect();
+                println!("{}", serde_json::to_string_pretty(&list)?);
+            } else {
+                let bold = ui.style_bold();
+                let dim = ui.style_dim();
+                println!("{bold}Skill Doctor Threat Matrix (SDTM-v1) — 11 Classes:{bold:#}");
+                println!();
+                for class in ThreatClass::ALL {
+                    let sev_style = ui.severity_style(class.default_severity());
+                    println!(
+                        "  {bold}{}{bold:#}  {sev_style}[{:<8}]{sev_style:#}  {}",
+                        class.id(),
+                        format!("{}", class.default_severity()),
+                        class.description()
+                    );
+                }
+                println!();
+                println!(
+                    "{dim}Run `skill-doctor explain <ID>` (e.g. `skill-doctor explain SD-04`) for details.{dim:#}"
+                );
+            }
+            Ok(0)
+        }
     }
 }

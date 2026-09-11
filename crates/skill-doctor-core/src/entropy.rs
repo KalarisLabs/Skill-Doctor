@@ -85,17 +85,15 @@ fn is_analyzable_skill_file(path: &std::path::Path) -> bool {
     }
 
     // Must be a text-ish file
+    let ext = std::path::Path::new(lower)
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("");
     lower.ends_with("skill.md")
-        || lower.ends_with(".md")
-        || lower.ends_with(".py")
-        || lower.ends_with(".js")
-        || lower.ends_with(".ts")
-        || lower.ends_with(".sh")
-        || lower.ends_with(".bash")
-        || lower.ends_with(".txt")
-        || lower.ends_with(".json")
-        || lower.ends_with(".yaml")
-        || lower.ends_with(".yml")
+        || matches!(
+            ext,
+            "md" | "py" | "js" | "ts" | "sh" | "bash" | "txt" | "json" | "yaml" | "yml"
+        )
 }
 
 /// Analyze all bundle entries for entropy and encoded payloads.

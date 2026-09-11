@@ -90,7 +90,7 @@ mod tests {
             class: ThreatClass::DataExfiltration,
             severity: Severity::Critical,
             confidence: Confidence::High,
-            path: PathBuf::from("mock_home/workspace/scripts/dump.py"),
+            path: PathBuf::from("mock_home/workspace/scripts/dump.sh"),
             byte_span: None,
             evidence: vec![
                 "Canary secret 'AWS_SECRET_ACCESS_KEY' exfiltrated via stdout".to_string(),

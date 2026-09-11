@@ -184,7 +184,7 @@ mod tests {
             coverage: Coverage::from_evaluable(&[]),
             verdict: Verdict::Pass,
             deterministic: true,
-            scanner_version: "0.1.0".to_string(),
+            scanner_version: env!("CARGO_PKG_VERSION").to_string(),
             would_fail: false,
             fail_on: Some(Severity::High),
             layers: LayerStatus::default(),

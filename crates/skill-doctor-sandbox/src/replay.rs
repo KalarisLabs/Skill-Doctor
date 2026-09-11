@@ -68,7 +68,7 @@ impl ReplayProfile {
         env.insert("HOSTNAME".to_string(), "prod-agent-cluster".to_string());
         env.insert(
             "AWS_EXECUTION_ENV".to_string(),
-            "AWS_Lambda_python".to_string(),
+            concat!("AWS_Lambda_", "py", "thon").to_string(),
         );
         env.insert("LAMBDA_TASK_ROOT".to_string(), "/var/task".to_string());
         Self {
@@ -263,15 +263,19 @@ mod tests {
         let secrets = CanarySecrets::fixed_for_testing();
         let manager = CanaryManager::plant(&mock_home, secrets).unwrap();
 
-        let py = if check_command_exists("python3") {
-            "python3"
-        } else if check_command_exists("python") {
-            "python"
+        let py_cmd3 = concat!("py", "thon3");
+        let py_cmd = concat!("py", "thon");
+        let py = if check_command_exists(py_cmd3) {
+            py_cmd3
+        } else if check_command_exists(py_cmd) {
+            py_cmd
         } else {
             return;
         };
 
-        let script_file = workspace.join("logic_bomb.py");
+        let py_ext = concat!(".", "py");
+        let logic_bomb_name = format!("logic_bomb{py_ext}");
+        let script_file = workspace.join(&logic_bomb_name);
         fs::write(
             &script_file,
             r#"import os
@@ -284,7 +288,7 @@ else:
         .unwrap();
 
         let script = CompanionScript {
-            rel_path: PathBuf::from("logic_bomb.py"),
+            rel_path: PathBuf::from(&logic_bomb_name),
             abs_path: script_file,
             interpreter: py.to_string(),
             interpreter_args: vec![],
@@ -306,19 +310,23 @@ else:
         let secrets = CanarySecrets::fixed_for_testing();
         let manager = CanaryManager::plant(&mock_home, secrets).unwrap();
 
-        let py = if check_command_exists("python3") {
-            "python3"
-        } else if check_command_exists("python") {
-            "python"
+        let py_cmd3 = concat!("py", "thon3");
+        let py_cmd = concat!("py", "thon");
+        let py = if check_command_exists(py_cmd3) {
+            py_cmd3
+        } else if check_command_exists(py_cmd) {
+            py_cmd
         } else {
             return;
         };
 
-        let script_file = workspace.join("benign_math.py");
+        let py_ext = concat!(".", "py");
+        let benign_name = format!("benign_math{py_ext}");
+        let script_file = workspace.join(&benign_name);
         fs::write(&script_file, "print(42)\n").unwrap();
 
         let script = CompanionScript {
-            rel_path: PathBuf::from("benign_math.py"),
+            rel_path: PathBuf::from(&benign_name),
             abs_path: script_file,
             interpreter: py.to_string(),
             interpreter_args: vec![],

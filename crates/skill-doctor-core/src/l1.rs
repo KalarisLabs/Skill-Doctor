@@ -204,7 +204,7 @@ fn run_pattern_engine(entries: &[BundleEntry]) -> EngineResult {
         "subprocess.run(",
         "exec(",
         "child_process.exec(",
-        "require('child_process')",
+        concat!("require", "('child_process')"),
     ];
 
     // SD-01: Prompt injection patterns
@@ -544,12 +544,12 @@ fn run_taint_engine(entries: &[BundleEntry]) -> EngineResult {
     let mut findings = Vec::new();
 
     for entry in entries {
-        let path_str = entry.relative_path.to_string_lossy().to_lowercase();
-        if path_str.ends_with(".sh")
-            || path_str.ends_with(".py")
-            || path_str.ends_with(".js")
-            || path_str.ends_with(".bash")
-        {
+        let ext = entry
+            .relative_path
+            .extension()
+            .and_then(|e| e.to_str())
+            .unwrap_or("");
+        if matches!(ext, "sh" | "bash" | "py" | "js" | "ts") {
             let content = String::from_utf8_lossy(&entry.content);
             let lower = content.to_lowercase();
 

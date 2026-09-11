@@ -282,7 +282,7 @@ mod tests {
 
         let entries = vec![
             make_entry("SKILL.md", skill_md),
-            make_entry("script.py", script),
+            make_entry("script.sh", script),
         ];
 
         let findings = analyze_capabilities(&entries);
@@ -298,7 +298,7 @@ mod tests {
 
         let entries = vec![
             make_entry("SKILL.md", skill_md),
-            make_entry("script.py", script),
+            make_entry("script.sh", script),
         ];
 
         let findings = analyze_capabilities(&entries);

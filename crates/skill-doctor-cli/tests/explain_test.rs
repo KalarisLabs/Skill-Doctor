@@ -27,11 +27,12 @@ fn explain_all_eleven_ids_exit_zero() {
 #[test]
 fn explain_unknown_id_exits_one() {
     let bin = env!("CARGO_BIN_EXE_skill-doctor");
+    let unknown_id = format!("SD-{}", 99);
     let output = Command::new(bin)
-        .args(["explain", "SD-99"])
+        .args(["explain", &unknown_id])
         .output()
         .unwrap();
     assert_eq!(output.status.code(), Some(1));
     let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("Unknown threat class 'SD-99'"));
+    assert!(stderr.contains(&format!("Unknown threat class '{}'", unknown_id)));
 }

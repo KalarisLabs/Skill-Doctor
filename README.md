@@ -39,6 +39,17 @@ skill-doctor explain SD-04                       # describe a threat class and i
 
 ### CI gate
 
+GitHub Action (`@v0` or pinned SHA):
+
+```yaml
+- uses: kalarislabs/skill-doctor-action@v0
+  with:
+    fail-on: HIGH
+    fail-under-coverage: 0.8
+```
+
+CLI:
+
 ```bash
 skill-doctor scan-all . \
   --output sarif \

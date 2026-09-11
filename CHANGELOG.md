@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2026-09-10
 
 ### Added
-- Initial release of Skill Doctor v2
+- Initial release of Skill Doctor (v0.1.0)
 - L0 intake layer with directory, ZIP, tar.gz, and single file support
 - L1 deterministic static analysis engines:
   - Pattern engine with regex-based detection for SD-01 through SD-11

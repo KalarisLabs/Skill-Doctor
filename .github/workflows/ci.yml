@@ -126,6 +126,14 @@ jobs:
       - name: cargo-deny check (advisories, licenses, bans, unknown git)
         uses: EmbarkStudios/cargo-deny-action@v2
 
+      - name: Invariant shell grep gate
+        run: bash scripts/invariants.sh
+
+      - name: Semgrep architectural invariants
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: .semgrep/skill-doctor-invariants.yml
+
   dogfood-self-scan:
     name: dogfood-self-scan
     runs-on: ubuntu-latest

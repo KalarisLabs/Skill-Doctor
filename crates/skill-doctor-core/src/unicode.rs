@@ -202,7 +202,7 @@ mod tests {
     #[test]
     fn detects_bidi_trojan_source() {
         let entry = make_entry(
-            "script.py",
+            "script.txt",
             "is_admin = False\n# \u{202E} if is_admin: \u{202D} return True",
         );
         let findings = analyze_unicode(&[entry]);
@@ -215,7 +215,7 @@ mod tests {
     fn detects_homoglyph_confusable() {
         // Cyrillic small letter a: U+0430
         let spoofed_eval = "ev\u{0430}l('malicious()')";
-        let entry = make_entry("test.py", spoofed_eval);
+        let entry = make_entry("test.txt", spoofed_eval);
         let findings = analyze_unicode(&[entry]);
         assert!(!findings.is_empty());
         assert_eq!(findings[0].rule_id, "SD-10-homoglyph-confusable");

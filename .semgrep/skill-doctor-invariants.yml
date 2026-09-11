@@ -1,0 +1,78 @@
+rules:
+  - id: sd-unsafe-outside-sandbox
+    severity: ERROR
+    languages: [rust]
+    message: "Invariant: unsafe is only permitted in skill-doctor-sandbox."
+    paths:
+      exclude: ["crates/skill-doctor-sandbox/**"]
+    pattern: unsafe { ... }
+
+  - id: sd-core-must-not-import-runtime-deps
+    severity: ERROR
+    languages: [rust]
+    message: "Invariant 8: core/neutralize/rules must not link tokio, rmcp, reqwest, ratatui, crossterm."
+    paths:
+      include:
+        - "crates/skill-doctor-core/**"
+        - "crates/skill-doctor-neutralize/**"
+        - "crates/skill-doctor-rules/**"
+    pattern-either:
+      - pattern: use tokio::$X;
+      - pattern: use rmcp::$X;
+      - pattern: use reqwest::$X;
+      - pattern: use ratatui::$X;
+      - pattern: use crossterm::$X;
+
+  - id: sd-no-subprocess-outside-sandbox
+    severity: ERROR
+    languages: [rust]
+    message: "Only skill-doctor-sandbox may spawn processes."
+    paths:
+      exclude:
+        - "crates/skill-doctor-sandbox/**"
+        - "**/tests/**"
+        - "**/build.rs"
+    pattern-either:
+      - pattern: std::process::Command::new($X)
+      - pattern: Command::new($X)
+
+  - id: sd-no-wallclock-on-report-path
+    severity: ERROR
+    languages: [rust]
+    message: "Invariant 4: wall-clock time breaks determinism. Inject the timestamp instead."
+    paths:
+      include: ["crates/skill-doctor-core/**", "crates/skill-doctor-cli/src/sarif.rs"]
+    pattern-either:
+      - pattern: std::time::SystemTime::now()
+      - pattern: SystemTime::now()
+      - pattern: chrono::$X::now()
+
+  - id: sd-no-canary-values-in-output
+    severity: ERROR
+    languages: [rust]
+    message: "Invariant 7: emit secret_name only, never the secret value."
+    pattern-either:
+      - pattern: println!("...", ..., $S.aws_secret, ...)
+      - pattern: println!("...", ..., $S.github_token, ...)
+      - pattern: format!("...", ..., $S.openai_key, ...)
+      - pattern: format!("...", ..., $S.ssh_key, ...)
+
+  - id: sd-no-unwrap-in-libraries
+    severity: WARNING
+    languages: [rust]
+    paths:
+      include: ["crates/skill-doctor-core/**", "crates/skill-doctor-neutralize/**"]
+      exclude: ["**/tests/**", "**/*_test.rs"]
+    message: "Library crates must return Result, not panic on untrusted input."
+    pattern-either:
+      - pattern: $E.unwrap()
+      - pattern: $E.expect(...)
+
+  - id: sd-no-stubs-shipped
+    severity: ERROR
+    languages: [rust]
+    paths: { exclude: ["**/tests/**"] }
+    pattern-either:
+      - pattern: todo!(...)
+      - pattern: unimplemented!(...)
+      - pattern: dbg!(...)

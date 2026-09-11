@@ -6,7 +6,7 @@ rule sd_09_context_flooding {
         severity = "MEDIUM"
 
     strings:
-        $repeat_a = /(.{1,10})\1{50,}/
+        $repeat_a = /(\w{2,8}){40,}/
         $long_base64 = /[A-Za-z0-9+\/]{500,}/
         $padding = /\s{1000,}/
 

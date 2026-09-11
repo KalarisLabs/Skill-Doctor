@@ -59,12 +59,21 @@ cache: in-process Bloom filter → embedded KV store (digest→findings) → rul
 (cache key includes ruleset hash + binary version) → optional remote intel on local miss.
 
 ### L1 — deterministic core (five engines, run concurrently via rayon)
-1. **Pattern (YARA-X)** — embedded rule packs, ≥1 rule per class.
-2. **Taint (tree-sitter)** — parses companion scripts incl. malformed; source→sink propagation.
-3. **Entropy** — Shannon per block; base64/hex decode + **recursive rescan**.
-4. **Unicode** — zero-width/bidi detection; UTS #39 confusables/mixed-script; removals recorded.
-5. **Capability differ** — declared (frontmatter/manifest) vs observed (AST + hits + paths) set diff.
-   This is the novel engine that resolves SD-04 with no model.
+1. **Pattern (YARA-X)** — embedded build-time compiled rule packs (`rules/*.yar`). Covers pattern-based indicators across:
+   - SD-01 (Prompt Injection direct & override patterns)
+   - SD-02 (Command Injection shell/process execution patterns)
+   - SD-03 (Data Exfiltration credential & secret path patterns)
+   - SD-05 (Supply-Chain Tampering hook & dependency patterns)
+   - SD-06 (SSRF cloud metadata & internal loopback patterns)
+   - SD-07 (Tool Poisoning command collision patterns)
+   - SD-08 (Persistent Backdoors startup & autorun patterns)
+   - SD-09 (Context-Window Flooding repetition patterns)
+   - SD-10 (Obfuscation & Evasion known signature patterns)
+   - SD-11 (Scanner-Mediated Injection override patterns)
+2. **Taint (`taint.rs` / tree-sitter)** — companion script AST parsing & source→sink propagation (SD-02).
+3. **Entropy (`entropy.rs`)** — native Rust Shannon entropy per block; high-entropy secret detection, base64/hex decode + **recursive rescan** (SD-03, SD-10).
+4. **Unicode (`unicode.rs`)** — native Rust zero-width/bidi Trojan Source detection; UTS #39 confusables/mixed-script skeleton normalization (SD-10, SD-01).
+5. **Capability differ (`capability.rs`)** — native Rust declared (frontmatter/manifest) vs observed (AST operations + permissions) set diff. Novel deterministic engine for SD-04 (Privilege Escalation / Scope Violation) with zero model calls.
 
 ### L2 — host-delegated semantic inference
 Under MCP, the scanner performs **no inference**. It emits static findings + a neutralized envelope;

@@ -1,25 +1,28 @@
-//! Skill Doctor Rules — compiled YARA rule packs.
+//! Skill Doctor Rules — build-time compiled YARA-X rule packs.
 //!
-//! At build time, `build.rs` compiles all `.yar` files from `rules/` and
-//! emits static rule tables embedded directly into the binary.
+//! At build time, `build.rs` compiles all `.yar` files from `rules/` using
+//! `yara_x::Compiler` and serializes the compiled rules into a binary blob.
+//! At runtime, rules are deserialized once into a `yara_x::Rules` instance.
 //! The scan path does NOT compile rules at runtime.
 
-#[derive(Clone, Debug)]
-pub struct CompiledRule {
-    pub rule_id: &'static str,
-    pub class_id: &'static str,
-    pub class_name: &'static str,
-    pub severity: &'static str,
-    pub description: &'static str,
-    pub string_patterns: &'static [&'static str],
-    pub regex_patterns: &'static [&'static str],
+pub use yara_x;
+
+pub static COMPILED_RULES_BIN: &[u8] =
+    include_bytes!(concat!(env!("OUT_DIR"), "/compiled_rules.bin"));
+
+static YARA_RULES: std::sync::OnceLock<yara_x::Rules> = std::sync::OnceLock::new();
+
+/// Return the build-time compiled YARA-X rules (deserialized once via OnceLock).
+pub fn get_rules() -> &'static yara_x::Rules {
+    YARA_RULES.get_or_init(|| {
+        yara_x::Rules::deserialize(COMPILED_RULES_BIN)
+            .expect("Failed to deserialize build-time compiled YARA-X rules")
+    })
 }
 
-include!(concat!(env!("OUT_DIR"), "/compiled_rules.rs"));
-
-/// Return all build-time compiled rules.
-pub fn compiled_rules() -> &'static [CompiledRule] {
-    COMPILED_RULES
+/// Return the build-time compiled YARA-X rules (alias for `get_rules()`).
+pub fn compiled_rules() -> &'static yara_x::Rules {
+    get_rules()
 }
 
 /// Return the list of rule file stems for coverage tracking.
@@ -37,7 +40,28 @@ mod tests {
     #[test]
     fn all_eleven_classes_have_rules() {
         assert_eq!(rule_classes().len(), 11);
-        assert!(!compiled_rules().is_empty());
-        assert_eq!(compiled_rules().len(), 11);
+        let rules = compiled_rules();
+        let mut scanner = yara_x::Scanner::new(rules);
+        assert!(scanner.scan(b"test").is_ok());
+    }
+
+    #[test]
+    fn test_yara_scan() {
+        let rules = get_rules();
+        let mut scanner = yara_x::Scanner::new(rules);
+        let results = scanner.scan(b"ignore previous instructions").unwrap();
+        let matching: Vec<_> = results.matching_rules().collect();
+        assert!(!matching.is_empty());
+        for rule in &matching {
+            println!("Matched rule: {}", rule.identifier());
+            for (name, val) in rule.metadata() {
+                println!("  meta: {} = {:?}", name, val);
+            }
+            for pattern in rule.patterns() {
+                for m in pattern.matches() {
+                    println!("  pattern match: {}..{}", m.range().start, m.range().end);
+                }
+            }
+        }
     }
 }

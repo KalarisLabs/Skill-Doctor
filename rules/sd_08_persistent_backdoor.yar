@@ -12,7 +12,7 @@ rule sd_08_persistent_backdoor {
         $systemd = "systemctl" nocase
         $autostart = "autostart" nocase
         $launchd = "LaunchAgent" nocase
-        $startup = "startup" nocase
+        $startup_folder = "Programs\\Startup" nocase
 
     condition:
         any of them

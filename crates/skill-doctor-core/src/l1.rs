@@ -7,9 +7,8 @@
 //! 4. Taint (tree-sitter) — source→sink propagation
 //! 5. Capability differ — declared vs observed
 //!
-//! For milestone 1, each engine is a stub that reports its structural coverage
-//! and returns no findings (except the pattern engine which does basic regex
-//! matching as a stand-in until YARA-X is wired).
+//! Engines execute deterministically on in-memory buffers with build-time compiled
+//! rule packs (zero scan-time compilation) and native Rust analysers.
 
 use crate::finding::{AnalysisLayer, ByteSpan, Confidence, Finding, Severity};
 use crate::l0::BundleEntry;
@@ -57,9 +56,140 @@ pub fn run_all_engines(entries: &[BundleEntry]) -> EngineResult {
     }
 }
 
+fn run_yara_engine(entries: &[BundleEntry]) -> Vec<Finding> {
+    let rules = skill_doctor_rules::compiled_rules();
+    let mut scanner = skill_doctor_rules::yara_x::Scanner::new(rules);
+    let mut yara_findings = Vec::new();
+
+    for entry in entries {
+        if let Ok(scan_results) = scanner.scan(&entry.content) {
+            for rule in scan_results.matching_rules() {
+                let mut meta_id = "SD-00";
+                let mut class = ThreatClass::PromptInjection;
+                let mut severity = Severity::High;
+                let mut confidence = Confidence::High;
+                let mut description = String::new();
+
+                for (name, val) in rule.metadata() {
+                    match name {
+                        "id" | "sd_class" => {
+                            if let skill_doctor_rules::yara_x::MetaValue::String(s) = val {
+                                meta_id = s;
+                                if let Some(c) = ThreatClass::from_id(s) {
+                                    class = c;
+                                }
+                            }
+                        }
+                        "class" => {
+                            if let skill_doctor_rules::yara_x::MetaValue::String(s) = val {
+                                if let Some(c) = ThreatClass::from_id(s) {
+                                    class = c;
+                                }
+                            }
+                        }
+                        "severity" => {
+                            if let skill_doctor_rules::yara_x::MetaValue::String(s) = val {
+                                if let Some(sev) = Severity::from_str_loose(s) {
+                                    severity = sev;
+                                }
+                            }
+                        }
+                        "confidence" => {
+                            if let skill_doctor_rules::yara_x::MetaValue::String(s) = val {
+                                match s.to_lowercase().as_str() {
+                                    "high" => confidence = Confidence::High,
+                                    "medium" => confidence = Confidence::Medium,
+                                    "low" => confidence = Confidence::Low,
+                                    _ => {}
+                                }
+                            }
+                        }
+                        "description" => {
+                            if let skill_doctor_rules::yara_x::MetaValue::String(s) = val {
+                                description = s.to_string();
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+
+                let suffix = rule
+                    .identifier()
+                    .trim_start_matches("sd_")
+                    .trim_start_matches(|c: char| c.is_ascii_digit() || c == '_')
+                    .replace('_', "-");
+                let rule_id = format!("{}-{}", meta_id, suffix);
+
+                let mut spans = Vec::new();
+                for pattern in rule.patterns() {
+                    for m in pattern.matches() {
+                        spans.push((m.range().start, m.range().end));
+                    }
+                }
+                spans.sort();
+                spans.dedup();
+
+                if spans.is_empty() {
+                    yara_findings.push(Finding {
+                        rule_id,
+                        class,
+                        severity,
+                        confidence,
+                        path: entry.relative_path.clone(),
+                        byte_span: None,
+                        evidence: vec![if description.is_empty() {
+                            format!("YARA-X rule matched: {}", rule.identifier())
+                        } else {
+                            description.clone()
+                        }],
+                        remediation: Some(class.remediation().to_string()),
+                        layer: AnalysisLayer::L1,
+                    });
+                } else {
+                    for (start, end) in spans {
+                        let snippet = String::from_utf8_lossy(
+                            &entry.content[start..end.min(entry.content.len())],
+                        );
+                        yara_findings.push(Finding {
+                            rule_id: rule_id.clone(),
+                            class,
+                            severity,
+                            confidence,
+                            path: entry.relative_path.clone(),
+                            byte_span: Some(ByteSpan { start, end }),
+                            evidence: vec![format!("YARA-X pattern matched: '{}'", snippet)],
+                            remediation: Some(class.remediation().to_string()),
+                            layer: AnalysisLayer::L1,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    // Sort deterministically by (path, rule_id, byte_offset) before emitting
+    yara_findings.sort_by(|a, b| {
+        a.path
+            .cmp(&b.path)
+            .then_with(|| a.rule_id.cmp(&b.rule_id))
+            .then_with(|| {
+                let a_offset = a.byte_span.as_ref().map(|s| s.start);
+                let b_offset = b.byte_span.as_ref().map(|s| s.start);
+                a_offset.cmp(&b_offset)
+            })
+            .then_with(|| {
+                let a_end = a.byte_span.as_ref().map(|s| s.end);
+                let b_end = b.byte_span.as_ref().map(|s| s.end);
+                a_end.cmp(&b_end)
+            })
+    });
+
+    yara_findings
+}
+
 /// Pattern engine — scans for indicators across SDTM-v1 threat classes.
 fn run_pattern_engine(entries: &[BundleEntry]) -> EngineResult {
-    let mut findings = Vec::new();
+    let mut findings = run_yara_engine(entries);
 
     // SD-02: Command injection patterns
     let cmd_injection_patterns = [
@@ -371,11 +501,13 @@ fn run_pattern_engine(entries: &[BundleEntry]) -> EngineResult {
             ThreatClass::PromptInjection,
             ThreatClass::CommandInjection,
             ThreatClass::DataExfiltration,
+            ThreatClass::PrivilegeEscalation,
             ThreatClass::SupplyChainTampering,
             ThreatClass::Ssrf,
             ThreatClass::ToolPoisoning,
             ThreatClass::PersistentBackdoor,
             ThreatClass::ContextFlooding,
+            ThreatClass::ObfuscationEvasion,
             ThreatClass::ScannerMediatedInjection,
         ],
     }

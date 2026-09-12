@@ -1,6 +1,6 @@
 # Whitepaper Reconciliation Report (Skill Doctor v0.1.0)
 
-This document provides a factual, line-by-line reconciliation between the architectural assertions in the Skill Doctor academic whitepaper and the actual implementation in the repository as of `v0.1.0` (commit `5ac6ded`).
+This document provides a factual, line-by-line reconciliation between the architectural assertions in the Skill Doctor academic whitepaper and the actual implementation in the repository as of `v0.1.0` (commit `6a17e68`).
 
 Every finding reports **FACT** (what the code does, with file and line citations) and proposes an **exact replacement sentence** for the paper. Findings are presented without softening.
 
@@ -111,7 +111,7 @@ Every finding reports **FACT** (what the code does, with file and line citations
   - **Adversarial-scanner corpus**: **0** directory fixtures (covered by unit tests in `crates/skill-doctor-neutralize/tests/`).
   - **Real-malware corpus**: **0** in repository. As stated in [SECURITY.md:27](file:///c:/Users/KalarisLabs/Desktop/SKILL%20DOCTOR/skill-doctor-repo/SECURITY.md#L27), live malware is strictly prohibited from the repository.
 - **Proposed replacement sentence**:
-  > *"The v0.1.0 test and benchmark suite includes 14 curated skill fixtures (8 attack samples spanning SD-01 through SD-10 and 6 clean reference skills), with large-scale evaluation against external public repositories conducted via automated benchmark harnesses."*
+  > *"The v0.1.0 test and benchmark suite includes 14 curated skill fixtures: 6 attack fixtures covering threat classes SD-01, SD-02, SD-03, SD-04, and SD-10; 3 benign fixtures; 4 benchmark skills; and 1 example skill. No evaluation against external public repositories has been conducted."*
 
 ---
 
@@ -173,11 +173,11 @@ Every finding reports **FACT** (what the code does, with file and line citations
 
 - **Paper claim**: Asserts a ~12 MB standalone binary footprint.
 - **Fact**:
-  CI benchmark measurements from `.github/workflows/bench.yml` run [34680650225](https://github.com/KalarisLabs/Skill-Doctor/actions/runs/34680650225) (Job `103518559780`):
-  - **Stripped Linux musl binary**: **14.31 MB** (`15,004,080` bytes)
-  - **Stripped Linux host binary**: **14.20 MB** (`14,890,088` bytes)
-  - **Windows PE release binary** (`target/release/skill-doctor.exe` with `--features mcp`): **17.93 MB** (`17,936,896` bytes)
-  - **Peak RSS**: **14.98 MB** (`15,340` KB, well within the < 40 MB target)
+  CI benchmark measurements from `.github/workflows/bench.yml` run [34698953208](https://github.com/KalarisLabs/Skill-Doctor/actions/runs/34698953208) (Job `103567203315`):
+  - **Binary footprint (stripped, --features mcp): 16934512 bytes (16.15 MiB, x86_64-unknown-linux-musl)**
+  - **Stripped Linux host binary**: **16821056 bytes** (`16.04 MiB`, `x86_64-unknown-linux-gnu`)
+  - **Windows PE release binary** (`target/release/skill-doctor.exe` with `--features mcp`): **17936896 bytes** (`17.11 MiB`, `x86_64-pc-windows-msvc, not CI-verified`)
+  - **Peak RSS**: **15.10 MiB** (`15,456` KB, well within the < 40 MiB ceiling)
   - **Scan Latency**: **0.06 s** wall-clock time
 - **Cranelift / Wasmtime Subsystem Analysis**:
   Running `cargo tree -i wasmtime --target x86_64-unknown-linux-musl` confirms:
@@ -187,9 +187,9 @@ Every finding reports **FACT** (what the code does, with file and line citations
       [build-dependencies]
       └── skill-doctor-rules v0.1.0
   ```
-  `yara-x` compiles YARA rules into WebAssembly bytecode and runs them via embedded Wasmtime, pulling in `cranelift-codegen v0.132.3`, `cranelift-frontend`, and the entire Cranelift JIT/AOT compiler backend. This single subsystem contributes ~14 MB of the compiled binary footprint.
+  `yara-x` compiles YARA rules into WebAssembly bytecode and runs them via embedded Wasmtime, pulling in `cranelift-codegen v0.132.3`, `cranelift-frontend`, and the entire Cranelift JIT/AOT compiler backend. This single subsystem contributes ~14 MiB of the compiled binary footprint.
 - **Recommendations for the ~12 MB Target**:
-  - **Option A (Recommended)**: Restate the whitepaper target from "~12 MB" to the empirically measured value of **~14–18 MB** across platforms, retaining a hard **20 MB ceiling**.
-  - **Option B (Feature Gate)**: Make `yara-x` an opt-in Cargo feature (`--features yara`). Without `yara-x` (relying on regex and native static engines), the stripped binary drops to **~4 MB**.
+  - **Option A (Recommended)**: Restate the whitepaper target from "~12 MB" to the empirically measured value of **~16–18 MiB** across platforms, retaining a hard **20 MiB ceiling**.
+  - **Option B (Feature Gate)**: Would require making `yara-x` an opt-in Cargo feature; the resulting footprint has not been measured.
 - **Proposed replacement sentence**:
-  > *"The standalone release binary with embedded YARA-X compiles to ~14.3 MB (Linux musl) and ~17.9 MB (Windows PE), strictly within an upper ceiling of 20 MB. This footprint is dominated (~14 MB) by YARA-X's embedded Wasmtime/Cranelift compiler backend; builds omitting YARA-X compile to an ultra-compact ~4 MB binary."*
+  > *"The standalone release binary with embedded YARA-X compiles to 16,934,512 bytes (16.15 MiB, x86_64-unknown-linux-musl) and 17,936,896 bytes (17.11 MiB, x86_64-pc-windows-msvc, not CI-verified), strictly within an upper ceiling of 20 MiB. This footprint is dominated (~14 MiB) by YARA-X's embedded Wasmtime/Cranelift compiler backend."*

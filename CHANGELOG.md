@@ -40,13 +40,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Performance
 - Pre-registered targets:
   - Throughput: ≥ 2,000 skills/min (offline L1, warm cache off)
-  - Peak RSS: < 40 MB
-  - Binary footprint: < 20 MB ceiling
+  - Peak RSS: < 40 MiB
+  - Binary footprint: < 20 MiB ceiling
   - Cold install → first result: < 15 s
 - Empirical measurements (v0.1.0):
-  - Peak RSS: 14.66 MB (15,020 KB) (local measurement, x86_64-pc-windows-msvc, not CI-verified)
+  - Peak RSS: 14.67 MiB (15,020 KB) (local measurement, x86_64-pc-windows-msvc, not CI-verified)
   - Throughput: 660 skills/s (~39,600 skills/min) (local measurement, x86_64-pc-windows-msvc, not CI-verified)
-  - Binary footprint (stripped with MCP): 16.2 MB (Linux musl), 17.9 MB (Windows PE)
+  - Binary footprint (stripped, --features mcp): 16934512 bytes (16.15 MiB, x86_64-unknown-linux-musl), 17936896 bytes (17.11 MiB, x86_64-pc-windows-msvc, not CI-verified)
 
 ### Documentation
 - AGENTS.md: working agreement for coding agents

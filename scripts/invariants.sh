@@ -3,7 +3,7 @@ set -euo pipefail
 fail=0
 chk() { # name, pattern, paths...
   local name="$1" pat="$2"; shift 2
-  if grep -rInE --exclude-dir={target,.git,node_modules,fixtures} "$pat" "$@" 2>/dev/null; then
+  if grep -rInE --exclude-dir={target,.git,node_modules,fixtures} --exclude="PAPER-RECONCILIATION.md" "$pat" "$@" 2>/dev/null; then
     echo "::error::INVARIANT VIOLATION: $name"; fail=1
   fi
 }

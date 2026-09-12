@@ -13,6 +13,8 @@ all-features = true
 
 [advisories]
 ignore = [
+    # Bincode 2.0.1 unmaintained advisory (transitive dependency of yara-x 1.20.0).
+    "RUSTSEC-2025-0141",
     # Wasmtime 45.0.3 WASI filesystem vulnerabilities (GHSA-hgjw-h833-99q9 & GHSA-vqjp-4c8c-hfgg).
     # skill-doctor-rules uses yara-x with in-memory Cranelift runtime only;
     # WASI filesystem APIs are neither compiled nor exposed.

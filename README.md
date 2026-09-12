@@ -20,10 +20,10 @@ running inside an agent runtime.
 
 ```bash
 # Run directly via npx (downloads and verifies prebuilt binary on demand):
-npx @kalarislabsai/skill-doctor scan ./examples/hello-skill
+npx @security.kalarislabs/skill-doctor scan ./examples/hello-skill
 
 # Or install globally via npm:
-npm install -g @kalarislabsai/skill-doctor
+npm install -g @security.kalarislabs/skill-doctor
 
 # Or install from crates.io with cargo:
 cargo install skill-doctor --locked --features mcp

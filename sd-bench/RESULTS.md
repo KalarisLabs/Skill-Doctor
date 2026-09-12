@@ -12,9 +12,9 @@ These pre-registered targets represent the architectural optimization budget. Me
 
 | Metric | Target | Measured Status | Verification Source |
 |---|---|---|---|
-| Throughput (offline L1, warm cache off) | **≥ 2,000 skills/min** | Target budget | Evaluated on release tags & nightly grid via `./sd-bench/run.sh` / HyperExecute |
-| Peak RSS | **< 40 MB** | Target budget | Zero-alloc miss path verified; evaluated on release tags |
-| Install Footprint | **one binary, ~12 MB, zero runtime deps** | **2.2 MB** (release binary, default features) | Measured on Windows x64 MSVC (`target/release/skill-doctor.exe`) |
+| Throughput (offline L1, warm cache off) | **≥ 2,000 skills/min** | **~39,600 skills/min** (660 skills/s; 33 skills in 0.05 s) | Measured via `bench.yml` Single Skill & Corpus harness |
+| Peak RSS | **< 40 MB** | **14.66 MB** (15,020 KB) | Measured via `bench.yml` GNU time (`/usr/bin/time -v`) |
+| Install Footprint | **one binary, ~12 MB, zero runtime deps** | **14.31 MB** (musl stripped) / **14.20 MB** (host stripped) | Measured via `bench.yml` on `x86_64-unknown-linux-musl` (15,004,080 bytes) and host Linux (14,890,088 bytes); Windows PE stripped is 15.66 MB (15,660,544 bytes) |
 | Cold install → first result | **< 15 s** | Target budget | Standalone precompiled binary executes with zero runtime dependencies |
 
 ---

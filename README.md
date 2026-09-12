@@ -1,8 +1,12 @@
+<p align="center">
+  <img src="public/skill-doctor-banner.webp" alt="Skill Doctor Banner" width="100%" />
+</p>
+
 # Skill Doctor
 
 **Deterministic, multi-layer security analysis for AI agent skill files.**
 A single statically linked Rust binary. No interpreter, no API key, no network required.
-Sub-150 ms median scan, bit-reproducible verdicts, and host-delegated semantic analysis when
+Pre-registered target of sub-150 ms median scans, bit-reproducible verdicts, and host-delegated semantic analysis when
 running inside an agent runtime.
 
 > Skill files (`SKILL.md`, `AGENTS.md`, `.clauderules`, `.cursor/rules`, MCP manifests) are
@@ -15,16 +19,17 @@ running inside an agent runtime.
 ## Install
 
 ```bash
-# Any one of:
-npx @kalarislabs/skill-doctor init          # scaffolds config + CI + git hooks, then installs the binary
-cargo install skill-doctor                  # from crates.io
-brew install kalarislabs/tap/skill-doctor   # Homebrew (macOS/Linux)
-# winget install KalarisLabs.SkillDoctor    # Windows
-# scoop install skill-doctor
+# Run directly via npx (downloads and verifies prebuilt binary on demand):
+npx @kalarislabs/skill-doctor scan ./examples/hello-skill
+
+# Or install globally via npm:
+npm install -g @kalarislabs/skill-doctor
+
+# Or build and install from local source with cargo:
+cargo install --path crates/skill-doctor-cli --locked --features mcp
 ```
 
-The npm package is a thin installer that downloads the correct prebuilt static binary for your
-platform; there is no Node runtime dependency at scan time.
+The npm package is a thin installer that verifies SHA-256 digests against official release checksums and places the prebuilt static binary; there is no Node runtime dependency at scan time. Prebuilt standalone binaries are also downloadable directly from [GitHub Releases](https://github.com/KalarisLabs/Skill-Doctor/releases).
 
 ## Quick start (CLI)
 
@@ -39,14 +44,27 @@ skill-doctor explain SD-04                       # describe a threat class and i
 
 ### CI gate
 
-GitHub Action (`@v0` or pinned SHA):
+GitHub Action (`@v0.1.0` or pinned SHA):
 
 ```yaml
-- uses: kalarislabs/skill-doctor-action@v0
+- name: Run Skill Doctor
+  id: scan
+  uses: KalarisLabs/Skill-Doctor@v0.1.0
   with:
+    path: .
+    mode: scan-all
     fail-on: HIGH
     fail-under-coverage: 0.8
+    output: sarif
+    sarif-file: skill-doctor.sarif
+
+- name: Upload SARIF report
+  if: always()
+  uses: github/codeql-action/upload-sarif@faaca9a8f6edddba5725ffe5adefdab6669a2eca # v3.38.0
+  with:
+    sarif_file: skill-doctor.sarif
 ```
+
 
 CLI:
 
@@ -66,10 +84,10 @@ Requires Rust 1.93.0+ (MSRV):
 
 ```bash
 rustup toolchain install stable             # requires Rust 1.93.0+ (MSRV)
-git clone https://github.com/kalarislabs/skill-doctor && cd skill-doctor
-cargo build --release                        # produces target/release/skill-doctor
-cargo test --workspace                        # unit + corpus tests (excludes real_malware)
-cargo run -p skill-doctor -- scan ./examples/hello-skill
+git clone https://github.com/KalarisLabs/Skill-Doctor && cd Skill-Doctor
+cargo build --release --locked --features mcp # produces target/release/skill-doctor
+cargo test --workspace --locked              # unit + corpus tests (excludes real_malware)
+cargo run -p skill-doctor --locked --features mcp -- scan ./examples/hello-skill
 ```
 
 Static musl build (fully static binary):
@@ -77,6 +95,29 @@ Static musl build (fully static binary):
 ```bash
 rustup target add x86_64-unknown-linux-musl
 cargo build --release --target x86_64-unknown-linux-musl
+```
+
+## Release artifact verification
+
+Skill Doctor release assets are signed using Sigstore Cosign (OIDC keyless) and accompanied by CycloneDX SBOMs.
+
+To verify a downloaded release asset against official release attestations:
+
+```bash
+# 1. Verify SHA256SUMS.txt with Cosign (Keyless GitHub Actions OIDC)
+cosign verify-blob \
+  --bundle SHA256SUMS.txt.bundle \
+  --certificate-identity-regexp '^https://github\.com/KalarisLabs/Skill-Doctor/\.github/workflows/release\.yml@refs/tags/v.*$' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  SHA256SUMS.txt
+
+# 2. Verify binary digest
+sha256sum -c SHA256SUMS.txt --ignore-missing
+```
+
+Each release publishes `skill-doctor.cdx.json` (CycloneDX JSON). Inspect dependencies and licenses with `jq` or `cyclonedx`:
+```bash
+jq -r '.components[] | "\(.name) \(.version) (\(.licenses[0].license.id // "unknown"))"' skill-doctor.cdx.json
 ```
 
 ## Repository layout

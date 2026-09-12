@@ -7,3 +7,4 @@ Cargo.lock.bak
 *.sarif
 .DS_Store
 node_modules
+scratch/

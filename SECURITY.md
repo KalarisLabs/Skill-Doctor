@@ -26,3 +26,38 @@ Skill Doctor contains rules and detectors for 11 threat classes (SDTM-v1).
 
 - **Do NOT open issues or PRs containing active malware, live command-and-control URLs, or unredacted credentials.**
 - To contribute detection rules or test fixtures, refer to [CONTRIBUTING.md](CONTRIBUTING.md). Attack test fixtures must follow the synthetic test fixture conventions and be quarantined in `tests/fixtures/attack/` using harmless mock endpoints.
+
+## Verifying Release Artifacts
+
+Every official release of Skill Doctor includes a cryptographic provenance chain and software bill of materials:
+
+### 1. Sigstore Cosign Attestation
+The release checksum manifest (`SHA256SUMS.txt`) is signed using keyless OIDC Cosign via GitHub Actions.
+Verify `SHA256SUMS.txt` against its signature bundle:
+
+```bash
+cosign verify-blob \
+  --bundle SHA256SUMS.txt.bundle \
+  --certificate-identity-regexp '^https://github\.com/KalarisLabs/Skill-Doctor/\.github/workflows/release\.yml@refs/tags/v.*$' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  SHA256SUMS.txt
+```
+
+### 2. Verifying Binary Checksums
+After verifying `SHA256SUMS.txt`, confirm the SHA-256 digest of your downloaded binary:
+
+```bash
+sha256sum -c SHA256SUMS.txt --ignore-missing
+```
+
+### 3. CycloneDX Software Bill of Materials (SBOM)
+Every release publishes `skill-doctor.cdx.json` conforming to the CycloneDX JSON specification.
+You can inspect all transitive dependencies, component hashes, and licenses:
+
+```bash
+# Validate the SBOM format
+cyclonedx validate --input-file skill-doctor.cdx.json
+
+# List components and licenses with jq
+jq -r '.components[] | "\(.name) \(.version) (\(.licenses[0].license.id // "unknown"))"' skill-doctor.cdx.json
+```

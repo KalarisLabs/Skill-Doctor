@@ -10,15 +10,16 @@ These are the non-negotiable gates that keep `npx`, `cargo install`, and the Git
 
 | Job Name | What it Proves | Why it is Non-Negotiable |
 |---|---|---|
-| **`lint-and-unit`** (`fmt`) | `cargo fmt --all --check` | Contributors and coding agents cannot bikeshed code style. |
-| **`lint-and-unit`** (`clippy`) | `cargo clippy --workspace --all-targets -- -D warnings` | The real Rust review bot; enforces zero warnings across all crates. |
-| **`lint-and-unit`** (`tests`) | `cargo test --workspace --locked` | Unit + integration + CLI tests pass. `--locked` ensures CI matches `Cargo.lock`. |
-| **`lint-and-unit`** (`invariants`) | Default features have no OpenAI / Anthropic SDK | Keeps the "no mandatory LLM / pure offline" invariant true in CI, not just in README. |
-| **`os-cli`** (Ubuntu / macOS / Windows) | `--help`, `--version`, scan benign → `0`, scan SD-02 → `2` (`--offline --deterministic`) | Adoption is "does the CLI work on my laptop." |
-| **`determinism`** | Two JSON/SARIF runs produce identical SHA-256 | Core product claim. Without this, CI users will not trust `--fail-on`. |
-| **`lint-and-unit`** (`additive-only`) | L1 CRITICAL survives an L2 "benign" | SD-11 invariant; one regression and the scanner is unsafe. |
-| **dogfood-self-scan** | `skill-doctor scan-all . --exclude tests/fixtures/attack --exclude tests/fixtures/evasion --exclude sd-bench/corpora --fail-on HIGH --offline` | Scans all first-party skills and benign fixtures (excluding deliberate malware attack corpora); must exit 0, and asserts attack fixture SD-02 exits 2. |
-| **`supply-chain`** | `cargo deny check` + `gitleaks` | Prevents supply-chain attacks, license violations, and committed credentials. |
+| **`check-gate`** | `cargo check --workspace --all-targets --locked` | Fast compilation baseline before running heavier jobs. |
+| **`msrv-check`** | `cargo +1.93.0 check --workspace --all-targets --locked` | Enforces MSRV floor (1.93.0) and guarantees pinned toolchain compatibility. |
+| **`version-sync`** | Consistency across `Cargo.toml`, `package.json`, `CHANGELOG.md`, `README.md`, `action.yml`, and `DEPENDENCIES.md` | Eliminates version drift and prevents phantom dependencies. |
+| **`lint-and-unit`** | `cargo fmt`, `clippy`, unit + integration tests, invariant checks | Enforces zero warnings, code style, and architectural invariants. |
+| **`supply-chain`** | `cargo deny check` + `gitleaks` + `semgrep` | Prevents supply-chain attacks, license violations, and committed credentials. |
+| **`determinism`** | Two JSON/SARIF runs produce identical SHA-256 | Core product claim. Guarantees bit-reproducible scan output. |
+| **`docs-smoke`** | Smoke tests all README install, CLI, and quickstart commands | Prevents documentation drift and broken copy-paste commands. |
+| **`packaging-gate`** | Validates npm wrapper, tarball packaging, offline skip flag, and binary execution | Ensures released npm packages and archives install cleanly with zero stray files. |
+| **`dogfood-self-scan`** | `skill-doctor scan-all .` self-scan (exit 0) and SD-02 detection (exit 2) | Proves the tool scans real repos cleanly while detecting actual attacks. |
+| **`os-cli`** (Ubuntu / macOS / Windows) | `--help`, `--version`, scan benign → `0`, scan SD-02 → `2` (`--offline --deterministic`) | Validates prebuilt CLI binary execution across all 3 major platforms. |
 
 ### What is NOT on this Path
 Do not put on this path: TestMu Kane, competitor benches, musl cross-compile, `cargo publish`, `npm publish`, or coverage percentage-fails. Those killed v1 and they do not help a first-time adopter.
@@ -67,17 +68,34 @@ The repository enforces the presence of standard open-source files:
 
 ## 6. GitHub Branch Protection Configuration
 
-Configure branch protection on `main` with the following **Required Status Checks**:
+Branch protection on `main` is configured and enforced via the GitHub API with the following **12 Required Status Checks**:
 
 ```text
+check-gate
+msrv-check
+version-sync
 lint-and-unit
+supply-chain
+determinism
+docs-smoke
+packaging-gate
+dogfood-self-scan
 os-cli (ubuntu-latest)
 os-cli (macos-latest)
 os-cli (windows-latest)
-supply-chain
-dogfood-self-scan
-determinism
-docs-smoke
 ```
 
-*Admin bypass should be disabled to ensure all merged code meets these quality criteria.*
+*Strict branch protection is active: branches must be up to date before merging, and all 12 checks must pass.*
+
+---
+
+## 7. Local Test Execution on Windows (Application Control / AppLocker)
+
+When developing on Windows environments where unverified/unsigned test binaries in `target\debug\deps\*.exe` are blocked by Windows Application Control or AppLocker (error `4551`), run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-windows.ps1
+```
+
+This helper compiles test targets (`cargo test --no-run`), automatically signs generated test executables and DLLs using `signtool.exe` with a developer certificate, and executes the complete test suite (87+ tests across all workspace crates and integration suites).
+

@@ -40,12 +40,16 @@ jobs:
             target: x86_64-pc-windows-msvc
             archive_ext: zip
             use_cross: false
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            archive_ext: zip
+            use_cross: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1
         with:
           toolchain: stable
           targets: ${{ matrix.target }}
@@ -54,16 +58,16 @@ jobs:
         if: matrix.use_cross
         run: cargo install cross --git https://github.com/cross-rs/cross
 
-      - name: Build release binary (default features only)
+      - name: Build release binary (including mcp feature)
         shell: bash
         run: |
           if [ "${{ matrix.use_cross }}" = "true" ]; then
-            cross build --release --locked -p skill-doctor --no-default-features --target ${{ matrix.target }}
+            cross build --release --locked -p skill-doctor --features mcp --target ${{ matrix.target }}
           else
-            cargo build --release --locked -p skill-doctor --no-default-features --target ${{ matrix.target }}
+            cargo build --release --locked -p skill-doctor --features mcp --target ${{ matrix.target }}
           fi
 
-      - name: Package archive
+      - name: Package archive (flat layout)
         shell: bash
         run: |
           BIN_DIR="target/${{ matrix.target }}/release"
@@ -74,13 +78,13 @@ jobs:
           if [ "${{ matrix.archive_ext }}" = "zip" ]; then
             cp "${BIN_DIR}/skill-doctor.exe" "dist/${PKG_NAME}/"
             cp LICENSE README.md "dist/${PKG_NAME}/"
-            cd dist
-            7z a "${PKG_NAME}.zip" "${PKG_NAME}"
+            cd "dist/${PKG_NAME}"
+            7z a "../../${PKG_NAME}.zip" *
           else
             cp "${BIN_DIR}/skill-doctor" "dist/${PKG_NAME}/"
             cp LICENSE README.md "dist/${PKG_NAME}/"
-            cd dist
-            tar -czf "${PKG_NAME}.tar.gz" "${PKG_NAME}"
+            cd "dist/${PKG_NAME}"
+            tar -czf "../../${PKG_NAME}.tar.gz" *
           fi
 
       - name: Upload archive artifact
@@ -99,7 +103,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1
         with:
           toolchain: stable
 
@@ -132,10 +136,10 @@ jobs:
             --bundle SHA256SUMS.txt.bundle \
             SHA256SUMS.txt
 
-      - name: Generate CycloneDX SBOM (default features only)
+      - name: Generate CycloneDX SBOM (including mcp feature)
         run: |
           cargo install cargo-cyclonedx
-          cargo cyclonedx --format json -p skill-doctor --all-features=false
+          cargo cyclonedx --format json -p skill-doctor --features mcp
           # Copy generated SBOM to release assets
           if [ -f "crates/skill-doctor-cli/skill-doctor.cdx.json" ]; then
             cp crates/skill-doctor-cli/skill-doctor.cdx.json release-assets/
@@ -147,18 +151,21 @@ jobs:
 
       - name: Dry-run Packaging Verification (Topological Crate Order)
         run: |
-          echo "Verifying crate packaging without live token..."
+          echo "Verifying crate packaging in topological order..."
+          # Tier 1: Leaf crates with zero internal dependencies
           cargo publish --dry-run -p skill-doctor-neutralize
           cargo publish --dry-run -p skill-doctor-rules
           cargo publish --dry-run -p skill-doctor-sandbox
+          # Note: Downstream crates (skill-doctor-core, skill-doctor-mcp, skill-doctor) require
+          # their path dependencies to be published to crates.io first, and are published sequentially.
           echo "Verifying npm thin-wrapper tarball..."
           npm pack --dry-run
 
-      - name: Create GitHub Release with Provenance Assets
+      - name: Create GitHub Release with Provenance Assets (Draft)
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           files: |
             release-assets/*
           generate_release_notes: true
-          draft: false
+          draft: true
           prerelease: false

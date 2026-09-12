@@ -383,16 +383,53 @@ impl SkillDoctorServer {
     }
 }
 
+fn is_connection_closed_error(err: &(dyn std::error::Error + 'static)) -> bool {
+    if let Some(io_err) = err.downcast_ref::<std::io::Error>() {
+        matches!(
+            io_err.kind(),
+            std::io::ErrorKind::UnexpectedEof
+                | std::io::ErrorKind::ConnectionReset
+                | std::io::ErrorKind::BrokenPipe
+                | std::io::ErrorKind::ConnectionAborted
+        )
+    } else if let Some(source) = err.source() {
+        is_connection_closed_error(source)
+    } else {
+        false
+    }
+}
+
 /// Run the Skill Doctor MCP server over stdio.
 ///
 /// Ensures stdout is 100% reserved for JSON-RPC messages.
 pub async fn run_stdio_server() -> anyhow::Result<()> {
     eprintln!("Starting Skill Doctor MCP server on stdio...");
-    let server = SkillDoctorServer::new()
+    let server = match SkillDoctorServer::new()
         .serve(rmcp::transport::io::stdio())
-        .await?;
-    server.waiting().await?;
-    Ok(())
+        .await
+    {
+        Ok(s) => s,
+        Err(rmcp::service::ServerInitializeError::ConnectionClosed(_)) => return Ok(()),
+        Err(e) => return Err(e.into()),
+    };
+    match server.waiting().await {
+        Ok(rmcp::service::QuitReason::Closed) | Ok(rmcp::service::QuitReason::Cancelled) => Ok(()),
+        Ok(rmcp::service::QuitReason::JoinError(e)) => {
+            if e.is_cancelled() || is_connection_closed_error(&e) {
+                Ok(())
+            } else {
+                Err(e.into())
+            }
+        }
+        Ok(_) => Ok(()),
+        Err(e) => {
+            if e.is_cancelled() || is_connection_closed_error(&e) {
+                Ok(())
+            } else {
+                Err(e.into())
+            }
+        }
+    }
 }
 
 #[cfg(test)]

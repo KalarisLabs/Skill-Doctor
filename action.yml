@@ -1,0 +1,177 @@
+name: "Skill Doctor Security Scanner"
+description: "Deterministic, multi-layer security analysis for AI agent skill files"
+author: "Kalaris Labs"
+
+branding:
+  icon: "shield"
+  color: "blue"
+
+inputs:
+  path:
+    description: "Path to scan (skill bundle directory or parent directory)"
+    required: false
+    default: "."
+  mode:
+    description: "Scan mode: 'scan' (single skill) or 'scan-all' (directory of skills)"
+    required: false
+    default: "scan-all"
+  fail-on:
+    description: "Minimum finding severity to trigger exit code 2: LOW, MEDIUM, HIGH, CRITICAL"
+    required: false
+    default: "HIGH"
+  fail-under-coverage:
+    description: "Minimum structural coverage ratio to trigger exit code 3 (0.0 - 1.0)"
+    required: false
+    default: "0.8"
+  output:
+    description: "Report output format: text, json, sarif"
+    required: false
+    default: "sarif"
+  sarif-file:
+    description: "File path to save SARIF output (when output is sarif)"
+    required: false
+    default: "skill-doctor.sarif"
+  version:
+    description: "Version of Skill Doctor to run (defaults to pinned 0.1.0)"
+    required: false
+    default: "0.1.0"
+
+outputs:
+  sarif-file:
+    description: "File path where SARIF output was written"
+    value: ${{ steps.run-scan.outputs.sarif-file }}
+  exit-code:
+    description: "Exit code returned by skill-doctor (0 clean, 1 error, 2 findings, 3 coverage)"
+    value: ${{ steps.run-scan.outputs.exit-code }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download & verify Skill Doctor binary
+      shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+
+        # If already installed on PATH or runner, skip download
+        if command -v skill-doctor >/dev/null 2>&1; then
+          echo "skill-doctor is already installed in PATH: $(command -v skill-doctor)"
+          exit 0
+        fi
+
+        VERSION="$INPUT_VERSION"
+        REPO="KalarisLabs/Skill-Doctor"
+
+        OS="$(uname -s)"
+        ARCH="$(uname -m)"
+
+        case "$OS" in
+          Linux*)
+            EXT="tar.gz"
+            case "$ARCH" in
+              x86_64) TARGET="x86_64-unknown-linux-musl" ;;
+              aarch64|arm64) TARGET="aarch64-unknown-linux-musl" ;;
+              *) echo "Unsupported Linux arch: $ARCH"; exit 1 ;;
+            esac
+            ;;
+          Darwin*)
+            EXT="tar.gz"
+            case "$ARCH" in
+              x86_64) TARGET="x86_64-apple-darwin" ;;
+              arm64) TARGET="aarch64-apple-darwin" ;;
+              *) echo "Unsupported macOS arch: $ARCH"; exit 1 ;;
+            esac
+            ;;
+          CYGWIN*|MINGW*|MSYS*)
+            EXT="zip"
+            case "$ARCH" in
+              x86_64) TARGET="x86_64-pc-windows-msvc" ;;
+              *) echo "Unsupported Windows arch: $ARCH"; exit 1 ;;
+            esac
+            ;;
+          *)
+            echo "Unsupported operating system: $OS"
+            exit 1
+            ;;
+        esac
+
+        ASSET="skill-doctor-v${VERSION}-${TARGET}.${EXT}"
+        BASE_URL="https://github.com/${REPO}/releases/download/v${VERSION}"
+
+        INSTALL_DIR="${RUNNER_TEMP:-/tmp}/skill-doctor-install"
+        mkdir -p "$INSTALL_DIR"
+        cd "$INSTALL_DIR"
+
+        echo "Downloading ${ASSET} and SHA256SUMS.txt from ${BASE_URL}..."
+        curl -sSfL "${BASE_URL}/${ASSET}" -o "${ASSET}"
+        curl -sSfL "${BASE_URL}/SHA256SUMS.txt" -o "SHA256SUMS.txt"
+
+        echo "Verifying SHA-256 checksum..."
+        grep -F " ${ASSET}$" SHA256SUMS.txt > "${ASSET}.sha256"
+        if command -v sha256sum >/dev/null 2>&1; then
+          sha256sum -c "${ASSET}.sha256"
+        elif command -v shasum >/dev/null 2>&1; then
+          shasum -a 256 -c "${ASSET}.sha256"
+        else
+          echo "No sha256sum or shasum tool found to verify checksum"; exit 1
+        fi
+        echo "Checksum verified successfully."
+
+        # Extract to isolated directory
+        EXTRACT_DIR="${INSTALL_DIR}/extracted"
+        mkdir -p "$EXTRACT_DIR"
+        if [ "$EXT" = "zip" ]; then
+          unzip -q "${ASSET}" -d "$EXTRACT_DIR"
+        else
+          tar -xzf "${ASSET}" -C "$EXTRACT_DIR"
+        fi
+
+        EXE_NAME="skill-doctor"
+        if [ "$EXT" = "zip" ]; then
+          EXE_NAME="skill-doctor.exe"
+        fi
+
+        BIN_SRC=$(find "$EXTRACT_DIR" -type f -name "$EXE_NAME" | head -n 1)
+        if [ -z "$BIN_SRC" ]; then
+          echo "Failed to locate $EXE_NAME in extracted archive"
+          exit 1
+        fi
+
+        BIN_TARGET_DIR="${RUNNER_TEMP:-/tmp}/skill-doctor-bin"
+        mkdir -p "$BIN_TARGET_DIR"
+        cp "$BIN_SRC" "${BIN_TARGET_DIR}/${EXE_NAME}"
+        chmod +x "${BIN_TARGET_DIR}/${EXE_NAME}"
+
+        echo "$BIN_TARGET_DIR" >> "$GITHUB_PATH"
+        echo "Installed skill-doctor to ${BIN_TARGET_DIR}/${EXE_NAME} and added to GITHUB_PATH."
+
+    - name: Run Skill Doctor
+      id: run-scan
+      shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_FAIL_UNDER_COVERAGE: ${{ inputs.fail-under-coverage }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_SARIF_FILE: ${{ inputs.sarif-file }}
+      run: |
+        set -uo pipefail
+
+        ARGS=("$INPUT_PATH" "--fail-on" "$INPUT_FAIL_ON" "--fail-under-coverage" "$INPUT_FAIL_UNDER_COVERAGE" "--output" "$INPUT_OUTPUT" "--offline" "--deterministic")
+
+        echo "Running: skill-doctor $INPUT_MODE ${ARGS[*]}"
+
+        EXIT=0
+        if [ "$INPUT_OUTPUT" = "sarif" ]; then
+          skill-doctor "$INPUT_MODE" "${ARGS[@]}" > "$INPUT_SARIF_FILE" || EXIT=$?
+        else
+          skill-doctor "$INPUT_MODE" "${ARGS[@]}" || EXIT=$?
+        fi
+
+        echo "exit-code=$EXIT" >> "$GITHUB_OUTPUT"
+        echo "sarif-file=$INPUT_SARIF_FILE" >> "$GITHUB_OUTPUT"
+
+        exit "$EXIT"
+

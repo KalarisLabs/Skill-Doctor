@@ -13,8 +13,25 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  tag-version-guard:
+    name: tag-version-guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Verify tag matches Cargo.toml and package.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          CARGO_VER=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
+          PKG_VER=$(node -p "require('./package.json').version")
+          TAG_VER="${GITHUB_REF_NAME#v}"
+          echo "tag=$TAG_VER cargo=$CARGO_VER package.json=$PKG_VER"
+          [ "$TAG_VER" = "$CARGO_VER" ] || { echo "ERROR: tag $TAG_VER != Cargo.toml $CARGO_VER"; exit 1; }
+          [ "$TAG_VER" = "$PKG_VER" ]   || { echo "ERROR: tag $TAG_VER != package.json $PKG_VER"; exit 1; }
+
   build-release:
     name: Build Binary (${{ matrix.target }})
+    needs: [tag-version-guard]
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

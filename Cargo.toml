@@ -22,7 +22,6 @@ authors = ["Kalaris Labs <sayan@kalarislabs.com>"]
 # analysis engines — milestone 1
 regex = "1"
 memchr = "2"
-bstr = "1"
 base64 = "0.23"
 hex = "0.4"
 

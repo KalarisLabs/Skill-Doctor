@@ -82,15 +82,6 @@ jobs:
           echo "Running dependency claim verification against cargo metadata..."
           python3 scripts/check-deps.py
 
-          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
-            TAG_VER="${GITHUB_REF_NAME#v}"
-            echo "Git tag version: $TAG_VER"
-            if [ "$TAG_VER" != "$CARGO_VER" ]; then
-              echo "ERROR: Git tag ($TAG_VER) does not match Cargo.toml ($CARGO_VER)"
-              exit 1
-            fi
-          fi
-
           echo "Version sync & claim integrity verified: $CARGO_VER (MSRV: $MSRV)"
 
   supply-chain:

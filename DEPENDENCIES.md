@@ -106,3 +106,4 @@ Opt-in community threat intelligence query engine.
 | `x86_64-apple-darwin` | macOS x64 (Intel)| Mach-O | Dynamically links `libSystem` |
 | `aarch64-apple-darwin` | macOS ARM64 (Apple Silicon) | Mach-O | Dynamically links `libSystem` |
 | `x86_64-pc-windows-msvc` | Windows x64 | PE32+ (exe) | Statically links MSVC CRT (`/MT`) |
+| `aarch64-pc-windows-msvc` | Windows ARM64 | PE32+ (exe) | Statically links MSVC CRT (`/MT`) |

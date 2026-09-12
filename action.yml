@@ -87,6 +87,7 @@ runs:
             EXT="zip"
             case "$ARCH" in
               x86_64) TARGET="x86_64-pc-windows-msvc" ;;
+              aarch64|arm64) TARGET="aarch64-pc-windows-msvc" ;;
               *) echo "Unsupported Windows arch: $ARCH"; exit 1 ;;
             esac
             ;;

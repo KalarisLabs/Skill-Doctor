@@ -68,7 +68,7 @@ The repository enforces the presence of standard open-source files:
 
 ## 6. GitHub Branch Protection Configuration
 
-Configure branch protection on `main` with the following **12 Required Status Checks**:
+Branch protection on `main` is configured and enforced via the GitHub API with the following **12 Required Status Checks**:
 
 ```text
 check-gate
@@ -85,5 +85,17 @@ os-cli (macos-latest)
 os-cli (windows-latest)
 ```
 
-*Admin bypass should be disabled to ensure all merged code meets these quality criteria.*
+*Strict branch protection is active: branches must be up to date before merging, and all 12 checks must pass.*
+
+---
+
+## 7. Local Test Execution on Windows (Application Control / AppLocker)
+
+When developing on Windows environments where unverified/unsigned test binaries in `target\debug\deps\*.exe` are blocked by Windows Application Control or AppLocker (error `4551`), run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\test-windows.ps1
+```
+
+This helper compiles test targets (`cargo test --no-run`), automatically signs generated test executables and DLLs using `signtool.exe` with a developer certificate, and executes the complete test suite (87+ tests across all workspace crates and integration suites).
 

@@ -41,6 +41,9 @@ Before opening a PR, run the local pre-publish check:
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --locked
+
+# On Windows under Application Control / AppLocker:
+powershell -ExecutionPolicy Bypass -File .\scripts\test-windows.ps1
 ```
 
 Every PR must pass all 12 required status checks across platforms (including check-gate, msrv-check, version-sync, packaging-gate, and os-cli on Ubuntu, macOS, and Windows). See [TESTING.md](TESTING.md) §6 for the complete required checks set.

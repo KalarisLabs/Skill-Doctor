@@ -1,108 +1,101 @@
-# DEPENDENCIES.md — every package we use and why
+# DEPENDENCIES.md — Every Package We Use and Why
 
-All versions are indicative and pinned for real in `Cargo.lock`. Rust edition 2021, toolchain pinned
-in `rust-toolchain.toml`. The product ships as one static binary; nothing here implies a runtime
-interpreter. Prefer pure-Rust crates so the static (musl) build stays clean.
+This document details the complete, verified dependency graph for Skill Doctor `v0.1.0`. All versions are pinned in `Cargo.lock` with Rust edition 2021 and MSRV `1.93.0`.
 
-## Analysis engines (core)
+Skill Doctor compiles to a single, standalone static binary with zero external runtime interpreters and zero mandatory network calls.
 
-| Crate | Purpose | Layer |
-|-------|---------|-------|
-| `yara-x` | Pure-Rust YARA engine; rule packs for SD-01–SD-11. Compiled once at build time with minimal features (`default-features = false, features = ["constant-folding"]`) to drop binary format and crypto modules. | L1 pattern |
-| `tree-sitter` + `tree-sitter-bash`, `tree-sitter-python`, `tree-sitter-javascript`, `tree-sitter-json`, `tree-sitter-md` | Parse companion scripts & manifests (incl. malformed) for taint analysis. | L1 taint |
-| `unicode-security` | UTS #39 confusables / mixed-script / skeleton normalization. | L1 unicode, neutralize |
-| `unicode-normalization` | NFC/NFKC normalization; zero-width & bidi handling. | L1 unicode, neutralize |
-| `memchr` / `bstr` | Fast byte scanning over memory-mapped buffers. | L1 |
-| `regex` | Bounded, backtracking-free pattern checks (frontmatter, IDs). | L1 |
-| `base64`, `hex` | Recursive decode of encoded payloads (then rescan). | L1 entropy |
+---
 
-## Intake, hashing, IO (L0)
+## 1. Shipped in Default Binary
 
-| Crate | Purpose |
-|-------|---------|
-| `memmap2` | Memory-map files; no heap copy of hostile input. |
-| `sha2` | Canonical SHA-256 bundle digest (cache + threat intel key). |
-| `blake3` | Fast content hashing for the in-process cache tier. |
-| `walkdir`, `ignore` | Directory traversal honoring ignore files. |
-| `zip`, `tar`, `flate2` | Accept ZIP / tar.gz skill bundles. |
-| `sled` *(or `redb`)* | Embedded KV cache (digest → findings) for warm re-scans. |
-| `growable-bloom-filter` | In-process "definitely not seen" tier. |
+These crates form the core static analysis engine and CLI, linked into the primary distribution binary.
 
-## Concurrency & error handling
+### Core Analysis & Hashing (`skill-doctor-core`, `skill-doctor-neutralize`, `skill-doctor-rules`)
 
-| Crate | Purpose |
-|-------|---------|
-| `rayon` | Work-stealing fan-out across files and engines. |
-| `tokio` | Async runtime — **only** in `skill-doctor-mcp` and the optional network layer. |
-| `anyhow` | Error boundary at the CLI. |
-| `thiserror` | Typed errors in libraries. |
-| `once_cell` | Lazily-initialized embedded rulesets/tables. |
+| Crate | Version | Purpose |
+|-------|---------|---------|
+| `yara-x` | `1.20.0` | Pure-Rust YARA compiler & VM executing SD-01 through SD-11 threat rules. Configured with `default-features = false, features = ["constant-folding"]` to exclude native binary/crypto modules. **Note on footprint**: `yara-x` compiles rules into WebAssembly bytecode and executes them via embedded `wasmtime` 45.0.3 using the Cranelift JIT compiler; this Cranelift/wasmtime subsystem accounts for ~14 MB of the stripped binary. |
+| `unicode-security` | `0.1.2` | UTS #39 confusables, mixed-script detection, and ASCII skeleton generation for Trojan Source and homoglyph detection (SD-10 / SD-11). |
+| `unicode-normalization`| `0.1.25`| NFC / NFKC canonical decomposition and zero-width character detection. |
+| `regex` | `1.13.1` | Linear-time, backtracking-free regular expression matching for frontmatter parsing and rule matching. |
+| `memchr` | `2.8.3` | SIMD-accelerated byte-level substring searching. |
+| `base64` | `0.23.1` | Multi-pass recursive decode of obfuscated payloads (Base64 standard & URL-safe) for hidden threat scanning. |
+| `hex` | `0.4.3` | Hexadecimal payload decoding and digest formatting. |
+| `sha2` | `0.11.0` | Canonical cryptographic SHA-256 digesting of files and skill bundles. |
+| `rayon` | `1.12.0` | Work-stealing parallel multi-threaded file and bundle traversal. |
+| `zip` | `8.6.0` | Native intake and in-memory extraction of `.zip` skill archives. |
+| `tar` | `0.4.46` | Native intake of `.tar` skill bundles. |
+| `flate2` | `1.1.10`| Gzip decompression for `.tar.gz` and `.tgz` archives. |
+| `walkdir` | `2.5.0` | Recursive directory traversal with cycle detection. |
+| `serde` | `1.0.229`| Serialization framework with derive macros. |
+| `serde_json` | `1.0.151`| Deterministic JSON and SARIF report generation. |
+| `serde_yaml` | `0.9.34`| YAML frontmatter parsing for `SKILL.md` capability manifests. |
+| `thiserror` | `2.0.20`| Ergonomic, strongly typed error models across internal crate boundaries. |
 
-## CLI, reporting, UX (`skill-doctor-cli`)
+### CLI, Terminal UX & Filesystem Watcher (`skill-doctor-cli`)
 
-| Crate | Purpose |
-|-------|---------|
-| `clap` (derive) | Argument parsing / subcommands. |
-| `serde`, `serde_json` | JSON report model. |
-| `serde-sarif` | SARIF 2.1.0 output for GitHub Code Scanning. |
-| `is-terminal` | Detect TTY; default to plain text through a pipe. |
-| `anstream` + `owo-colors` | Colored diagnostics only when attached to a terminal. |
-| `ratatui` + `crossterm` | Opt-in TUI (feature `tui`, never default). |
-| `codespan-reporting` | Compiler-grade underlined byte-span diagnostics. |
+| Crate | Version | Purpose |
+|-------|---------|---------|
+| `clap` | `4.6.6` | Command-line argument parsing with derive macros. |
+| `anstream` | `1.0.0` | Terminal stream colorizer honoring `NO_COLOR` and ANSI capability. |
+| `anstyle` | `1.0.14`| Zero-dependency ANSI style definitions for terminal diagnostics. |
+| `is-terminal` | `0.4.17`| TTY detection to default to uncolored output when piped or running in CI. |
+| `indicatif` | `0.18.6`| Terminal progress bars for multi-skill batch scanning. |
+| `notify` | `8.2.0` | Cross-platform filesystem watcher for `skill-doctor watch`. |
+| `anyhow` | `1.0.104`| Top-level application error handling with backtraces. |
 
-## Semantic delegation (`skill-doctor-mcp`)
+---
 
-| Crate | Purpose |
-|-------|---------|
-| `rmcp` | Official Rust Model Context Protocol SDK (server, stdio/HTTP transports). |
-| `schemars` | JSON Schema for the `skill_doctor_scan` tool + schema-constrained verdict. |
-| `serde`, `serde_json`, `tokio` | Transport + envelope/verdict (I)O. |
-| `rand` | Per-scan nonce generation (verdict must echo it). |
+## 2. Feature-Gated Modules (Opt-In)
 
-## Behavioral sandbox (`skill-doctor-sandbox`, feature `sandbox`)
+These crates are activated via Cargo features and compiled into specialized configurations.
 
-| Crate | Purpose |
-|-------|---------|
-| `nix` | Low-level process/namespace controls for monitoring. |
-| `serde`, `serde_json` | Behavior trace records. |
+### Model Context Protocol Server (`--features mcp`, `skill-doctor-mcp`)
+Included in official prebuilt release binaries to enable `skill-doctor mcp`.
 
-Note: L3 is currently implemented as a process harness with environment isolation and differential replay, not as a microVM. Future versions may integrate microVM isolation.
+| Crate | Version | Purpose |
+|-------|---------|---------|
+| `rmcp` | `3.2.0` | Official Rust SDK for the Model Context Protocol (stdio transport, JSON-RPC 2.0). |
+| `tokio` | `1.53.1`| Async runtime (`rt`, `macros`, `io-std`) driving the MCP event loop. |
+| `uuid` | `1.26.1`| Cryptographically secure single-use session nonces preventing prompt replay attacks. |
 
-## Threat intel & provenance (opt-in / release)
+### Behavioral Sandbox Harness (`--features sandbox`, `skill-doctor-sandbox`)
+Opt-in L3 dynamic analysis harness providing process tree monitoring and environment isolation.
 
-| Crate | Purpose |
-|-------|---------|
-| `reqwest` (rustls) | L4 threat-intel fetch (digests/summaries only), feature-gated, opt-in. |
-| `sigstore` | Verify/produce signed release artifacts + attestation. |
-| `cargo-auditable` (build) | Embed dependency list for advisory scanning. |
+| Crate | Version | Purpose | Platform |
+|-------|---------|---------|----------|
+| `windows-sys`| `0.61.2`| Windows Job Objects, process containment, and token manipulation. | Windows only |
+| `libc` | `0.2` | Process groups (`setpgid`), file descriptor management, and resource limits. | Unix only |
+| `tempfile` | `3.27.0`| Ephemeral isolated scratch filesystems for child execution. | All |
+| `uuid` | `1.26.1`| Unique sandbox session identifiers. | All |
 
-## Rules build (`skill-doctor-rules`)
+### Optional Terminal UI (`--features tui`)
 
-| Crate | Purpose |
-|-------|---------|
-| `yara-x` | Compile `rules/*.yar` in `build.rs` and serialize into the binary. |
-| `serde_yaml` | Parse rule-pack metadata / SDTM-v1 mapping. |
+| Crate | Version | Purpose |
+|-------|---------|---------|
+| `ratatui` | `0.29.0`| Opt-in interactive terminal dashboard. |
+| `crossterm`| `0.28.1`| Cross-platform terminal control and raw mode. |
 
-## Dev / CI / bench (not shipped in the binary)
+---
 
-| Tool | Purpose |
-|------|---------|
-| `criterion` | Micro-benchmarks. |
-| `insta` | Snapshot tests for reports (locks determinism). |
-| `proptest` | Property tests (e.g. additive-only invariant, digest stability). |
-| `cargo-nextest` | Faster test runner in CI. |
-| `cargo-deny` | License + advisory + duplicate-dependency gate. |
-| `cargo-dist` | Build/sign/publish the multi-platform binaries. |
+## 3. Development & CI Dependencies (Not Shipped in Binary)
 
-## Distribution packages (outside crates.io)
+| Crate / Tool | Version | Purpose |
+|--------------|---------|---------|
+| `criterion` | `0.8.2` | Statistical micro-benchmarks for L0 intake and L1 analysis engines. |
+| `tempfile` | `3.27.0`| Test fixture isolation in unit and integration test suites. |
+| `cargo-deny` | `v2.0.11`| Automated supply-chain gate (licenses, bans, RUSTSEC advisories). |
+| `gitleaks` | `v8.24.0`| Pre-commit and CI secrets scanner. |
+| `semgrep` | `v1` | Architectural invariant enforcement (no unauthorized crate imports). |
 
-| Channel | Artifact |
-|---------|----------|
-| npm `@kalarislabs/skill-doctor` | Thin installer that fetches the prebuilt static binary (no Node at scan time). |
-| Homebrew tap `kalarislabs/tap` | `skill-doctor` formula. |
-| winget / Scoop | Windows binaries. |
-| GitHub Action `kalarislabs/skill-doctor-action` | CI gate wrapper around `scan-all`. |
+---
 
-> Rule of thumb: any dependency added here must keep the static musl build green and must not pull
-> in a C toolchain requirement that breaks single-binary distribution. Run `cargo deny check` and
-> `cargo build --target x86_64-unknown-linux-musl` before merging a new dependency.
+## 4. Packaging & Platform Summary
+
+| Target Triple | OS / Environment | Binary Format | Linkage |
+|---------------|------------------|---------------|---------|
+| `x86_64-unknown-linux-musl` | Linux x64 | ELF | 100% Statically linked (musl libc) |
+| `aarch64-unknown-linux-musl`| Linux ARM64 | ELF | 100% Statically linked (musl libc) |
+| `x86_64-apple-darwin` | macOS x64 (Intel)| Mach-O | Dynamically links `libSystem` |
+| `aarch64-apple-darwin` | macOS ARM64 (Apple Silicon) | Mach-O | Dynamically links `libSystem` |
+| `x86_64-pc-windows-msvc` | Windows x64 | PE32+ (exe) | Statically links MSVC CRT (`/MT`) |

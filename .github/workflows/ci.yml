@@ -26,7 +26,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify version synchronization
+      - name: Verify version synchronization & claim integrity
         run: |
           CARGO_VER=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
           PKG_VER=$(grep -m1 '"version":' package.json | cut -d'"' -f4)
@@ -43,6 +43,38 @@ jobs:
             exit 1
           fi
 
+          if ! grep -q "https://github.com/KalarisLabs/Skill-Doctor/releases/tag/v${CARGO_VER}" CHANGELOG.md; then
+            echo "ERROR: CHANGELOG.md missing release link for https://github.com/KalarisLabs/Skill-Doctor/releases/tag/v${CARGO_VER}"
+            exit 1
+          fi
+
+          MSRV=$(grep -m1 '^rust-version = ' Cargo.toml | cut -d'"' -f2)
+          if ! grep -q "Requires Rust ${MSRV}+ (MSRV)" README.md; then
+            echo "ERROR: README.md does not match Cargo.toml MSRV ($MSRV)"
+            exit 1
+          fi
+
+          if [ ! -f "action.yml" ]; then
+            echo "ERROR: action.yml missing at repository root"
+            exit 1
+          fi
+
+          ACTION_VER=$(grep -m1 'default: "0.1.0"' action.yml || true)
+          if [ -z "$ACTION_VER" ]; then
+            echo "ERROR: action.yml default version is not pinned to 0.1.0"
+            exit 1
+          fi
+
+          if ! grep -q "uses: KalarisLabs/Skill-Doctor@v${CARGO_VER}" README.md; then
+            echo "ERROR: README.md does not reference canonical action uses: KalarisLabs/Skill-Doctor@v${CARGO_VER}"
+            exit 1
+          fi
+
+          if ! grep -q '"LICENSE"' package.json || ! grep -q '"README.md"' package.json; then
+            echo "ERROR: package.json files array must include LICENSE and README.md"
+            exit 1
+          fi
+
           if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
             TAG_VER="${GITHUB_REF_NAME#v}"
             echo "Git tag version: $TAG_VER"
@@ -52,7 +84,7 @@ jobs:
             fi
           fi
 
-          echo "Version sync verified: $CARGO_VER"
+          echo "Version sync & claim integrity verified: $CARGO_VER (MSRV: $MSRV)"
 
   supply-chain:
     name: supply-chain
@@ -111,6 +143,8 @@ jobs:
     name: msrv-check
     needs: [check]
     runs-on: ubuntu-latest
+    env:
+      RUSTUP_TOOLCHAIN: "1.93.0"
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -124,7 +158,7 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.7.7
 
       - name: Verify MSRV compilation floor
-        run: cargo check --workspace --all-targets --locked
+        run: cargo +1.93.0 check --workspace --all-targets --locked
 
   lint-and-unit:
     name: lint-and-unit
@@ -323,6 +357,59 @@ jobs:
           fi
           echo "Determinism verified: Outputs are bit-identical."
 
+  packaging-gate:
+    name: packaging-gate
+    needs: [check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: stable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: 20
+
+      - name: Build release binary with MCP feature
+        run: cargo build --release --locked -p skill-doctor --features mcp
+
+      - name: Verify local binary installer flow (npm wrapper)
+        run: |
+          # 1. Clean bin/ directory
+          rm -rf bin/skill-doctor bin/skill-doctor.exe
+          
+          # 2. Test download-binary.js detects local target/release binary
+          node scripts/download-binary.js
+          test -f bin/skill-doctor
+          
+          # 3. Test bin/skill-doctor.js wrapper execution
+          node bin/skill-doctor.js --version
+          node bin/skill-doctor.js scan examples/hello-skill
+
+          # 4. Verify no stray files in bin/
+          test ! -f bin/LICENSE
+          test ! -f bin/README.md
+
+      - name: Verify npm package packing and tarball contents
+        run: |
+          TARBALL=$(npm pack)
+          echo "Packed tarball: $TARBALL"
+          tar -tzf "$TARBALL" | grep "package/LICENSE"
+          tar -tzf "$TARBALL" | grep "package/README.md"
+          tar -tzf "$TARBALL" | grep "package/bin/skill-doctor.js"
+          tar -tzf "$TARBALL" | grep "package/scripts/download-binary.js"
+
+      - name: Verify offline / source install skip flag
+        run: |
+          rm -rf bin/skill-doctor
+          SKILL_DOCTOR_SKIP_DOWNLOAD=1 node scripts/download-binary.js
+          echo "Offline skip flag verified cleanly."
+
   docs-smoke:
     name: docs-smoke
     needs: [check]
@@ -336,39 +423,51 @@ jobs:
         with:
           toolchain: stable
 
+      - name: Setup Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: 20
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.7.7
 
       - name: Build release binary
         run: cargo build --release --locked --features mcp
 
-      - name: Smoke test README quick-start commands
+      - name: Smoke test README install and quick-start commands
         run: |
           set -e
           export PATH="$(pwd)/target/release:$PATH"
 
-          echo "1. Testing skill-doctor scan ./examples/hello-skill..."
+          echo "1. Testing README Install command (npx wrapper simulation)..."
+          node bin/skill-doctor.js scan ./examples/hello-skill
+
+          echo "2. Testing README Install from source with cargo..."
+          cargo install --path crates/skill-doctor-cli --locked --features mcp
+          which skill-doctor
+
+          echo "3. Testing skill-doctor scan ./examples/hello-skill..."
           skill-doctor scan ./examples/hello-skill
 
-          echo "2. Testing skill-doctor scan-all . --output sarif..."
+          echo "4. Testing skill-doctor scan-all . --output sarif..."
           skill-doctor scan-all ./examples --output sarif
 
-          echo "3. Testing skill-doctor diff ./examples/hello-skill --baseline report.json..."
+          echo "5. Testing skill-doctor diff ./examples/hello-skill --baseline report.json..."
           skill-doctor scan ./examples/hello-skill --output json > report.json
           skill-doctor diff ./examples/hello-skill --baseline report.json
 
-          echo "4. Testing skill-doctor watch ./examples/hello-skill..."
+          echo "6. Testing skill-doctor watch ./examples/hello-skill..."
           timeout 2 skill-doctor watch ./examples/hello-skill || [ $? -eq 124 ] || [ $? -eq 0 ]
 
-          echo "5. Testing skill-doctor mcp..."
+          echo "7. Testing skill-doctor mcp..."
           mcp_out=$(timeout 2 skill-doctor mcp </dev/null 2>&1 || true)
           echo "$mcp_out"
           echo "$mcp_out" | grep -q "Starting Skill Doctor MCP server on stdio"
 
-          echo "6. Testing skill-doctor explain SD-04..."
+          echo "8. Testing skill-doctor explain SD-04..."
           skill-doctor explain SD-04
 
-          echo "7. Testing CI gate command block..."
+          echo "9. Testing CI gate command block..."
           skill-doctor scan-all ./examples \
             --output sarif \
             --fail-on HIGH \
@@ -376,7 +475,7 @@ jobs:
             --deterministic \
             --offline
 
-          echo "8. Testing Build from source command..."
-          cargo run -p skill-doctor --locked -- scan ./examples/hello-skill
+          echo "10. Testing Build from source command..."
+          cargo run -p skill-doctor --locked --features mcp -- scan ./examples/hello-skill
 
-          echo "All README quick-start commands executed successfully with exit 0."
+          echo "All README Install and quick-start commands executed successfully with exit 0."

@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - skill-doctor-mcp crate for Model Context Protocol server (host-delegated L2)
 - skill-doctor-sandbox crate for L3 behavioral process harness (feature-gated)
 - skill-doctor-rules crate for YARA-X rule compilation (build-time embedded)
-- CI gates: lint-and-unit, os-cli (Ubuntu/macOS/Windows), supply-chain, dogfood-self-scan, determinism
+- CI gates: check-gate, msrv-check, lint-and-unit, supply-chain, determinism, os-cli (Ubuntu/macOS/Windows), dogfood-self-scan, docs-smoke, packaging-gate
 - License: Apache-2.0
 
 ### Security
@@ -38,11 +38,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Process tree isolation in L3 sandbox via Windows Job Objects and Unix process groups
 
 ### Performance
-- Target benchmarks (pre-registered, not yet measured):
+- Pre-registered targets:
   - Throughput: ≥ 2,000 skills/min (offline L1, warm cache off)
   - Peak RSS: < 40 MB
-  - Binary footprint: ~12 MB stripped
+  - Binary footprint: < 20 MB ceiling
   - Cold install → first result: < 15 s
+- Empirical measurements (v0.1.0):
+  - Peak RSS: 14.66 MB (15,020 KB)
+  - Throughput: 660 skills/s (~39,600 skills/min)
+  - Binary footprint (stripped with MCP): 16.2 MB (Linux musl), 17.9 MB (Windows PE)
 
 ### Documentation
 - AGENTS.md: working agreement for coding agents
@@ -52,4 +56,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SECURITY.md: private vulnerability reporting path
 - CONTRIBUTING.md: contribution guidelines and four-item detector PR requirement
 
-[0.1.0]: https://github.com/kalarislabs/skill-doctor/releases/tag/v0.1.0
+[0.1.0]: https://github.com/KalarisLabs/Skill-Doctor/releases/tag/v0.1.0

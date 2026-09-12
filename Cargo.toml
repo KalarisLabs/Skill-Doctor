@@ -14,7 +14,7 @@ version = "0.1.0"
 edition = "2021"
 rust-version = "1.93.0"
 license = "Apache-2.0"
-repository = "https://github.com/kalarislabs/skill-doctor"
+repository = "https://github.com/KalarisLabs/Skill-Doctor"
 authors = ["Kalaris Labs <sayan@kalarislabs.com>"]
 
 [workspace.dependencies]

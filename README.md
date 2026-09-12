@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/skill-doctor-banner.webp" alt="Skill Doctor Banner" width="100%" />
+</p>
+
 # Skill Doctor
 
 **Deterministic, multi-layer security analysis for AI agent skill files.**

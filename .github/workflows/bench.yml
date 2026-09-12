@@ -37,7 +37,7 @@ jobs:
 
       - name: Run Criterion benchmarks
         run: |
-          cargo bench --workspace --locked -- --verbose 2>&1 | tee bench_output.txt
+          cargo bench --bench engine_bench --locked -- --verbose 2>&1 | tee bench_output.txt
 
       - name: Upload Criterion reports
         if: always()

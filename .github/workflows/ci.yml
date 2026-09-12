@@ -361,7 +361,9 @@ jobs:
           timeout 2 skill-doctor watch ./examples/hello-skill || [ $? -eq 124 ] || [ $? -eq 0 ]
 
           echo "5. Testing skill-doctor mcp..."
-          timeout 2 skill-doctor mcp </dev/null || [ $? -eq 124 ] || [ $? -eq 0 ]
+          mcp_out=$(timeout 2 skill-doctor mcp </dev/null 2>&1 || true)
+          echo "$mcp_out"
+          echo "$mcp_out" | grep -q "Starting Skill Doctor MCP server on stdio"
 
           echo "6. Testing skill-doctor explain SD-04..."
           skill-doctor explain SD-04

@@ -388,10 +388,26 @@ impl SkillDoctorServer {
 /// Ensures stdout is 100% reserved for JSON-RPC messages.
 pub async fn run_stdio_server() -> anyhow::Result<()> {
     eprintln!("Starting Skill Doctor MCP server on stdio...");
-    let server = SkillDoctorServer::new()
+    let server = match SkillDoctorServer::new()
         .serve(rmcp::transport::io::stdio())
-        .await?;
-    server.waiting().await?;
+        .await
+    {
+        Ok(s) => s,
+        Err(e) => {
+            let msg = e.to_string();
+            if msg.contains("connection closed") {
+                return Ok(());
+            }
+            return Err(e.into());
+        }
+    };
+    if let Err(e) = server.waiting().await {
+        let msg = e.to_string();
+        if msg.contains("connection closed") {
+            return Ok(());
+        }
+        return Err(e.into());
+    }
     Ok(())
 }
 

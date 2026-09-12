@@ -383,8 +383,12 @@ jobs:
         with:
           node-version: 20
 
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+
       - name: Build release binary with MCP feature
         run: cargo build --release --locked -p skill-doctor --features mcp
+
 
       - name: Verify local binary installer flow (npm wrapper)
         run: |

@@ -162,16 +162,22 @@ jobs:
       - name: Generate CycloneDX SBOM (including mcp feature)
         run: |
           cargo install cargo-cyclonedx
-          cargo cyclonedx --format json -p skill-doctor --features mcp
+          cargo cyclonedx --manifest-path crates/skill-doctor-cli/Cargo.toml --format json --features mcp
           mkdir -p release-assets
           # Copy generated SBOM to release assets
           if [ -f "crates/skill-doctor-cli/skill-doctor.cdx.json" ]; then
-            cp crates/skill-doctor-cli/skill-doctor.cdx.json release-assets/
+            cp crates/skill-doctor-cli/skill-doctor.cdx.json release-assets/skill-doctor.cdx.json
+          elif [ -f "crates/skill-doctor-cli/bom.json" ]; then
+            cp crates/skill-doctor-cli/bom.json release-assets/skill-doctor.cdx.json
           elif [ -f "skill-doctor.cdx.json" ]; then
-            cp skill-doctor.cdx.json release-assets/
+            cp skill-doctor.cdx.json release-assets/skill-doctor.cdx.json
           else
-            find . -name "*.cdx.json" -exec cp {} release-assets/skill-doctor.cdx.json \;
+            find . -name "*.cdx.json" -o -name "bom.json" | while read -r f; do
+              cp "$f" release-assets/skill-doctor.cdx.json
+              break
+            done
           fi
+          test -f release-assets/skill-doctor.cdx.json || { echo "ERROR: skill-doctor.cdx.json not found"; exit 1; }
           ls -la release-assets/
 
       - name: Dry-run Packaging Verification (Topological Crate Order)

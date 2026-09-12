@@ -340,7 +340,7 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.7.7
 
       - name: Build release binary
-        run: cargo build --release --locked
+        run: cargo build --release --locked --features mcp
 
       - name: Smoke test README quick-start commands
         run: |

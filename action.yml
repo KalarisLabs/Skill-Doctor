@@ -2,6 +2,10 @@ name: "Skill Doctor Security Scanner"
 description: "Deterministic, multi-layer security analysis for AI agent skill files"
 author: "Kalaris Labs"
 
+branding:
+  icon: "shield"
+  color: "blue"
+
 inputs:
   path:
     description: "Path to scan (skill bundle directory or parent directory)"
@@ -32,11 +36,21 @@ inputs:
     required: false
     default: "0.1.0"
 
+outputs:
+  sarif-file:
+    description: "File path where SARIF output was written"
+    value: ${{ steps.run-scan.outputs.sarif-file }}
+  exit-code:
+    description: "Exit code returned by skill-doctor (0 clean, 1 error, 2 findings, 3 coverage)"
+    value: ${{ steps.run-scan.outputs.exit-code }}
+
 runs:
   using: "composite"
   steps:
     - name: Download & verify Skill Doctor binary
       shell: bash
+      env:
+        INPUT_VERSION: ${{ inputs.version }}
       run: |
         set -euo pipefail
 
@@ -46,7 +60,7 @@ runs:
           exit 0
         fi
 
-        VERSION="${{ inputs.version }}"
+        VERSION="$INPUT_VERSION"
         REPO="KalarisLabs/Skill-Doctor"
 
         OS="$(uname -s)"
@@ -94,7 +108,7 @@ runs:
         curl -sSfL "${BASE_URL}/SHA256SUMS.txt" -o "SHA256SUMS.txt"
 
         echo "Verifying SHA-256 checksum..."
-        grep "${ASSET}" SHA256SUMS.txt > "${ASSET}.sha256"
+        grep -F " ${ASSET}$" SHA256SUMS.txt > "${ASSET}.sha256"
         if command -v sha256sum >/dev/null 2>&1; then
           sha256sum -c "${ASSET}.sha256"
         elif command -v shasum >/dev/null 2>&1; then
@@ -133,15 +147,31 @@ runs:
         echo "Installed skill-doctor to ${BIN_TARGET_DIR}/${EXE_NAME} and added to GITHUB_PATH."
 
     - name: Run Skill Doctor
+      id: run-scan
       shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_MODE: ${{ inputs.mode }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_FAIL_UNDER_COVERAGE: ${{ inputs.fail-under-coverage }}
+        INPUT_OUTPUT: ${{ inputs.output }}
+        INPUT_SARIF_FILE: ${{ inputs.sarif-file }}
       run: |
-        set -euo pipefail
+        set -uo pipefail
 
-        ARGS="${{ inputs.path }} --fail-on ${{ inputs.fail-on }} --fail-under-coverage ${{ inputs.fail-under-coverage }} --output ${{ inputs.output }} --offline --deterministic"
-        echo "Running: skill-doctor ${{ inputs.mode }} $ARGS"
+        ARGS=("$INPUT_PATH" "--fail-on" "$INPUT_FAIL_ON" "--fail-under-coverage" "$INPUT_FAIL_UNDER_COVERAGE" "--output" "$INPUT_OUTPUT" "--offline" "--deterministic")
 
-        if [ "${{ inputs.output }}" = "sarif" ]; then
-          skill-doctor ${{ inputs.mode }} $ARGS > "${{ inputs.sarif-file }}"
+        echo "Running: skill-doctor $INPUT_MODE ${ARGS[*]}"
+
+        EXIT=0
+        if [ "$INPUT_OUTPUT" = "sarif" ]; then
+          skill-doctor "$INPUT_MODE" "${ARGS[@]}" > "$INPUT_SARIF_FILE" || EXIT=$?
         else
-          skill-doctor ${{ inputs.mode }} $ARGS
+          skill-doctor "$INPUT_MODE" "${ARGS[@]}" || EXIT=$?
         fi
+
+        echo "exit-code=$EXIT" >> "$GITHUB_OUTPUT"
+        echo "sarif-file=$INPUT_SARIF_FILE" >> "$GITHUB_OUTPUT"
+
+        exit "$EXIT"
+

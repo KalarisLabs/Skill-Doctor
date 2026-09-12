@@ -43,4 +43,5 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace --locked
 ```
 
-Every PR must also pass the cross-platform CLI smoke gate on Ubuntu, macOS, and Windows. See [TESTING.md](TESTING.md) for full CI gate details.
+Every PR must pass all 12 required status checks across platforms (including check-gate, msrv-check, version-sync, packaging-gate, and os-cli on Ubuntu, macOS, and Windows). See [TESTING.md](TESTING.md) §6 for the complete required checks set.
+

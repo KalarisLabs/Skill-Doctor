@@ -73,8 +73,8 @@ Opt-in L3 dynamic analysis harness providing process tree monitoring and environ
 
 | Crate | Version | Purpose |
 |-------|---------|---------|
-| `ratatui` | `0.29.0`| Opt-in interactive terminal dashboard. |
-| `crossterm`| `0.28.1`| Cross-platform terminal control and raw mode. |
+| `ratatui` | `0.30.2`| Opt-in interactive terminal dashboard. |
+| `crossterm`| `0.29.0`| Cross-platform terminal control and raw mode. |
 
 ---
 

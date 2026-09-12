@@ -26,7 +26,7 @@ npx @kalarislabs/skill-doctor scan ./examples/hello-skill
 npm install -g @kalarislabs/skill-doctor
 
 # Or build and install from local source with cargo:
-cargo install --path crates/skill-doctor-cli --locked
+cargo install --path crates/skill-doctor-cli --locked --features mcp
 ```
 
 The npm package is a thin installer that verifies SHA-256 digests against official release checksums and places the prebuilt static binary; there is no Node runtime dependency at scan time. Prebuilt standalone binaries are also downloadable directly from [GitHub Releases](https://github.com/KalarisLabs/Skill-Doctor/releases).
@@ -47,11 +47,24 @@ skill-doctor explain SD-04                       # describe a threat class and i
 GitHub Action (`@v0.1.0` or pinned SHA):
 
 ```yaml
-- uses: KalarisLabs/Skill-Doctor@v0.1.0
+- name: Run Skill Doctor
+  id: scan
+  uses: KalarisLabs/Skill-Doctor@v0.1.0
   with:
+    path: .
+    mode: scan-all
     fail-on: HIGH
     fail-under-coverage: 0.8
+    output: sarif
+    sarif-file: skill-doctor.sarif
+
+- name: Upload SARIF report
+  if: always()
+  uses: github/codeql-action/upload-sarif@faaca9a8f6edddba5725ffe5adefdab6669a2eca # v3.38.0
+  with:
+    sarif_file: skill-doctor.sarif
 ```
+
 
 CLI:
 

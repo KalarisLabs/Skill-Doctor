@@ -44,8 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Binary footprint: < 20 MB ceiling
   - Cold install → first result: < 15 s
 - Empirical measurements (v0.1.0):
-  - Peak RSS: 14.66 MB (15,020 KB)
-  - Throughput: 660 skills/s (~39,600 skills/min)
+  - Peak RSS: 14.66 MB (15,020 KB) (local measurement, x86_64-pc-windows-msvc, not CI-verified)
+  - Throughput: 660 skills/s (~39,600 skills/min) (local measurement, x86_64-pc-windows-msvc, not CI-verified)
   - Binary footprint (stripped with MCP): 16.2 MB (Linux musl), 17.9 MB (Windows PE)
 
 ### Documentation

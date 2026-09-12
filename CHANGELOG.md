@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2026-09-10
 
+> **Note on crates.io version history**: Pre-release prototype versions `0.2.0`, `0.2.2`, and `0.2.3` of `skill-doctor` and `skill-doctor-core` were published during early development and have been yanked. `v0.1.0` is the initial canonical public release.
+
 ### Added
 - Initial release of Skill Doctor (v0.1.0)
 - L0 intake layer with directory, ZIP, tar.gz, and single file support

@@ -25,9 +25,10 @@ jobs:
           CARGO_VER=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
           PKG_VER=$(node -p "require('./package.json').version")
           TAG_VER="${GITHUB_REF_NAME#v}"
-          echo "tag=$TAG_VER cargo=$CARGO_VER package.json=$PKG_VER"
-          [ "$TAG_VER" = "$CARGO_VER" ] || { echo "ERROR: tag $TAG_VER != Cargo.toml $CARGO_VER"; exit 1; }
-          [ "$TAG_VER" = "$PKG_VER" ]   || { echo "ERROR: tag $TAG_VER != package.json $PKG_VER"; exit 1; }
+          BASE_TAG="${TAG_VER%%-*}"
+          echo "tag=$TAG_VER base=$BASE_TAG cargo=$CARGO_VER package.json=$PKG_VER"
+          [ "$BASE_TAG" = "$CARGO_VER" ] || { echo "ERROR: base tag $BASE_TAG != Cargo.toml $CARGO_VER"; exit 1; }
+          [ "$BASE_TAG" = "$PKG_VER" ]   || { echo "ERROR: base tag $BASE_TAG != package.json $PKG_VER"; exit 1; }
 
   build-release:
     name: Build Binary (${{ matrix.target }})
@@ -185,4 +186,4 @@ jobs:
             release-assets/*
           generate_release_notes: true
           draft: true
-          prerelease: false
+          prerelease: ${{ contains(github.ref_name, '-rc') }}

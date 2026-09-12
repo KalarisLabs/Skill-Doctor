@@ -25,6 +25,9 @@ npx @kalarislabs/skill-doctor scan ./examples/hello-skill
 # Or install globally via npm:
 npm install -g @kalarislabs/skill-doctor
 
+# Or install from crates.io with cargo:
+cargo install skill-doctor --locked --features mcp
+
 # Or build and install from local source with cargo:
 cargo install --path crates/skill-doctor-cli --locked --features mcp
 ```

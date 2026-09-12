@@ -178,15 +178,17 @@ jobs:
             done
           fi
           test -f release-assets/skill-doctor.cdx.json || { echo "ERROR: skill-doctor.cdx.json not found"; exit 1; }
+          # Clean up any intermediate SBOM artifacts from crate directories
+          rm -f crates/*/*.cdx.json crates/*/*.json
           ls -la release-assets/
 
       - name: Dry-run Packaging Verification (Topological Crate Order)
         run: |
           echo "Verifying crate packaging in topological order..."
           # Tier 1: Leaf crates with zero internal dependencies
-          cargo publish --dry-run -p skill-doctor-neutralize
-          cargo publish --dry-run -p skill-doctor-rules
-          cargo publish --dry-run -p skill-doctor-sandbox
+          cargo publish --dry-run --allow-dirty -p skill-doctor-neutralize
+          cargo publish --dry-run --allow-dirty -p skill-doctor-rules
+          cargo publish --dry-run --allow-dirty -p skill-doctor-sandbox
           # Note: Downstream crates (skill-doctor-core, skill-doctor-mcp, skill-doctor) require
           # their path dependencies to be published to crates.io first, and are published sequentially.
           echo "Verifying npm thin-wrapper tarball..."

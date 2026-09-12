@@ -144,13 +144,13 @@ jobs:
       - name: Clippy linter (workspace default)
         run: cargo clippy --workspace --all-targets --locked -- -D warnings
 
-      - name: Clippy linter (feature: mcp)
+      - name: "Clippy linter (feature: mcp)"
         run: cargo clippy -p skill-doctor --no-default-features --features mcp --all-targets --locked -- -D warnings
 
-      - name: Clippy linter (feature: sandbox)
+      - name: "Clippy linter (feature: sandbox)"
         run: cargo clippy -p skill-doctor --no-default-features --features sandbox --all-targets --locked -- -D warnings
 
-      - name: Clippy linter (feature: intel)
+      - name: "Clippy linter (feature: intel)"
         run: cargo clippy -p skill-doctor --no-default-features --features intel --all-targets --locked -- -D warnings
 
       - name: Clippy linter (all-features)

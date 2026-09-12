@@ -196,7 +196,7 @@ jobs:
       - name: Unit & Integration tests
         env:
           SD_L3_REQUIRE_INTERPRETER: "1"
-        run: cargo test --workspace --locked
+        run: cargo test --workspace --all-features --locked
 
       - name: Invariant grep (no mandatory LLM SDKs)
         run: |

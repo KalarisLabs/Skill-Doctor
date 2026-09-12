@@ -14,7 +14,7 @@ Only from a `v*` tag on `main` after required checks are green.
 5. `git tag vX.Y.Z && git push origin vX.Y.Z`
 6. `release.yml`: musl/darwin/win, checksums, SBOM, Sigstore, GitHub Release
 7. `cargo publish` order: neutralize → rules → core → sandbox → mcp → skill-doctor
-8. `npm publish --access public` `@kalarislabs/skill-doctor` (installer only)
+8. `npm publish --access public` `@kalarislabsai/skill-doctor` (installer only)
 9. Homebrew tap follow-up
 
 Never: publish from CI on a non-tag; npm without matching binary checksums; skip dry-run; publish if deny/gitleaks is red.

@@ -1,5 +1,5 @@
 {
-  "name": "@kalarislabs/skill-doctor",
+  "name": "@kalarislabsai/skill-doctor",
   "version": "0.1.0",
   "description": "Deterministic, multi-layer security analysis for AI agent skill files. Thin installer for the prebuilt Rust binary (no Node required at scan time).",
   "license": "Apache-2.0",

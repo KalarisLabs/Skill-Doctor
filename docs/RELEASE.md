@@ -18,7 +18,7 @@ crates.io name check + npm scope -> merge -> tag -> inspect DRAFT -> un-draft ->
 > **Never npm publish against a draft release, because download-binary.js fetches SHA256SUMS.txt from the tag and draft assets 404 anonymously.**
 >
 > **Why?**
-> The npm package (`@kalarislabs/skill-doctor`) is a thin installer. When a user runs `npx @kalarislabs/skill-doctor` or `npm install -g @kalarislabs/skill-doctor`, the postinstall hook (`scripts/download-binary.js`) anonymously fetches `SHA256SUMS.txt` and the platform archive directly from GitHub Releases:
+> The npm package (`@kalarislabsai/skill-doctor`) is a thin installer. When a user runs `npx @kalarislabsai/skill-doctor` or `npm install -g @kalarislabsai/skill-doctor`, the postinstall hook (`scripts/download-binary.js`) anonymously fetches `SHA256SUMS.txt` and the platform archive directly from GitHub Releases:
 > `https://github.com/KalarisLabs/Skill-Doctor/releases/download/v${VERSION}/...`
 >
 > Assets on **Draft** releases return **HTTP 404** for unauthenticated users. If npm is published before the release is un-drafted, all user installations will immediately crash with:
@@ -133,7 +133,7 @@ Only leaf crates with no workspace path dependencies (`skill-doctor-neutralize`,
 
 ### Step 8: Install & Post-Release Verification (`install-verify.yml`)
 The publication of the GitHub release automatically triggers `.github/workflows/install-verify.yml` (or run manually via `workflow_dispatch`):
-1. Verifies clean `npx @kalarislabs/skill-doctor@0.1.0 scan <fixture>` across Ubuntu, macOS, and Windows.
+1. Verifies clean `npx @kalarislabsai/skill-doctor@0.1.0 scan <fixture>` across Ubuntu, macOS, and Windows.
 2. Asserts the real download path and SHA-256 checksum verification actually executed (`skill-doctor: verifying SHA-256 digest...` and `skill-doctor: checksum OK`).
-3. Verifies `npm install -g @kalarislabs/skill-doctor@0.1.0` and `skill-doctor --version`.
+3. Verifies `npm install -g @kalarislabsai/skill-doctor@0.1.0` and `skill-doctor --version`.
 4. Verifies composite action `uses: KalarisLabs/Skill-Doctor@v0.1.0` on real runner environments.

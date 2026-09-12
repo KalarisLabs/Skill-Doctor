@@ -126,7 +126,7 @@ Every finding reports **FACT** (what the code does, with file and line citations
 - **Proposed replacement code block**:
   ```bash
   # Run directly via npx (downloads and verifies prebuilt binary):
-  npx @kalarislabs/skill-doctor scan ./examples/hello-skill
+  npx @kalarislabsai/skill-doctor scan ./examples/hello-skill
 
   # Or install from source:
   cargo install --path crates/skill-doctor-cli --locked --features mcp

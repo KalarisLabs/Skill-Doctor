@@ -29,7 +29,7 @@ These crates form the core static analysis engine and CLI, linked into the prima
 | `walkdir` | `2.5.0` | Recursive directory traversal with cycle detection. |
 | `serde` | `1.0.229`| Serialization framework with derive macros. |
 | `serde_json` | `1.0.151`| Deterministic JSON and SARIF report generation. |
-| `serde_yaml` | `0.9.34`| YAML frontmatter parsing for `SKILL.md` capability manifests. |
+| `serde_yaml` | `0.9.34+deprecated`| YAML frontmatter parsing for `SKILL.md` capability manifests. |
 | `thiserror` | `2.0.20`| Ergonomic, strongly typed error models across internal crate boundaries. |
 
 ### CLI, Terminal UX & Filesystem Watcher (`skill-doctor-cli`)
@@ -65,7 +65,7 @@ Opt-in L3 dynamic analysis harness providing process tree monitoring and environ
 | Crate | Version | Purpose | Platform |
 |-------|---------|---------|----------|
 | `windows-sys`| `0.61.2`| Windows Job Objects, process containment, and token manipulation. | Windows only |
-| `libc` | `0.2` | Process groups (`setpgid`), file descriptor management, and resource limits. | Unix only |
+| `libc` | `0.2.189` | Process groups (`setpgid`), file descriptor management, and resource limits. | Unix only |
 | `tempfile` | `3.27.0`| Ephemeral isolated scratch filesystems for child execution. | All |
 | `uuid` | `1.26.1`| Unique sandbox session identifiers. | All |
 
@@ -75,6 +75,13 @@ Opt-in L3 dynamic analysis harness providing process tree monitoring and environ
 |-------|---------|---------|
 | `ratatui` | `0.30.2`| Opt-in interactive terminal dashboard. |
 | `crossterm`| `0.29.0`| Cross-platform terminal control and raw mode. |
+
+### Threat Intelligence Client (`--features intel`, `skill-doctor-core`)
+Opt-in community threat intelligence query engine.
+
+| Crate | Version | Purpose |
+|-------|---------|---------|
+| `reqwest` | `0.12.28` | Pure HTTPS client for querying SHA-256 digest feeds. |
 
 ---
 

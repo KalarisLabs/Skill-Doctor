@@ -393,22 +393,13 @@ pub async fn run_stdio_server() -> anyhow::Result<()> {
         .await
     {
         Ok(s) => s,
-        Err(e) => {
-            let msg = e.to_string();
-            if msg.contains("connection closed") {
-                return Ok(());
-            }
-            return Err(e.into());
-        }
+        Err(rmcp::service::ServerInitializeError::ConnectionClosed(_)) => return Ok(()),
+        Err(e) => return Err(e.into()),
     };
-    if let Err(e) = server.waiting().await {
-        let msg = e.to_string();
-        if msg.contains("connection closed") {
-            return Ok(());
-        }
-        return Err(e.into());
+    match server.waiting().await {
+        Ok(_) => Ok(()),
+        Err(e) => Err(e.into()),
     }
-    Ok(())
 }
 
 #[cfg(test)]

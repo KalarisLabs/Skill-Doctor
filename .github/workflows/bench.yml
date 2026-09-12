@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1
         with:
           toolchain: stable
 
@@ -55,7 +55,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1
         with:
           toolchain: stable
 
@@ -95,7 +95,6 @@ jobs:
 
           echo "Stripped host binary: ${HOST_SIZE_MB} MB ($HOST_SIZE_BYTES bytes)"
           echo "Stripped musl binary: ${MUSL_SIZE_MB} MB ($MUSL_SIZE_BYTES bytes)"
-          echo "Measured Windows PE footprint with MCP: 17.9 MB (leaves 2.1 MB headroom; within 10.5% of 20 MB ceiling)."
 
           # Dynamically evaluate Peak RSS against 40 MB target
           RSS_STATUS="✅ Passed"
@@ -120,8 +119,8 @@ jobs:
           echo "|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| Peak RSS | ${MAX_RSS_MB} MB | < 40 MB | ${RSS_STATUS} |" >> $GITHUB_STEP_SUMMARY
           echo "| Wall Clock Time | ${ELAPSED_SEC} | Sub-second | ${TIME_STATUS} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Stripped Host Footprint | ${HOST_SIZE_MB} MB | ~12 MB target (ceiling: 20 MB) | ✅ Tracked |" >> $GITHUB_STEP_SUMMARY
-          echo "| Stripped Musl Footprint | ${MUSL_SIZE_MB} MB | ~12 MB target (ceiling: 20 MB) | ✅ Tracked |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stripped Host Footprint | ${HOST_SIZE_MB} MB | < 20 MB ceiling | ✅ Tracked |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stripped Musl Footprint | ${MUSL_SIZE_MB} MB | < 20 MB ceiling | ✅ Tracked |" >> $GITHUB_STEP_SUMMARY
 
           if [ "$RSS_PASS" -ne 1 ]; then
             echo "ESCALATION: Peak RSS (${MAX_RSS_MB} MB) exceeded 40 MB target!"

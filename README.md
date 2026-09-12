@@ -4,6 +4,8 @@
 
 # Skill Doctor
 
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/KalarisLabs/Skill-Doctor)
+
 **Deterministic, multi-layer security analysis for AI agent skill files.**
 A single statically linked Rust binary. No interpreter, no API key, no network required.
 Pre-registered target of sub-150 ms median scans, bit-reproducible verdicts, and host-delegated semantic analysis when

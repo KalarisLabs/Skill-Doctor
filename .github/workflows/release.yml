@@ -96,14 +96,13 @@ jobs:
           if [ "${{ matrix.archive_ext }}" = "zip" ]; then
             cp "${BIN_DIR}/skill-doctor.exe" "dist/${PKG_NAME}/"
             cp LICENSE README.md "dist/${PKG_NAME}/"
-            cd "dist/${PKG_NAME}"
-            7z a "../../${PKG_NAME}.zip" *
+            (cd "dist/${PKG_NAME}" && 7z a "../${PKG_NAME}.zip" *)
           else
             cp "${BIN_DIR}/skill-doctor" "dist/${PKG_NAME}/"
             cp LICENSE README.md "dist/${PKG_NAME}/"
-            cd "dist/${PKG_NAME}"
-            tar -czf "../../${PKG_NAME}.tar.gz" *
+            (cd "dist/${PKG_NAME}" && tar -czf "../${PKG_NAME}.tar.gz" *)
           fi
+          ls -la dist/
 
       - name: Upload archive artifact
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
@@ -133,6 +132,9 @@ jobs:
       - name: Setup Cosign for Sigstore keyless signing
         uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.8.0
 
+      - name: Prepare release assets directory
+        run: mkdir -p release-assets
+
       - name: Download all binary artifacts
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
@@ -140,10 +142,13 @@ jobs:
           pattern: binary-*
           merge-multiple: true
 
+      - name: List downloaded binary archives
+        run: ls -la release-assets/
+
       - name: Generate SHA256SUMS.txt
         working-directory: release-assets
         run: |
-          sha256sum * > SHA256SUMS.txt
+          sha256sum skill-doctor-* > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Sign SHA256SUMS.txt with Sigstore Cosign (OIDC Keyless)
@@ -158,6 +163,7 @@ jobs:
         run: |
           cargo install cargo-cyclonedx
           cargo cyclonedx --format json -p skill-doctor --features mcp
+          mkdir -p release-assets
           # Copy generated SBOM to release assets
           if [ -f "crates/skill-doctor-cli/skill-doctor.cdx.json" ]; then
             cp crates/skill-doctor-cli/skill-doctor.cdx.json release-assets/
@@ -166,6 +172,7 @@ jobs:
           else
             find . -name "*.cdx.json" -exec cp {} release-assets/skill-doctor.cdx.json \;
           fi
+          ls -la release-assets/
 
       - name: Dry-run Packaging Verification (Topological Crate Order)
         run: |

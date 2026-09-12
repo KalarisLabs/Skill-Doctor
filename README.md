@@ -120,6 +120,11 @@ Each release publishes `skill-doctor.cdx.json` (CycloneDX JSON). Inspect depende
 jq -r '.components[] | "\(.name) \(.version) (\(.licenses[0].license.id // "unknown"))"' skill-doctor.cdx.json
 ```
 
+### Binary signing & OS security posture
+- **Cosign OIDC Provenance**: All checksum manifests are signed keylessly via Sigstore Cosign on GitHub Actions.
+- **macOS**: Binaries are **not Apple-notarized**; archives downloaded directly via a web browser will be quarantined by macOS Gatekeeper (`xattr -d com.apple.quarantine skill-doctor`). CLI installations via `npx`, `npm -g`, or `curl` do not set quarantine bits and run directly.
+- **Windows**: Binaries are **unsigned** with Authenticode; browser downloads may show a Microsoft Defender SmartScreen warning. Installations via `npx`, npm, or `cargo install` run directly.
+
 ## Repository layout
 
 ```

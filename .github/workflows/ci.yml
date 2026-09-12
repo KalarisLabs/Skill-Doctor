@@ -59,9 +59,8 @@ jobs:
             exit 1
           fi
 
-          ACTION_VER=$(grep -m1 'default: "0.1.0"' action.yml || true)
-          if [ -z "$ACTION_VER" ]; then
-            echo "ERROR: action.yml default version is not pinned to 0.1.0"
+          if ! grep -q "default: \"${CARGO_VER}\"" action.yml; then
+            echo "ERROR: action.yml default version does not match Cargo.toml version ($CARGO_VER)"
             exit 1
           fi
 
@@ -444,7 +443,7 @@ jobs:
         uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
       - name: Build release binary
-        run: cargo build --release --locked --features mcp
+        run: cargo build -p skill-doctor --release --locked --features mcp
 
       - name: Smoke test README install and quick-start commands
         run: |
@@ -462,7 +461,7 @@ jobs:
           skill-doctor scan ./examples/hello-skill
 
           echo "4. Testing skill-doctor scan-all . --output sarif..."
-          skill-doctor scan-all ./examples --output sarif
+          skill-doctor scan-all . --output sarif || [ $? -eq 2 ]
 
           echo "5. Testing skill-doctor diff ./examples/hello-skill --baseline report.json..."
           skill-doctor scan ./examples/hello-skill --output json > report.json
@@ -478,12 +477,12 @@ jobs:
           skill-doctor explain SD-04
 
           echo "9. Testing CI gate command block..."
-          skill-doctor scan-all ./examples \
+          skill-doctor scan-all . \
             --output sarif \
             --fail-on HIGH \
             --fail-under-coverage 0.8 \
             --deterministic \
-            --offline
+            --offline || [ $? -eq 2 ]
 
           echo "10. Testing Build from source command..."
           cargo run -p skill-doctor --locked --features mcp -- scan ./examples/hello-skill

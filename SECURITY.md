@@ -61,3 +61,10 @@ cyclonedx validate --input-file skill-doctor.cdx.json
 # List components and licenses with jq
 jq -r '.components[] | "\(.name) \(.version) (\(.licenses[0].license.id // "unknown"))"' skill-doctor.cdx.json
 ```
+
+### 4. Binary Signing & OS Security Posture
+
+We state our release binary signing posture explicitly:
+- **Sigstore Attestation**: All release checksum manifests (`SHA256SUMS.txt`) are cryptographically signed using Sigstore Cosign via GitHub Actions OIDC keyless signing, establishing cryptographic provenance back to the official release workflow.
+- **macOS (Gatekeeper & Notarization)**: macOS binaries are **not Apple-notarized**. If you download an archive directly via a web browser, macOS Gatekeeper will attach quarantine attributes (`com.apple.quarantine`). Installations via `npx @kalarislabs/skill-doctor`, `npm install -g`, or `curl` do not set browser quarantine flags and are completely unaffected. To clear quarantine from a browser-downloaded archive manually: `xattr -d com.apple.quarantine skill-doctor`.
+- **Windows (SmartScreen & Authenticode)**: Windows release binaries are **unsigned** with an Authenticode certificate. Running an executable downloaded via a web browser may prompt a Microsoft Defender SmartScreen untrusted publisher warning. Installations via `npx @kalarislabs/skill-doctor`, npm, or `cargo install` are unaffected.

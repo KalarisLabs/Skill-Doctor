@@ -53,15 +53,39 @@ jobs:
 
           echo "Testing npx @kalarislabs/skill-doctor@${VERSION} scan ./test-skill..."
           # Run npx wrapper and capture stdout/stderr
-          # Must NOT find any local binary shortcut and MUST verify checksum
+          # Must NOT find any local binary shortcut and MUST execute SHA-256 checksum verification
           OUTPUT=$(npx --yes "@kalarislabs/skill-doctor@${VERSION}" scan ./test-skill 2>&1)
           echo "$OUTPUT"
 
-          # Assert that real download path executed
-          if echo "$OUTPUT" | grep -q "Found local release binary"; then
+          # Assert that real download path executed and verified SHA-256
+          if echo "$OUTPUT" | grep -Fq "using existing local binary"; then
             echo "FAILED: Local binary shortcut was incorrectly executed instead of real download!"
             exit 1
           fi
+          if ! echo "$OUTPUT" | grep -Fq "skill-doctor: verifying SHA-256 digest..."; then
+            echo "FAILED: Real download path did not log SHA-256 verification!"
+            exit 1
+          fi
+          if ! echo "$OUTPUT" | grep -Fq "skill-doctor: checksum OK"; then
+            echo "FAILED: Expected 'skill-doctor: checksum OK' log line!"
+            exit 1
+          fi
+
+      - name: Test npm global install and CLI binary execution
+        run: |
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          if [ -z "$VERSION" ]; then
+            VERSION="${{ inputs.version }}"
+          fi
+          if [ -z "$VERSION" ]; then
+            VERSION="0.1.0"
+          fi
+
+          echo "Testing npm install -g @kalarislabs/skill-doctor@${VERSION}..."
+          npm install -g "@kalarislabs/skill-doctor@${VERSION}"
+          skill-doctor --version
+          skill-doctor scan ./test-skill
 
       - name: Test Composite Action from published release tag
         uses: KalarisLabs/Skill-Doctor@v0.1.0

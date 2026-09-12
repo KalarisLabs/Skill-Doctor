@@ -421,7 +421,8 @@ pub async fn run_stdio_server() -> anyhow::Result<()> {
                 Err(e.into())
             }
         }
-        Ok(_) => Ok(()),
+        #[allow(unreachable_patterns)]
+        Ok(other) => Err(anyhow::anyhow!("Unknown server quit reason: {:?}", other)),
         Err(e) => {
             if e.is_cancelled() || is_connection_closed_error(&e) {
                 Ok(())

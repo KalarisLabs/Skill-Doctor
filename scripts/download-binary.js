@@ -157,17 +157,18 @@ async function main() {
   }
 
   console.log(`skill-doctor: downloading ${assetName}...`);
-  const tempArchive = path.join(binDir, `temp-${assetName}`);
-  const tempExtractDir = path.join(binDir, `temp-extract-${Date.now()}`);
+  const tempArchive = path.join(binDir, `temp-${Date.now()}-${process.pid}-${assetName}`);
+  const tempExtractDir = path.join(binDir, `temp-extract-${Date.now()}-${process.pid}`);
 
   try {
     const stream = await fetchWithRedirects(downloadUrl);
     const fileStream = fs.createWriteStream(tempArchive);
 
     await new Promise((resolve, reject) => {
-      stream.pipe(fileStream);
-      fileStream.on("finish", resolve);
+      stream.on("error", reject);
       fileStream.on("error", reject);
+      fileStream.on("finish", resolve);
+      stream.pipe(fileStream);
     });
 
     console.log(`skill-doctor: verifying SHA-256 digest...`);

@@ -84,15 +84,56 @@ fn is_analyzable_skill_file(path: &std::path::Path) -> bool {
         return false;
     }
 
-    // Must be a text-ish file
-    let ext = std::path::Path::new(lower)
+    // Must be a text-ish file or known dotfile
+    let file_name = path
+        .file_name()
+        .map(|s| s.to_string_lossy().to_lowercase())
+        .unwrap_or_default();
+
+    let is_known_basename = matches!(
+        file_name.as_str(),
+        ".bashrc"
+            | ".bash_profile"
+            | ".bash_login"
+            | ".profile"
+            | ".zshrc"
+            | ".zprofile"
+            | ".npmrc"
+            | ".yarnrc"
+            | ".env"
+            | ".env.local"
+            | ".env.production"
+            | ".gitconfig"
+            | "makefile"
+            | "dockerfile"
+    );
+
+    let ext = std::path::Path::new(&lower)
         .extension()
         .and_then(|e| e.to_str())
         .unwrap_or("");
+
     lower.ends_with("skill.md")
+        || is_known_basename
         || matches!(
             ext,
-            "md" | "py" | "js" | "ts" | "sh" | "bash" | "txt" | "json" | "yaml" | "yml"
+            "md" | "py"
+                | "js"
+                | "ts"
+                | "sh"
+                | "bash"
+                | "txt"
+                | "json"
+                | "yaml"
+                | "yml"
+                | "ps1"
+                | "bat"
+                | "cmd"
+                | "rb"
+                | "pl"
+                | "mjs"
+                | "cjs"
+                | "toml"
         )
 }
 
@@ -363,5 +404,27 @@ mod tests {
         let entry = make_entry("SKILL.md", "Simple documentation skill with normal text.");
         let findings = analyze_entropy(&[entry]);
         assert!(findings.is_empty());
+    }
+
+    #[test]
+    fn test_analyzable_skill_file_extensions_and_dotfiles() {
+        use std::path::Path;
+        // Dotfiles & persistence
+        assert!(is_analyzable_skill_file(Path::new(".bashrc")));
+        assert!(is_analyzable_skill_file(Path::new(".profile")));
+        assert!(is_analyzable_skill_file(Path::new(".env")));
+        assert!(is_analyzable_skill_file(Path::new("Makefile")));
+        // Windows & scripts
+        assert!(is_analyzable_skill_file(Path::new("payload.ps1")));
+        assert!(is_analyzable_skill_file(Path::new("install.bat")));
+        assert!(is_analyzable_skill_file(Path::new("run.cmd")));
+        assert!(is_analyzable_skill_file(Path::new("script.rb")));
+        assert!(is_analyzable_skill_file(Path::new("config.toml")));
+        // Binaries / excluded files
+        assert!(!is_analyzable_skill_file(Path::new("binary.exe")));
+        assert!(!is_analyzable_skill_file(Path::new("Cargo.lock")));
+        assert!(!is_analyzable_skill_file(Path::new(
+            "node_modules/pkg/index.js"
+        )));
     }
 }

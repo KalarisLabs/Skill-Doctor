@@ -4,14 +4,16 @@ on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
     branches: [main]
-  push:
-    branches: [main]
   schedule:
     # Nightly run at 03:00 UTC
     - cron: '0 3 * * *'
   workflow_dispatch:
   release:
     types: [published]
+
+defaults:
+  run:
+    shell: bash
 
 env:
   CARGO_TERM_COLOR: always
@@ -23,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -33,11 +35,11 @@ jobs:
 
       - name: Run Criterion benchmarks
         run: |
-          cargo bench --workspace -- --verbose 2>&1 | tee bench_output.txt
+          cargo bench --workspace --locked -- --verbose 2>&1 | tee bench_output.txt
 
       - name: Upload Criterion reports
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
         with:
           name: criterion-benchmark-reports
           path: target/criterion/
@@ -48,7 +50,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -56,11 +58,14 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Build release binary
-        run: cargo build --release
+      - name: Build release binaries (host & musl)
+        run: |
+          sudo apt-get update && sudo apt-get install -y musl-tools
+          rustup target add x86_64-unknown-linux-musl
+          cargo build --release --locked
+          cargo build --release --locked --target x86_64-unknown-linux-musl
 
       - name: Measure throughput & peak RSS
-        shell: bash
         run: |
           echo "=== Measuring throughput and peak RSS on fixtures ==="
           /usr/bin/time -v ./target/release/skill-doctor scan-all . \
@@ -75,9 +80,32 @@ jobs:
           MAX_RSS_MB=$(awk "BEGIN {print $MAX_RSS_KB / 1024}")
           ELAPSED_SEC=$(grep "Elapsed (wall clock) time" perf_stats.txt | awk '{print $NF}')
 
+          # Strip binaries for final footprint measurement
+          strip ./target/release/skill-doctor
+          strip ./target/x86_64-unknown-linux-musl/release/skill-doctor
+
+          HOST_SIZE_BYTES=$(stat -c%s ./target/release/skill-doctor)
+          HOST_SIZE_MB=$(awk "BEGIN {printf \"%.2f\", $HOST_SIZE_BYTES / 1048576}")
+          MUSL_SIZE_BYTES=$(stat -c%s ./target/x86_64-unknown-linux-musl/release/skill-doctor)
+          MUSL_SIZE_MB=$(awk "BEGIN {printf \"%.2f\", $MUSL_SIZE_BYTES / 1048576}")
+
+          echo "Stripped host binary: ${HOST_SIZE_MB} MB ($HOST_SIZE_BYTES bytes)"
+          echo "Stripped musl binary: ${MUSL_SIZE_MB} MB ($MUSL_SIZE_BYTES bytes)"
+
           echo "### Performance Benchmark Results (§7.3)" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Measured | Target (§7.3) | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| Peak RSS | ${MAX_RSS_MB} MB | < 40 MB | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Wall Clock Time | ${ELAPSED_SEC} | Sub-second | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Binary Footprint | $(ls -lh ./target/release/skill-doctor | awk '{print $5}') | ~12 MB stripped | ✅ Tracked |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stripped Host Footprint | ${HOST_SIZE_MB} MB | ~12 MB stripped | ✅ Tracked |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stripped Musl Footprint | ${MUSL_SIZE_MB} MB | ~12 MB stripped | ✅ Tracked |" >> $GITHUB_STEP_SUMMARY
+
+          # Decision Rule: Pre-registered target is ~12 MB stripped; threshold ceiling is 20 MB.
+          # If either exceeds ~20 MB, stop and escalate to make yara-x opt-in or rewrite §7.3 targets.
+          MAX_ALLOWED_BYTES=20971520 # 20 MB
+          if [ "$HOST_SIZE_BYTES" -gt "$MAX_ALLOWED_BYTES" ] || [ "$MUSL_SIZE_BYTES" -gt "$MAX_ALLOWED_BYTES" ]; then
+            echo "ESCALATION: Stripped release binary exceeds 20 MB ceiling!"
+            echo "Host: ${HOST_SIZE_MB} MB, Musl: ${MUSL_SIZE_MB} MB (limit: 20.00 MB)"
+            echo "Action required: yara-x must become an opt-in feature, or paper §7.3 target must be rewritten."
+            exit 1
+          fi

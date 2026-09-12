@@ -1,17 +1,12 @@
-use skill_doctor_sandbox::runner::check_command_exists;
+use skill_doctor_sandbox::runner::resolve_test_interpreter;
 use skill_doctor_sandbox::{run_sandbox, LeakSource, SandboxOptions, SandboxRunState};
 use std::fs;
 
 #[test]
 fn test_sandbox_detects_canary_exfil_script() {
-    let py_cmd3 = concat!("py", "thon3");
-    let py_cmd = concat!("py", "thon");
-    let _py = if check_command_exists(py_cmd3) {
-        py_cmd3
-    } else if check_command_exists(py_cmd) {
-        py_cmd
-    } else {
-        return; // Gracefully skip if no interpreter
+    let _py = match resolve_test_interpreter() {
+        Some(p) => p,
+        None => return,
     };
 
     let temp = tempfile::tempdir().unwrap();
@@ -60,14 +55,9 @@ print("Stolen credential: " + key)
 
 #[test]
 fn test_sandbox_detects_logic_bomb_divergence() {
-    let py_cmd3 = concat!("py", "thon3");
-    let py_cmd = concat!("py", "thon");
-    let _py = if check_command_exists(py_cmd3) {
-        py_cmd3
-    } else if check_command_exists(py_cmd) {
-        py_cmd
-    } else {
-        return;
+    let _py = match resolve_test_interpreter() {
+        Some(p) => p,
+        None => return,
     };
 
     let temp = tempfile::tempdir().unwrap();
@@ -105,14 +95,9 @@ else:
 
 #[test]
 fn test_sandbox_clean_benign_script() {
-    let py_cmd3 = concat!("py", "thon3");
-    let py_cmd = concat!("py", "thon");
-    let _py = if check_command_exists(py_cmd3) {
-        py_cmd3
-    } else if check_command_exists(py_cmd) {
-        py_cmd
-    } else {
-        return;
+    let _py = match resolve_test_interpreter() {
+        Some(p) => p,
+        None => return,
     };
 
     let temp = tempfile::tempdir().unwrap();

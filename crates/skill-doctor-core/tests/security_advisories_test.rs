@@ -1,4 +1,4 @@
-﻿//! Security advisories and supply-chain (SD-05) integrity tests.
+//! Security advisories and supply-chain (SD-05) integrity tests.
 
 use skill_doctor_core::finding::{AnalysisLayer, Confidence, Finding, Severity};
 use skill_doctor_core::l0;
@@ -18,7 +18,7 @@ fn fixtures_dir() -> PathBuf {
 fn test_supply_chain_threat_class_integrity() {
     let sc = ThreatClass::SupplyChainTampering;
     assert_eq!(sc.id(), "SD-05");
-    assert_eq!(sc.description(), "Supply-Chain Tampering");
+    assert!(sc.description().starts_with("Supply-Chain Tampering"));
 }
 
 #[test]

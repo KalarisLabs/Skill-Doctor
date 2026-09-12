@@ -8,7 +8,7 @@ interpreter. Prefer pure-Rust crates so the static (musl) build stays clean.
 
 | Crate | Purpose | Layer |
 |-------|---------|-------|
-| `yara-x` | Pure-Rust YARA engine; rule packs for SD-01–SD-11. Compiled once at build time. | L1 pattern |
+| `yara-x` | Pure-Rust YARA engine; rule packs for SD-01–SD-11. Compiled once at build time with minimal features (`default-features = false, features = ["constant-folding"]`) to drop binary format and crypto modules. | L1 pattern |
 | `tree-sitter` + `tree-sitter-bash`, `tree-sitter-python`, `tree-sitter-javascript`, `tree-sitter-json`, `tree-sitter-md` | Parse companion scripts & manifests (incl. malformed) for taint analysis. | L1 taint |
 | `unicode-security` | UTS #39 confusables / mixed-script / skeleton normalization. | L1 unicode, neutralize |
 | `unicode-normalization` | NFC/NFKC normalization; zero-width & bidi handling. | L1 unicode, neutralize |

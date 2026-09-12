@@ -269,6 +269,28 @@ pub fn check_command_exists(cmd: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// Helper to resolve script interpreter for tests.
+/// If absent, panics if `SD_L3_REQUIRE_INTERPRETER` or `CI` is set.
+pub fn resolve_test_interpreter() -> Option<&'static str> {
+    let py_cmd3 = concat!("py", "thon3");
+    let py_cmd = concat!("py", "thon");
+    if check_command_exists(py_cmd3) {
+        Some(py_cmd3)
+    } else if check_command_exists(py_cmd) {
+        Some(py_cmd)
+    } else if std::env::var("SD_L3_REQUIRE_INTERPRETER")
+        .map(|v| v == "1" || v.eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+        || std::env::var("CI")
+            .map(|v| v == "true" || v == "1")
+            .unwrap_or(false)
+    {
+        panic!("SD_L3_REQUIRE_INTERPRETER or CI is set, but no test interpreter was found on PATH");
+    } else {
+        None
+    }
+}
+
 /// Platform-specific process tree management.
 pub struct ProcessTreeGuard {
     #[cfg(windows)]
@@ -578,7 +600,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "sandbox")]
     fn test_runner_host_identity_stripping() {
         let temp = tempfile::tempdir().unwrap();
         let workspace = temp.path().join("workspace");
@@ -590,13 +611,10 @@ mod tests {
         let env_vars = build_isolated_env(&mock_home, &canaries, &HashMap::new());
 
         // 1. Verify environment map has synthetic identifiers
-        let py_cmd3 = concat!("py", "thon3");
-        let py_cmd = concat!("py", "thon");
-
         assert_eq!(
             env_vars.get("CI"),
-            Some(&"true".to_string()),
-            "Baseline must set CI=true"
+            None,
+            "Baseline must have CI absent; only Profile B injects CI=true"
         );
         assert_eq!(
             env_vars.get("HOSTNAME"),
@@ -605,12 +623,9 @@ mod tests {
         );
 
         // 2. Execute a child process verifying child sees stripped variables
-        let py = if check_command_exists(py_cmd3) {
-            py_cmd3
-        } else if check_command_exists(py_cmd) {
-            py_cmd
-        } else {
-            return;
+        let py = match resolve_test_interpreter() {
+            Some(p) => p,
+            None => return,
         };
 
         let py_ext = concat!(".", "py");

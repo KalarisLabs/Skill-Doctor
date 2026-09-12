@@ -8,56 +8,51 @@ on:
 
 permissions:
   contents: read
-  security-events: write
+
+defaults:
+  run:
+    shell: bash
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  lint-and-unit:
-    name: lint-and-unit
+  version-sync:
+    name: version-sync
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          components: rustfmt, clippy
+          fetch-depth: 0
 
-      - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
-
-      - name: Format check
-        run: cargo fmt --all --check
-
-      - name: Clippy linter
-        run: cargo clippy --workspace --all-targets -- -D warnings
-
-      - name: Unit & Integration tests
-        run: cargo test --workspace --locked
-
-      - name: Invariant grep (no mandatory LLM SDKs)
-        shell: bash
+      - name: Verify version synchronization
         run: |
-          echo "Verifying architectural invariant: zero direct model dependencies on default path..."
-          if grep -r -i -E "openai|anthropic" crates/skill-doctor-cli/src crates/skill-doctor-core/src; then
-            echo "ERROR: Direct model SDK/vendor references detected on default path."
+          CARGO_VER=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
+          PKG_VER=$(grep -m1 '"version":' package.json | cut -d'"' -f4)
+          echo "Cargo.toml version: $CARGO_VER"
+          echo "package.json version: $PKG_VER"
+
+          if [ "$CARGO_VER" != "$PKG_VER" ]; then
+            echo "ERROR: Cargo.toml version ($CARGO_VER) does not match package.json ($PKG_VER)"
             exit 1
           fi
-          echo "Invariant verified: Pure deterministic core."
 
-  os-cli:
-    name: os-cli
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7
+          if ! grep -q "## \[$CARGO_VER\]" CHANGELOG.md; then
+            echo "ERROR: CHANGELOG.md missing release section for [$CARGO_VER]"
+            exit 1
+          fi
+
+          if [ "${GITHUB_REF_TYPE:-}" = "tag" ]; then
+            TAG_VER="${GITHUB_REF_NAME#v}"
+            echo "Git tag version: $TAG_VER"
+            if [ "$TAG_VER" != "$CARGO_VER" ]; then
+              echo "ERROR: Git tag ($TAG_VER) does not match Cargo.toml ($CARGO_VER)"
+              exit 1
+            fi
+          fi
+
+          echo "Version sync verified: $CARGO_VER"
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -65,59 +60,35 @@ jobs:
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
 
-      - name: Build release binary
-        run: cargo build --release
-
-      - name: CLI smoke — --help & --version
-        shell: bash
+      - name: Verify CLI --version output
         run: |
-          BIN="./target/release/skill-doctor"
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            BIN="./target/release/skill-doctor.exe"
-          fi
-          $BIN --help
-          $BIN --version
-
-      - name: CLI smoke — benign scan (exit 0)
-        shell: bash
-        run: |
-          BIN="./target/release/skill-doctor"
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            BIN="./target/release/skill-doctor.exe"
-          fi
-          $BIN scan tests/fixtures/benign/hello-skill --fail-on HIGH --offline --deterministic
-
-      - name: CLI smoke — attack SD-02 scan (exit 2)
-        shell: bash
-        run: |
-          BIN="./target/release/skill-doctor"
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            BIN="./target/release/skill-doctor.exe"
-          fi
-          set +e
-          $BIN scan tests/fixtures/attack/SD-02/malicious-skill --fail-on HIGH --offline --deterministic
-          EXIT_CODE=$?
-          set -e
-          if [ "$EXIT_CODE" -ne 2 ]; then
-            echo "Expected exit code 2 for attack fixture, got $EXIT_CODE"
+          CARGO_VER=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
+          CLI_OUTPUT=$(cargo run -p skill-doctor --locked -- --version)
+          echo "CLI raw output: $CLI_OUTPUT"
+          CLI_VER=$(echo "$CLI_OUTPUT" | awk '{print $2}')
+          echo "CLI parsed version: $CLI_VER"
+          if [ "$CLI_VER" != "$CARGO_VER" ]; then
+            echo "ERROR: CLI version ($CLI_VER) does not match Cargo.toml ($CARGO_VER)"
             exit 1
           fi
-          echo "Attack fixture correctly exited with code 2."
 
   supply-chain:
     name: supply-chain
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
 
       - name: Gitleaks secrets detection
-        shell: bash
         run: |
           GITLEAKS_VERSION="8.24.0"
-          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | sudo tar -xz -C /usr/local/bin gitleaks
+          GITLEAKS_SHA256="cb49b7de5ee986510fe8666ca0273a6cc15eb82571f2f14832c9e8920751f3a4"
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" -o gitleaks.tar.gz
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
+          sudo tar -xz -C /usr/local/bin -f gitleaks.tar.gz gitleaks
+          rm gitleaks.tar.gz
           gitleaks detect --source . --verbose --redact
 
       - name: Setup Rust toolchain
@@ -134,15 +105,81 @@ jobs:
         with:
           config: .semgrep/skill-doctor-invariants.yml
 
-  dogfood-self-scan:
-    name: dogfood-self-scan
+  check:
+    name: check-gate
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Fast workspace check
+        run: cargo check --workspace --all-targets --locked
+
+  lint-and-unit:
+    name: lint-and-unit
+    needs: [check]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Format check
+        run: cargo fmt --all --check
+
+      - name: Clippy linter (workspace default)
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+
+      - name: Clippy linter (feature: mcp)
+        run: cargo clippy -p skill-doctor --no-default-features --features mcp --all-targets --locked -- -D warnings
+
+      - name: Clippy linter (feature: sandbox)
+        run: cargo clippy -p skill-doctor --no-default-features --features sandbox --all-targets --locked -- -D warnings
+
+      - name: Clippy linter (feature: intel)
+        run: cargo clippy -p skill-doctor --no-default-features --features intel --all-targets --locked -- -D warnings
+
+      - name: Clippy linter (all-features)
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+
+      - name: Unit & Integration tests
+        env:
+          SD_L3_REQUIRE_INTERPRETER: "1"
+        run: cargo test --workspace --locked
+
+      - name: Invariant grep (no mandatory LLM SDKs)
+        run: |
+          echo "Verifying architectural invariant: zero direct model dependencies on default path..."
+          if grep -r -i -E "openai|anthropic" crates/skill-doctor-cli/src crates/skill-doctor-core/src; then
+            echo "ERROR: Direct model SDK/vendor references detected on default path."
+            exit 1
+          fi
+          echo "Invariant verified: Pure deterministic core."
+
+  os-cli:
+    name: os-cli
+    needs: [check]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -151,10 +188,68 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build release binary
-        run: cargo build --release
+        run: cargo build --release --locked
+
+      - name: CLI smoke — --help & --version
+        run: |
+          BIN="./target/release/skill-doctor"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            BIN="./target/release/skill-doctor.exe"
+          fi
+          $BIN --help
+          CLI_VER=$($BIN --version | awk '{print $2}')
+          CARGO_VER=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
+          echo "CLI reported version: $CLI_VER, expected: $CARGO_VER"
+          if [ "$CLI_VER" != "$CARGO_VER" ]; then
+            echo "ERROR: CLI version ($CLI_VER) does not match Cargo.toml ($CARGO_VER)"
+            exit 1
+          fi
+
+      - name: CLI smoke — benign scan (exit 0)
+        run: |
+          BIN="./target/release/skill-doctor"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            BIN="./target/release/skill-doctor.exe"
+          fi
+          $BIN scan tests/fixtures/benign/hello-skill --fail-on HIGH --offline --deterministic
+
+      - name: CLI smoke — attack SD-02 scan (exit 2)
+        run: |
+          BIN="./target/release/skill-doctor"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            BIN="./target/release/skill-doctor.exe"
+          fi
+          set +e
+          $BIN scan tests/fixtures/attack/SD-02/malicious-skill --fail-on HIGH --offline --deterministic
+          EXIT_CODE=$?
+          set -e
+          if [ "$EXIT_CODE" -ne 2 ]; then
+            echo "Expected exit code 2 for attack fixture, got $EXIT_CODE"
+            exit 1
+          fi
+          echo "Attack fixture correctly exited with code 2."
+
+  dogfood-self-scan:
+    name: dogfood-self-scan
+    needs: [check]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release binary
+        run: cargo build --release --locked
 
       - name: Dogfood self-scan
-        shell: bash
         run: |
           ./target/release/skill-doctor scan-all . \
             --exclude tests/fixtures/attack \
@@ -166,7 +261,6 @@ jobs:
           echo "Dogfood self-scan passed."
 
       - name: Verify attack detection invariant (exit 2)
-        shell: bash
         run: |
           set +e
           ./target/release/skill-doctor scan tests/fixtures/attack/SD-02/malicious-skill --fail-on HIGH --offline --deterministic
@@ -186,10 +280,11 @@ jobs:
 
   determinism:
     name: determinism
+    needs: [check]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -198,10 +293,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build release binary
-        run: cargo build --release
+        run: cargo build --release --locked
 
       - name: Determinism verification (identical SHA-256)
-        shell: bash
         run: |
           ./target/release/skill-doctor scan tests/fixtures/benign/hello-skill \
             --output json --deterministic --offline > run1.json
@@ -219,10 +313,11 @@ jobs:
 
   docs-smoke:
     name: docs-smoke
+    needs: [check]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -231,10 +326,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Build release binary
-        run: cargo build --release
+        run: cargo build --release --locked
 
       - name: Smoke test README quick-start commands
-        shell: bash
         run: |
           set -e
           export PATH="$(pwd)/target/release:$PATH"
@@ -267,6 +361,6 @@ jobs:
             --offline
 
           echo "8. Testing Build from source command..."
-          cargo run -p skill-doctor -- scan ./examples/hello-skill
+          cargo run -p skill-doctor --locked -- scan ./examples/hello-skill
 
           echo "All README quick-start commands executed successfully with exit 0."

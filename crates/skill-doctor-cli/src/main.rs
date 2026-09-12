@@ -337,7 +337,7 @@ fn main() {
             output,
             deterministic,
             offline: _,
-        } => run_diff(&path, &baseline, &output, deterministic),
+        } => run_diff(&path, &baseline, &output, deterministic, &ui),
 
         Commands::Gate {
             path,
@@ -753,6 +753,7 @@ fn run_diff(
     baseline: &Path,
     output: &OutputFormat,
     deterministic: bool,
+    ui: &UiContext,
 ) -> Result<i32> {
     let baseline_json = std::fs::read_to_string(baseline)
         .with_context(|| format!("Failed to read baseline report: {}", baseline.display()))?;
@@ -780,21 +781,23 @@ fn run_diff(
                 .iter()
                 .any(|bf| bf.rule_id == f.rule_id && bf.path == f.path)
         })
+        .cloned()
         .collect();
 
     let diff_report = skill_doctor_core::report::Report {
         bundle_digest: current_report.bundle_digest.clone(),
-        findings: new_findings.into_iter().cloned().collect(),
-        coverage: current_report.coverage.clone(),
-        verdict: if current_report.findings.is_empty() {
+        verdict: if new_findings.is_empty() {
             skill_doctor_core::report::Verdict::Pass
         } else {
             skill_doctor_core::report::Verdict::Fail
         },
-        risk_score: current_report.risk_score,
+        coverage: current_report.coverage.clone(),
         deterministic,
+        scanner_version: current_report.scanner_version.clone(),
+        would_fail: !new_findings.is_empty(),
+        fail_on: current_report.fail_on,
         layers: current_report.layers.clone(),
-        timestamp: current_report.timestamp.clone(),
+        findings: new_findings,
     };
 
     match output {
@@ -802,11 +805,11 @@ fn run_diff(
             println!("{}", serde_json::to_string_pretty(&diff_report)?);
         }
         OutputFormat::Sarif => {
-            let sarif = report::sarif::to_sarif(&diff_report);
+            let sarif = sarif::report_to_sarif(&diff_report);
             println!("{}", serde_json::to_string_pretty(&sarif)?);
         }
         OutputFormat::Text => {
-            report::text::print_text_report(&diff_report, false, false);
+            ui.print_report(&diff_report);
         }
     }
 

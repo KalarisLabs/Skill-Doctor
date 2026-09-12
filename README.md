@@ -97,6 +97,29 @@ rustup target add x86_64-unknown-linux-musl
 cargo build --release --target x86_64-unknown-linux-musl
 ```
 
+## Release artifact verification
+
+Skill Doctor release assets are signed using Sigstore Cosign (OIDC keyless) and accompanied by CycloneDX SBOMs.
+
+To verify a downloaded release asset against official release attestations:
+
+```bash
+# 1. Verify SHA256SUMS.txt with Cosign (Keyless GitHub Actions OIDC)
+cosign verify-blob \
+  --bundle SHA256SUMS.txt.bundle \
+  --certificate-identity-regexp '^https://github\.com/KalarisLabs/Skill-Doctor/\.github/workflows/release\.yml@refs/tags/v.*$' \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  SHA256SUMS.txt
+
+# 2. Verify binary digest
+sha256sum -c SHA256SUMS.txt --ignore-missing
+```
+
+Each release publishes `skill-doctor.cdx.json` (CycloneDX JSON). Inspect dependencies and licenses with `jq` or `cyclonedx`:
+```bash
+jq -r '.components[] | "\(.name) \(.version) (\(.licenses[0].license.id // "unknown"))"' skill-doctor.cdx.json
+```
+
 ## Repository layout
 
 ```

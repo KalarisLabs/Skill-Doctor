@@ -1,4 +1,5 @@
 use rmcp::handler::server::wrapper::Parameters;
+use rmcp::ServiceExt;
 use skill_doctor_core::report::LayerRunState;
 use skill_doctor_mcp::{
     L2FindingInput, MergeVerdictParams, MergeVerdictResult, ScanParams, ScanResult,
@@ -156,4 +157,34 @@ async fn test_mcp_anti_replay_consumes_slot() {
     let res2: MergeVerdictResult = serde_json::from_str(&merge_resp2).unwrap();
     // Anti-replay: second call fails closed, l2 = Reduced
     assert_eq!(res2.report.layers.l2, LayerRunState::Reduced);
+}
+
+#[tokio::test]
+async fn test_mcp_stdin_closed_immediately_exits_cleanly() {
+    let (client_io, server_io) = tokio::io::duplex(1024);
+    // Dropping client_io causes server_io to encounter EOF immediately
+    drop(client_io);
+
+    let server = SkillDoctorServer::new();
+    let serve_res = server.serve(server_io).await;
+    match serve_res {
+        Ok(running) => {
+            let wait_res = running.waiting().await;
+            match wait_res {
+                Ok(rmcp::service::QuitReason::Closed)
+                | Ok(rmcp::service::QuitReason::Cancelled) => {}
+                Ok(rmcp::service::QuitReason::JoinError(e)) => {
+                    assert!(e.is_cancelled());
+                }
+                Ok(_) => {}
+                Err(e) => {
+                    assert!(e.is_cancelled());
+                }
+            }
+        }
+        Err(rmcp::service::ServerInitializeError::ConnectionClosed(_)) => {
+            // Expected EOF during initialization
+        }
+        Err(e) => panic!("Expected ConnectionClosed or clean exit, got: {:?}", e),
+    }
 }

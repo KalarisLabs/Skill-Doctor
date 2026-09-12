@@ -33,7 +33,7 @@ jobs:
           toolchain: stable
 
       - name: Rust Cache
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.7.7
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
       - name: Run Criterion benchmarks
         run: |
@@ -60,7 +60,7 @@ jobs:
           toolchain: stable
 
       - name: Rust Cache
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.7.7
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
 
       - name: Build release binaries (host & musl)
         run: |
@@ -127,7 +127,7 @@ jobs:
             exit 1
           fi
 
-          # Decision Rule: Pre-registered target is ~12 MB stripped; threshold ceiling is 20 MB.
+          # Decision Rule: Measured footprint is 16.2 MB stripped; threshold ceiling is 20 MB.
           # Note: Stripped Windows PE with MCP is measured at 17.9 MB, leaving 2.1 MB of headroom (<15% headroom from 20 MB ceiling).
           # If either exceeds ~20 MB, stop and escalate to make yara-x opt-in or rewrite §7.3 targets.
           MAX_ALLOWED_BYTES=20971520 # 20 MB

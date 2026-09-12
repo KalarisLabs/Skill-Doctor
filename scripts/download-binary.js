@@ -30,9 +30,7 @@ function getTargetTriple() {
     if (arch === "arm64") return "aarch64-apple-darwin";
   } else if (platform === "win32") {
     if (arch === "x64") return "x86_64-pc-windows-msvc";
-    if (arch === "arm64") {
-      throw new Error("Windows ARM64 is not currently supported in prebuilt releases. Please build from source using `cargo install --path crates/skill-doctor-cli`.");
-    }
+    if (arch === "arm64") return "aarch64-pc-windows-msvc";
   }
   return null;
 }

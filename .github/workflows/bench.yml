@@ -28,10 +28,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
 
       - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.7.7
 
       - name: Run Criterion benchmarks
         run: |
@@ -53,10 +53,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
 
       - name: Rust Cache
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.7.7
 
       - name: Build release binaries (host & musl)
         run: |
@@ -92,13 +92,36 @@ jobs:
           echo "Stripped host binary: ${HOST_SIZE_MB} MB ($HOST_SIZE_BYTES bytes)"
           echo "Stripped musl binary: ${MUSL_SIZE_MB} MB ($MUSL_SIZE_BYTES bytes)"
 
+          # Dynamically evaluate Peak RSS against 40 MB target
+          RSS_STATUS="✅ Passed"
+          RSS_PASS=$(awk "BEGIN {print ($MAX_RSS_MB < 40.0) ? 1 : 0}")
+          if [ "$RSS_PASS" -ne 1 ]; then
+            RSS_STATUS="❌ Failed (exceeds 40 MB target)"
+          fi
+
+          # Dynamically evaluate Wall Clock against sub-second target
+          TIME_STATUS="✅ Passed"
+          TIME_PASS=$(awk -v t="$ELAPSED_SEC" 'BEGIN {
+            split(t, a, ":");
+            if (length(a) > 1) { sec = a[1]*60 + a[2] } else { sec = a[1] }
+            print (sec <= 1.0) ? 1 : 0
+          }')
+          if [ "$TIME_PASS" -ne 1 ]; then
+            TIME_STATUS="⚠️ Exceeds sub-second target"
+          fi
+
           echo "### Performance Benchmark Results (§7.3)" >> $GITHUB_STEP_SUMMARY
           echo "| Metric | Measured | Target (§7.3) | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|---|---|" >> $GITHUB_STEP_SUMMARY
-          echo "| Peak RSS | ${MAX_RSS_MB} MB | < 40 MB | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Wall Clock Time | ${ELAPSED_SEC} | Sub-second | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Stripped Host Footprint | ${HOST_SIZE_MB} MB | ~12 MB stripped | ✅ Tracked |" >> $GITHUB_STEP_SUMMARY
-          echo "| Stripped Musl Footprint | ${MUSL_SIZE_MB} MB | ~12 MB stripped | ✅ Tracked |" >> $GITHUB_STEP_SUMMARY
+          echo "| Peak RSS | ${MAX_RSS_MB} MB | < 40 MB | ${RSS_STATUS} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Wall Clock Time | ${ELAPSED_SEC} | Sub-second | ${TIME_STATUS} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stripped Host Footprint | ${HOST_SIZE_MB} MB | ~12 MB target (ceiling: 20 MB) | ✅ Tracked |" >> $GITHUB_STEP_SUMMARY
+          echo "| Stripped Musl Footprint | ${MUSL_SIZE_MB} MB | ~12 MB target (ceiling: 20 MB) | ✅ Tracked |" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$RSS_PASS" -ne 1 ]; then
+            echo "ESCALATION: Peak RSS (${MAX_RSS_MB} MB) exceeded 40 MB target!"
+            exit 1
+          fi
 
           # Decision Rule: Pre-registered target is ~12 MB stripped; threshold ceiling is 20 MB.
           # If either exceeds ~20 MB, stop and escalate to make yara-x opt-in or rewrite §7.3 targets.

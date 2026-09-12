@@ -62,8 +62,10 @@ skill-doctor scan-all . \
 
 ## Build from source
 
+Requires Rust 1.93.0+ (MSRV):
+
 ```bash
-rustup toolchain install stable             # see rust-toolchain.toml for the pinned version
+rustup toolchain install stable             # requires Rust 1.93.0+ (MSRV)
 git clone https://github.com/kalarislabs/skill-doctor && cd skill-doctor
 cargo build --release                        # produces target/release/skill-doctor
 cargo test --workspace                        # unit + corpus tests (excludes real_malware)

@@ -560,16 +560,9 @@ mod tests {
         let canaries = CanarySecrets::fixed_for_testing();
         let env_vars = build_isolated_env(&mock_home, &canaries, &HashMap::new());
 
-        // Check interpreter availability
-        let py_cmd3 = concat!("py", "thon3");
-        let py_cmd = concat!("py", "thon");
-        let py = if check_command_exists(py_cmd3) {
-            py_cmd3
-        } else if check_command_exists(py_cmd) {
-            py_cmd
-        } else {
-            // Python not available on test machine, skip test gracefully
-            return;
+        let py = match resolve_test_interpreter() {
+            Some(p) => p,
+            None => return,
         };
 
         let py_ext = concat!(".", "py");

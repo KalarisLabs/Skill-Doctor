@@ -1,0 +1,52 @@
+name: "Rule Proposal"
+description: "Propose a new detection rule or detector logic for an SDTM-v1 threat class"
+title: "[Rule Proposal]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Skill Doctor detectors evaluate the 11 frozen SDTM-v1 threat classes.
+        Every rule contribution must provide both an attack sample (positive fixture) and a benign sample (hard negative).
+  - type: dropdown
+    id: threat_class
+    attributes:
+      label: "SDTM-v1 Threat Class"
+      description: "Select which threat class this rule targets"
+      options:
+        - "SD-01: Prompt Injection"
+        - "SD-02: Command Injection via companion scripts"
+        - "SD-03: Data Exfiltration (env/secrets)"
+        - "SD-04: Privilege Escalation / Scope Violation"
+        - "SD-05: Supply-Chain Tampering"
+        - "SD-06: SSRF via tool parameters"
+        - "SD-07: Tool Poisoning / Shadowing"
+        - "SD-08: Persistent Backdoors"
+        - "SD-09: Context-Window Flooding"
+        - "SD-10: Obfuscation & Evasion"
+        - "SD-11: Scanner-Mediated Injection"
+    validations:
+      required: true
+  - type: textarea
+    id: detection_logic
+    attributes:
+      label: "Proposed Detection Logic"
+      description: "Describe the pattern, regex, YARA rule, or AST/taint heuristic to detect this pattern"
+    validations:
+      required: true
+  - type: textarea
+    id: attack_fixture
+    attributes:
+      label: "Positive Fixture (Attack Sample)"
+      description: "Synthetic malicious sample that should trigger the proposed rule"
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: benign_fixture
+    attributes:
+      label: "Hard-Negative Fixture (Benign Sample)"
+      description: "Clean, benign sample exercising similar syntax that MUST NOT trigger the rule"
+      render: markdown
+    validations:
+      required: true

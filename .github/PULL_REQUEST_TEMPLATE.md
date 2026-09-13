@@ -5,8 +5,17 @@
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New threat detector or rule enhancement (SDTM-v1 class)
 - [ ] Performance optimization (throughput / RSS / binary size)
-- [ ] Documentation update
+- [ ] Documentation or community infrastructure update
 - [ ] Other (please describe):
+
+---
+
+## Contribution Quality Checklist (Required)
+- [ ] No `--no-run` or `echo`-printed output presented as a test result
+- [ ] Every number labelled pre-registered target or local measurement with triple
+- [ ] `cargo test --workspace --all-features --locked` run and output pasted
+- [ ] Fixture added for any new rule (attack + benign pair)
+- [ ] CHANGELOG.md updated under Unreleased
 
 ---
 
@@ -32,7 +41,8 @@ If this PR adds or modifies a threat detector (SD-01 through SD-11), verify that
 
 ---
 
-## Pre-Push Verification
-- [ ] `cargo fmt --all --check`
-- [ ] `cargo clippy --workspace --all-targets -- -D warnings`
-- [ ] `cargo test --workspace`
+## Pre-Push Verification Output
+<!-- Paste the output of: cargo test --workspace --all-features --locked -->
+```text
+
+```

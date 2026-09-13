@@ -1,5 +1,5 @@
 name: "Bug Report"
-description: "Report a bug, unexpected scan verdict, or crash in Skill Doctor"
+description: "Report a bug, unexpected crash, or tool failure in Skill Doctor"
 title: "[Bug]: "
 labels: ["bug"]
 body:
@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         Thanks for taking the time to report an issue!
-        Please ensure your issue does NOT contain active malicious payloads or sensitive credentials.
+        Please ensure your report does NOT contain active malicious payloads or sensitive credentials.
   - type: input
     id: version
     attributes:
@@ -16,30 +16,56 @@ body:
       placeholder: "e.g. skill-doctor 0.1.0"
     validations:
       required: true
-  - type: input
-    id: os
+  - type: dropdown
+    id: install_method
     attributes:
-      label: "Operating System"
-      placeholder: "e.g. Linux x86_64 / macOS ARM64 / Windows 11"
+      label: "Installation Method"
+      description: "How was Skill Doctor installed or run?"
+      options:
+        - "npx (@security.kalarislabs/skill-doctor)"
+        - "npm global install (-g @security.kalarislabs/skill-doctor)"
+        - "cargo install skill-doctor (crates.io)"
+        - "Prebuilt standalone binary (GitHub Releases)"
+        - "Built from local source (cargo install --path ...)"
+    validations:
+      required: true
+  - type: input
+    id: os_arch
+    attributes:
+      label: "Operating System & Architecture"
+      description: "Operating system, version, and CPU architecture"
+      placeholder: "e.g. Ubuntu 22.04 x86_64, macOS 14.5 ARM64 (Apple Silicon), Windows 11 x86_64"
     validations:
       required: true
   - type: textarea
-    id: reproduction
+    id: command
     attributes:
-      label: "Reproduction Steps"
-      description: "Exact CLI command and sanitized input"
-      placeholder: "skill-doctor scan ./my-skill --fail-on HIGH"
+      label: "Exact Command Run"
+      description: "Paste the exact CLI command line executed"
+      placeholder: "skill-doctor scan ./my-skill --fail-on HIGH --deterministic"
+    validations:
+      required: true
+  - type: input
+    id: exit_code
+    attributes:
+      label: "Observed Exit Code"
+      description: "What exit code did the process return? (0 clean, 1 error, 2 findings, 3 coverage)"
+      placeholder: "e.g. 1"
+    validations:
+      required: true
+  - type: textarea
+    id: json_output
+    attributes:
+      label: "JSON Output Excerpt"
+      description: "Paste relevant excerpt from running with `--output json` (redacting any sensitive paths)"
+      render: json
     validations:
       required: true
   - type: textarea
     id: expected
     attributes:
       label: "Expected Behavior"
+      description: "What did you expect to happen instead?"
     validations:
       required: true
-  - type: textarea
-    id: actual
-    attributes:
-      label: "Actual Output / Exit Code"
-    validations:
-      required: true
+

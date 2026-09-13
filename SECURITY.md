@@ -2,6 +2,20 @@
 
 Skill Doctor is a security scanner for AI agent skill files. We treat the security of this scanner, its analysis engines, and its supply chain with the highest priority.
 
+---
+
+## Supported Versions
+
+| Version | Supported | Notes |
+|---|---|---|
+| **0.1.x** | **Yes** | Active public release line (`v0.1.0` is initial canonical release). |
+| < 0.1.0 | No | Pre-release prototypes; do not use. |
+
+> [!WARNING]
+> **Note on crates.io version history**: Prototype versions `0.2.0`, `0.2.2`, and `0.2.3` of `skill-doctor` and `skill-doctor-core` were published during early internal development and have been yanked on crates.io. They must **NOT** be used. `v0.1.0` is the canonical public release.
+
+---
+
 ## Reporting a Vulnerability
 
 **DO NOT file public GitHub issues for security vulnerabilities, zero-days, or exploit payloads.**
@@ -15,17 +29,21 @@ If you discover a vulnerability in Skill Doctor, please report it privately:
    - Impact assessment
    - Your name and affiliation for disclosure credits (optional)
 
-### Policy & Responsible Disclosure
+### Policy & Responsible Disclosure SLA
 - We acknowledge reports within **48 hours**.
 - We aim to provide a remediation patch within **14 days** of confirmation.
 - We request that you observe coordinated disclosure: please do not publicly discuss or publish details of the vulnerability until a patch has been released.
 
+---
+
 ## Handling of Malicious Samples
 
-Skill Doctor contains rules and detectors for 11 threat classes (SDTM-v1). 
+Skill Doctor contains rules and detectors for 11 threat classes (SDTM-v1).
 
 - **Do NOT open issues or PRs containing active malware, live command-and-control URLs, or unredacted credentials.**
 - To contribute detection rules or test fixtures, refer to [CONTRIBUTING.md](CONTRIBUTING.md). Attack test fixtures must follow the synthetic test fixture conventions and be quarantined in `tests/fixtures/attack/` using harmless mock endpoints.
+
+---
 
 ## Verifying Release Artifacts
 
@@ -36,11 +54,7 @@ The release checksum manifest (`SHA256SUMS.txt`) is signed using keyless OIDC Co
 Verify `SHA256SUMS.txt` against its signature bundle:
 
 ```bash
-cosign verify-blob \
-  --bundle SHA256SUMS.txt.bundle \
-  --certificate-identity-regexp '^https://github\.com/KalarisLabs/Skill-Doctor/\.github/workflows/release\.yml@refs/tags/v.*$' \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  SHA256SUMS.txt
+cosign verify-blob   --bundle SHA256SUMS.txt.bundle   --certificate-identity-regexp '^https://github\.com/KalarisLabs/Skill-Doctor/\.github/workflows/release\.yml@refs/tags/v.*$'   --certificate-oidc-issuer https://token.actions.githubusercontent.com   SHA256SUMS.txt
 ```
 
 ### 2. Verifying Binary Checksums
@@ -52,7 +66,7 @@ sha256sum -c SHA256SUMS.txt --ignore-missing
 
 ### 3. CycloneDX Software Bill of Materials (SBOM)
 Every release publishes `skill-doctor.cdx.json` conforming to the CycloneDX JSON specification.
-You can inspect all transitive dependencies, component hashes, and licenses:
+Inspect all transitive dependencies, component hashes, and licenses:
 
 ```bash
 # Validate the SBOM format

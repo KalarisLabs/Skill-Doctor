@@ -4,11 +4,11 @@
 
 <div align="center">
 
-# 🩺 Skill Doctor
+# Skill Doctor
 
-### The Immune System for AI Agent Skills
+### Deterministic Security Analyzer & Threat Firewall for AI Agent Skills
 
-**Blazing-fast, deterministic multi-layer threat defense for agent skills, MCP bundles, and plugins — offline by default, zero runtime compromise.**
+**Sub-50ms static analysis, taint tracking, and runtime sandboxing for agent tools, skills, and MCP servers — offline by default, zero runtime overhead.**
 
 <br />
 
@@ -61,14 +61,53 @@ Skill Doctor evaluates skill packages across four defensive tiers:
 
 ## Getting Started
 
-### Quick start (< 1 min)
-Run an immediate scan with zero local installation:
+Skill Doctor can be integrated directly into your AI coding agent, run in real-time continuous watch mode during development, or invoked as a standalone CLI scanner.
+
+### 1. Add to your AI Agent (Claude Code, Cursor, Windsurf, Cline)
+Equip your AI coding agent with Skill Doctor via Model Context Protocol (MCP) so your agent automatically audits skills and tools before loading or modifying them.
+
+#### Prompt your Agent to install Skill Doctor
+Copy-paste this instruction into your AI coding agent:
+> *"Please install `@security.kalarislabs/skill-doctor` and register it as an MCP server with command `npx -y @security.kalarislabs/skill-doctor mcp`. Use it to audit skill files and tools in this workspace before executing or modifying them."*
+
+#### Add to Claude Desktop / Cursor / Windsurf MCP Configuration
+Add this entry to your `mcp.json` or agent settings:
+```json
+{
+  "mcpServers": {
+    "skill-doctor": {
+      "command": "npx",
+      "args": ["-y", "@security.kalarislabs/skill-doctor", "mcp"]
+    }
+  }
+}
+```
+
+Or add via the Claude Code CLI:
+```bash
+claude mcp add skill-doctor -- npx -y @security.kalarislabs/skill-doctor mcp
+```
+
+---
+
+### 2. Continuous Real-Time Watch Mode (Active Dev)
+Don't just scan once and exit — keep Skill Doctor active in the background. It continuously monitors your skill files and re-scans in sub-50ms as you or your agent write code:
+```bash
+npx @security.kalarislabs/skill-doctor watch ./skills
+```
+
+---
+
+### 3. Quick One-Shot Scan (< 10 sec)
+Run an immediate security audit with zero installation:
 ```bash
 npx @security.kalarislabs/skill-doctor scan ./examples/hello-skill
 ```
 
-### Production use
-Choose the installation method best suited for your pipeline:
+---
+
+### 4. Production & Global Installation
+Install globally or into your automated pipeline:
 
 - **npm global:**
   ```bash
@@ -84,7 +123,9 @@ Choose the installation method best suited for your pipeline:
   Standalone stripped binaries are available for 6 matrix targets (Linux musl, macOS, Windows):
   👉 [Download v0.1.0 Release Assets](https://github.com/KalarisLabs/Skill-Doctor/releases/tag/v0.1.0)
 
-### Development (from source)
+---
+
+### 5. Development (from source)
 Build from source (Requires Rust 1.93.0+ (MSRV)):
 ```bash
 git clone https://github.com/KalarisLabs/Skill-Doctor && cd Skill-Doctor

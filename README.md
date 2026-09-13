@@ -5,6 +5,7 @@
 # Skill Doctor
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/KalarisLabs/Skill-Doctor)
+*Note: DeepWiki is a community-generated third-party documentation index and is not authoritative.*
 
 **Deterministic, multi-layer security analysis for AI agent skill files.**
 A single statically linked Rust binary. No interpreter, no API key, no network required.
@@ -35,6 +36,9 @@ cargo install --path crates/skill-doctor-cli --locked --features mcp
 ```
 
 The npm package is a thin installer that verifies SHA-256 digests against official release checksums and places the prebuilt static binary; there is no Node runtime dependency at scan time. Prebuilt standalone binaries are also downloadable directly from [GitHub Releases](https://github.com/KalarisLabs/Skill-Doctor/releases).
+To build the npm package from source without downloading prebuilt binaries, set `SKILL_DOCTOR_SKIP_DOWNLOAD=1`.
+
+> **Note:** The `mcp` CLI subcommand requires the `mcp` Cargo feature (`--features mcp`). Standard `cargo install skill-doctor --locked --features mcp` enables full MCP server support.
 
 ## Quick start (CLI)
 
@@ -91,7 +95,7 @@ Requires Rust 1.93.0+ (MSRV):
 rustup toolchain install stable             # requires Rust 1.93.0+ (MSRV)
 git clone https://github.com/KalarisLabs/Skill-Doctor && cd Skill-Doctor
 cargo build --release --locked --features mcp # produces target/release/skill-doctor
-cargo test --workspace --locked              # unit + corpus tests (excludes real_malware)
+SD_L3_REQUIRE_INTERPRETER=1 cargo test --workspace --all-features --locked # unit + corpus + integration tests (matches CI)
 cargo run -p skill-doctor --locked --features mcp -- scan ./examples/hello-skill
 ```
 

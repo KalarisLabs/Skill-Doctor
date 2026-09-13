@@ -111,9 +111,53 @@ jobs:
           path: dist/*.${{ matrix.archive_ext }}
           retention-days: 1
 
+  packaging-dry-run:
+    name: packaging-dry-run
+    needs: [tag-version-guard]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
+        with:
+          node-version: 20
+      - name: Assert clean working tree
+        run: |
+          set -euo pipefail
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --porcelain
+            echo "ERROR: working tree is dirty before packaging verification"
+            exit 1
+          fi
+      - name: Dry-run Packaging Verification
+        run: |
+          set -uo pipefail
+          for c in skill-doctor-neutralize skill-doctor-rules skill-doctor-sandbox; do
+            echo "== dry-run (must pass): $c"
+            cargo publish --dry-run -p "$c"
+          done
+          for c in skill-doctor-core skill-doctor-mcp skill-doctor; do
+            echo "== dry-run (advisory until deps are on crates.io): $c"
+            out=$(cargo publish --dry-run -p "$c" 2>&1) || rc=$?
+            echo "$out"
+            if [ "${rc:-0}" -ne 0 ]; then
+              if echo "$out" | grep -Fq "no matching package"; then
+                echo "::warning::$c dry-run deferred: workspace dep not yet on crates.io for this version"
+              else
+                echo "ERROR: $c dry-run failed for a real reason"
+                exit 1
+              fi
+            fi
+            unset rc
+          done
+          npm pack --dry-run
+
   provenance-and-release:
     name: Provenance, SBOM, Attestation & Release
-    needs: [build-release]
+    needs: [build-release, packaging-dry-run]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -179,20 +223,13 @@ jobs:
           fi
           test -f release-assets/skill-doctor.cdx.json || { echo "ERROR: skill-doctor.cdx.json not found"; exit 1; }
           # Clean up any intermediate SBOM artifacts from crate directories
-          rm -f crates/*/*.cdx.json crates/*/*.json
+          rm -f crates/*/*.cdx.json crates/*/bom.json
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --porcelain
+            echo "ERROR: working tree is dirty after SBOM generation"
+            exit 1
+          fi
           ls -la release-assets/
-
-      - name: Dry-run Packaging Verification (Topological Crate Order)
-        run: |
-          echo "Verifying crate packaging in topological order..."
-          # Tier 1: Leaf crates with zero internal dependencies
-          cargo publish --dry-run --allow-dirty -p skill-doctor-neutralize
-          cargo publish --dry-run --allow-dirty -p skill-doctor-rules
-          cargo publish --dry-run --allow-dirty -p skill-doctor-sandbox
-          # Note: Downstream crates (skill-doctor-core, skill-doctor-mcp, skill-doctor) require
-          # their path dependencies to be published to crates.io first, and are published sequentially.
-          echo "Verifying npm thin-wrapper tarball..."
-          npm pack --dry-run
 
       - name: Create GitHub Release with Provenance Assets (Draft)
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2

@@ -79,6 +79,15 @@ jobs:
             exit 1
           fi
 
+          NPM_NAME=$(node -p "require('./package.json').name")
+          echo "npm package name: $NPM_NAME"
+          grep -Fq "npx ${NPM_NAME}" README.md || { echo "ERROR: README missing 'npx ${NPM_NAME}'"; exit 1; }
+          grep -Fq "npm install -g ${NPM_NAME}" README.md || { echo "ERROR: README missing 'npm install -g ${NPM_NAME}'"; exit 1; }
+          BAD=$(grep -rhoE "@[A-Za-z0-9._-]+/skill-doctor" \
+            --include="*.md" --include="*.json" --include="*.yml" --include="*.yaml" --include="*.js" . \
+            | sort -u | grep -Fxv "${NPM_NAME}" || true)
+          [ -z "$BAD" ] || { echo "ERROR: non-canonical npm package names present:"; echo "$BAD"; exit 1; }
+
           echo "Running dependency claim verification against cargo metadata..."
           python3 scripts/check-deps.py
 

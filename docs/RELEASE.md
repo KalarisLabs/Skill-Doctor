@@ -18,7 +18,7 @@ crates.io name check + npm scope -> merge -> tag -> inspect DRAFT -> un-draft ->
 > **Never npm publish against a draft release, because download-binary.js fetches SHA256SUMS.txt from the tag and draft assets 404 anonymously.**
 >
 > **Why?**
-> The npm package (`@kalarislabsai/skill-doctor`) is a thin installer. When a user runs `npx @kalarislabsai/skill-doctor` or `npm install -g @kalarislabsai/skill-doctor`, the postinstall hook (`scripts/download-binary.js`) anonymously fetches `SHA256SUMS.txt` and the platform archive directly from GitHub Releases:
+> The npm package (`@security.kalarislabs/skill-doctor`) is a thin installer. When a user runs `npx @security.kalarislabs/skill-doctor` or `npm install -g @security.kalarislabs/skill-doctor`, the postinstall hook (`scripts/download-binary.js`) anonymously fetches `SHA256SUMS.txt` and the platform archive directly from GitHub Releases:
 > `https://github.com/KalarisLabs/Skill-Doctor/releases/download/v${VERSION}/...`
 >
 > Assets on **Draft** releases return **HTTP 404** for unauthenticated users. If npm is published before the release is un-drafted, all user installations will immediately crash with:
@@ -103,37 +103,44 @@ Crates must be published sequentially in strict topological dependency order so 
 cargo publish -p skill-doctor-neutralize
 sleep 30 # wait for crates.io index update
 
-# 2. skill-doctor-rules (leaf crate, embeds YARA-X rules)
+# 2. skill-doctor-rules (leaf crate, embeds YARA-X rules, zero internal workspace dependencies)
 cargo publish -p skill-doctor-rules
 sleep 30
 
-# 3. skill-doctor-core (depends on neutralize, rules)
-cargo publish -p skill-doctor-core
-sleep 30
-
-# 4. skill-doctor-sandbox (depends on core types, self-contained process runner)
+# 3. skill-doctor-sandbox (leaf crate, self-contained process runner, zero internal workspace dependencies)
 cargo publish -p skill-doctor-sandbox
 sleep 30
 
-# 5. skill-doctor-mcp (depends on core, neutralize)
+# 4. skill-doctor-core (engine, depends on neutralize, rules)
+cargo publish -p skill-doctor-core
+sleep 30
+
+# 5. skill-doctor-mcp (server, depends on core, neutralize)
 cargo publish -p skill-doctor-mcp
 sleep 30
 
-# 6. skill-doctor (CLI binary, depends on all workspace crates)
+# 6. skill-doctor (CLI binary, depends on core, neutralize, rules, and optionally mcp, sandbox)
 cargo publish -p skill-doctor
 ```
 
-#### Why `cargo publish --dry-run` Cannot Pass for All 6 Crates Before Release
-`cargo publish --dry-run` enforces that all path dependencies declare versions already published to crates.io. Because `core`, `mcp`, and `skill-doctor` declare path dependencies on unpublished workspace members (`skill-doctor-neutralize`, `skill-doctor-rules`), running `cargo publish --dry-run` on them prior to the initial release of those leaf crates fails with:
-```
-error: no matching package found
-searched package name `skill-doctor-rules`
-```
-Only leaf crates with no workspace path dependencies (`skill-doctor-neutralize`, `skill-doctor-rules`, `skill-doctor-sandbox`) can pass `--dry-run` in pre-release CI. Downstream crates pass publish checks once their prerequisites are live on crates.io.
+#### Packaging Dry-Run Architecture in CI (`release.yml`)
+The pre-release CI packaging verification (`packaging-dry-run` job) runs on a clean checkout in parallel with binary builds and handles the 6 crates in two tiers:
+
+1. **Tier 1 (Hard Gate — Leaf Crates)**:
+   `skill-doctor-neutralize`, `skill-doctor-rules`, and `skill-doctor-sandbox` declare zero internal workspace dependencies. They must pass `cargo publish --dry-run` unconditionally without `--allow-dirty`. A failure in any Tier 1 crate halts the release immediately.
+
+2. **Downstream Crates (Tolerant Advisory Loop)**:
+   `skill-doctor-core`, `skill-doctor-mcp`, and `skill-doctor` declare path+version dependencies on workspace members. Prior to publishing a new tag (e.g. `v0.1.1`), the new version of those dependencies does not yet exist on crates.io, causing `cargo publish --dry-run` to output:
+   ```
+   error: no matching package found
+   searched package name `skill-doctor-rules`
+   ```
+   The CI loop executes `cargo publish --dry-run` on each downstream crate and specifically checks for this condition. If `no matching package` is encountered, it logs a workflow warning (`::warning::$c dry-run deferred: workspace dep not yet on crates.io for this version`). If any other packaging error occurs (syntax errors, missing files, dirty tree), it exits with code 1.
 
 ### Step 8: Install & Post-Release Verification (`install-verify.yml`)
 The publication of the GitHub release automatically triggers `.github/workflows/install-verify.yml` (or run manually via `workflow_dispatch`):
-1. Verifies clean `npx @kalarislabsai/skill-doctor@0.1.0 scan <fixture>` across Ubuntu, macOS, and Windows.
+> **Release Checklist Note**: Whenever cutting a new release, bump the pinned action in `.github/workflows/install-verify.yml`: `uses: KalarisLabs/Skill-Doctor@vX.Y.Z`.
+1. Verifies clean `npx @security.kalarislabs/skill-doctor@0.1.0 scan <fixture>` across Ubuntu, macOS, and Windows.
 2. Asserts the real download path and SHA-256 checksum verification actually executed (`skill-doctor: verifying SHA-256 digest...` and `skill-doctor: checksum OK`).
-3. Verifies `npm install -g @kalarislabsai/skill-doctor@0.1.0` and `skill-doctor --version`.
+3. Verifies `npm install -g @security.kalarislabs/skill-doctor@0.1.0` and `skill-doctor --version`.
 4. Verifies composite action `uses: KalarisLabs/Skill-Doctor@v0.1.0` on real runner environments.

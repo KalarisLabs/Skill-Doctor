@@ -1,0 +1,41 @@
+name: "False Negative Report"
+description: "Report an attack or evasion sample that evaded detection by Skill Doctor"
+title: "[False Negative]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form to report an attack or evasion technique that was missed by Skill Doctor.
+        CRITICAL: Never submit active malware, real credentials, or live C2 endpoints. All samples must be safe to publish.
+  - type: input
+    id: threat_class
+    attributes:
+      label: "Threat Class"
+      description: "SDTM-v1 threat class (SD-01 through SD-11)"
+      placeholder: "e.g. SD-01 Prompt Injection"
+    validations:
+      required: true
+  - type: textarea
+    id: malicious_sample
+    attributes:
+      label: "Minimal Malicious Sample"
+      description: "Provide a minimal, defanged proof-of-concept SKILL.md or companion script"
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: expected_detection
+    attributes:
+      label: "Expected Detection Mechanism"
+      description: "What detector layer (L1 regex/YARA, L1 Unicode, L1 Taint, L3 Sandbox) should have flagged this?"
+    validations:
+      required: true
+  - type: checkboxes
+    id: safety_confirmation
+    attributes:
+      label: "Sample Safety and Provenance Confirmation"
+      description: "You must confirm that this sample is safe to publish publicly."
+      options:
+        - label: "I confirm this sample is my own work or public domain research, contains no live malware, contains no credentials/PII, and is safe to publish in this public repository."
+          required: true

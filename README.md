@@ -1,60 +1,146 @@
 <p align="center">
-  <img src="public/skill-doctor-banner.webp" alt="Skill Doctor Banner" width="100%" />
+  <img src="public/skill-doctor-banner.webp" alt="Skill Doctor security scanner for AI agent skill files" width="100%" />
 </p>
 
 # Skill Doctor
 
+Deterministic static security analysis for AI agent skill files (SKILL.md bundles, archives), offline by default.
+
+[![CI](https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/KalarisLabs/Skill-Doctor/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![MSRV](https://img.shields.io/badge/MSRV-1.93.0-blue.svg)](Cargo.toml)
+[![crates.io](https://img.shields.io/crates/v/skill-doctor)](https://crates.io/crates/skill-doctor)
+[![npm](https://img.shields.io/npm/v/%40security.kalarislabs%2Fskill-doctor)](https://www.npmjs.com/package/@security.kalarislabs/skill-doctor)
+[![npm](https://img.shields.io/npm/dm/%40security.kalarislabs%2Fskill-doctor)](https://www.npmjs.com/package/@security.kalarislabs/skill-doctor)
+[![crates.io](https://img.shields.io/crates/d/skill-doctor)](https://crates.io/crates/skill-doctor)
+[![GitHub release](https://img.shields.io/github/v/release/KalarisLabs/Skill-Doctor)](https://github.com/KalarisLabs/Skill-Doctor/releases)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/KalarisLabs/Skill-Doctor)
-*Note: DeepWiki is a community-generated third-party documentation index and is not authoritative.*
+![GitHub Org Views](https://github-view-counter.vercel.app/api?username=KalarisLabs)
 
-**Deterministic, multi-layer security analysis for AI agent skill files.**
-A single statically linked Rust binary. No interpreter, no API key, no network required.
-Pre-registered target of sub-150 ms median scans, bit-reproducible verdicts, and host-delegated semantic analysis when
-running inside an agent runtime.
+[Docs](docs/RELEASE.md) · [Getting started](#getting-started) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · [Discussions](https://github.com/KalarisLabs/Skill-Doctor/discussions)
 
-> Skill files (`SKILL.md`, `AGENTS.md`, `.clauderules`, `.cursor/rules`, MCP manifests) are
-> loaded into agents with full trust but arrive with none of the defenses code accumulated over
-> decades. Skill Doctor is the security layer for that infrastructure. See the whitepaper for the
-> full threat model (SDTM-v1) and architecture.
+## Why this exists
 
----
+Skill files are natural-language instructions that agents execute with real tool access, installed from untrusted sources, and nothing statically analyses them before they run. The threat model includes prompt injection, credential exfiltration, privilege escalation, supply-chain and obfuscation tricks inside Markdown and frontmatter.
 
-## Install
+## Getting Started
 
+### npx (zero installation)
 ```bash
-# Run directly via npx (downloads and verifies prebuilt binary on demand):
 npx @security.kalarislabs/skill-doctor scan ./examples/hello-skill
-
-# Or install globally via npm:
-npm install -g @security.kalarislabs/skill-doctor
-
-# Or install from crates.io with cargo:
-cargo install skill-doctor --locked --features mcp
-
-# Or build and install from local source with cargo:
-cargo install --path crates/skill-doctor-cli --locked --features mcp
 ```
 
-The npm package is a thin installer that verifies SHA-256 digests against official release checksums and places the prebuilt static binary; there is no Node runtime dependency at scan time. Prebuilt standalone binaries are also downloadable directly from [GitHub Releases](https://github.com/KalarisLabs/Skill-Doctor/releases).
-To build the npm package from source without downloading prebuilt binaries, set `SKILL_DOCTOR_SKIP_DOWNLOAD=1`.
+### npm global install
+```bash
+npm install -g @security.kalarislabs/skill-doctor
+skill-doctor scan ./examples/hello-skill
+```
 
-> **Note:** The `mcp` CLI subcommand requires the `mcp` Cargo feature (`--features mcp`). Standard `cargo install skill-doctor --locked --features mcp` enables full MCP server support.
+### cargo install (crates.io)
+```bash
+cargo install skill-doctor --locked --features mcp
+skill-doctor scan ./examples/hello-skill
+```
 
-## Quick start (CLI)
+### Prebuilt binary download
+Download the platform archive from the [v0.1.0 GitHub release](https://github.com/KalarisLabs/Skill-Doctor/releases/tag/v0.1.0).
+
+### Build from source
+Requires Rust 1.93.0+ (MSRV):
 
 ```bash
-skill-doctor scan ./examples/hello-skill          # scan one bundle, human-readable report
-skill-doctor scan-all . --output sarif           # scan a whole tree -> SARIF
-skill-doctor diff ./examples/hello-skill --baseline report.json # only newly introduced findings vs baseline report (--baseline takes a saved JSON report path, not a git ref)
-skill-doctor watch ./examples/hello-skill         # live feedback while authoring
-skill-doctor mcp                                 # run as an MCP server (host-delegated L2)
-skill-doctor explain SD-04                       # describe a threat class and its detectors
+git clone https://github.com/KalarisLabs/Skill-Doctor && cd Skill-Doctor
+cargo install --path crates/skill-doctor-cli --locked --features mcp
+skill-doctor scan ./examples/hello-skill
+```
+
+**Notes:**
+- `--features mcp` is required for `skill-doctor mcp`; the published crate has `default = []`, so a plain `cargo install skill-doctor` ships without the MCP server.
+- `SKILL_DOCTOR_SKIP_DOWNLOAD=1` skips the npm postinstall binary download for source builds.
+- macOS: `xattr -d com.apple.quarantine skill-doctor`; binaries are not Apple-notarized.
+- Requires Node >= 18 for the npm path; Requires Rust 1.93.0+ (MSRV) to build.
+
+### Your first scan
+```bash
+skill-doctor scan ./examples/hello-skill
+```
+
+Exit codes: `0` = clean · `1` = usage or internal error · `2` = findings at or above `--fail-on` · `3` = structural coverage below `--fail-under-coverage`
+
+Exit code `1` is NOT "findings found" — it denotes a usage error or internal scanner failure.
+
+## What it detects
+
+| ID | Name | Description | Detection layer |
+|----|------|-------------|-----------------|
+| SD-01 | Prompt Injection | Direct, indirect, ASCII smuggling, and encoded prompt injections | L1 Unicode & Shannon Entropy; L2 semantic opt-in |
+| SD-02 | Command Injection | Unsanitized execution in companion scripts (`eval`, `exec`, `system`) | L1 Lexical Source-to-Sink Taint; L3-lite sandbox opt-in |
+| SD-03 | Data Exfiltration | Covert extraction of environment variables and sensitive file paths | L1 Secret Patterns; L3-lite sandbox opt-in |
+| SD-04 | Privilege Escalation | Undeclared capabilities exceeding frontmatter permission declarations | L1 Capability Differ (declared vs observed operations) |
+| SD-05 | Supply-Chain Tampering | Checksum mismatches, bytecode cache pollution, typosquatting | L1 Package Hook Patterns; L4 intel opt-in |
+| SD-06 | SSRF | Outbound requests to cloud metadata services or internal networks | L1 Metadata & Loopback Address Patterns; L2 semantic opt-in |
+| SD-07 | Tool Poisoning | Cross-skill tool name shadowing and parameter collisions | L1 Cross-Skill Namespace Collision Checks; L2 semantic opt-in |
+| SD-08 | Persistent Backdoor | Auto-loaded context hooks (.clauderules, startup persistence) | L1 Context File Rule Patterns; L3-lite sandbox opt-in |
+| SD-09 | Context-Window Flooding | Instruction washing and denial-of-service token floods | L1 Token Count & Repetition Detection; L3-lite sandbox opt-in |
+| SD-10 | Obfuscation & Evasion | UTS #39 confusables, bidi Trojan Source, deferred logic bombs | L1 Unicode Engine; L3-lite sandbox opt-in |
+| SD-11 | Scanner-Mediated Injection | Attacks attempting to exploit or hijack the host scanner/agent | skill-doctor-neutralize Fencing + Additive Invariant |
+
+The v0.1.0 suite ships 14 curated fixtures (6 attack covering SD-01/02/03/04/10, 3 benign, 4 benchmark, 1 example); remaining classes are rule-only and not yet fixture-covered. See [issue tracking corpus growth](https://github.com/KalarisLabs/Skill-Doctor/issues?q=is%3Aissue+is%3Aopen+label%3Acorpus).
+
+## Usage
+
+### Scan a single skill
+```bash
+skill-doctor scan ./examples/hello-skill
+```
+
+### Scan a directory of skills
+```bash
+skill-doctor scan-all . --exclude "node_modules/*" --exclude "target/*"
+```
+
+### Compare against a baseline
+```bash
+skill-doctor diff ./examples/hello-skill --baseline report.json
 ```
 
 ### CI gate
+```bash
+skill-doctor gate ./examples/hello-skill --fail-on HIGH --fail-under-coverage 0.8
+```
 
-GitHub Action (`@v0.1.0` or pinned SHA):
+### Watch for changes
+```bash
+skill-doctor watch ./examples/hello-skill
+```
 
+### MCP server
+```bash
+skill-doctor mcp
+```
+
+### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--fail-on` | Minimum severity to trigger exit code 2 (default: high) |
+| `--fail-under-coverage` | Minimum structural coverage ratio to trigger exit code 3 |
+| `--output` | Output format: text, json, sarif |
+| `--deterministic` | Byte-identical output (sorted maps, pinned timestamps) |
+| `--offline` | Zero network calls, zero LLM (default behavior) |
+| `--sandbox` | Run L3-lite behavioral process harness (opt-in feature) |
+| `--intel` | Query L4 community threat intelligence feed (opt-in feature) |
+| `--tui` | Launch interactive full-screen dashboard (opt-in feature) |
+| `--color` | Output colorization (auto, always, never) |
+| `--quiet` | Suppress informational headers and non-essential progress output |
+
+**Guarantees:**
+- Offline by default with zero mandatory network calls
+- `--deterministic` produces byte-identical output (enforced by the `determinism` CI job, which hashes two runs)
+
+## Use it in CI
+
+### GitHub Action
 ```yaml
 - name: Run Skill Doctor
   id: scan
@@ -69,14 +155,14 @@ GitHub Action (`@v0.1.0` or pinned SHA):
 
 - name: Upload SARIF report
   if: always()
-  uses: github/codeql-action/upload-sarif@faaca9a8f6edddba5725ffe5adefdab6669a2eca # v3.38.0
+  uses: github/codeql-action/upload-sarif@v3
   with:
     sarif_file: skill-doctor.sarif
 ```
 
+**Current limitation:** The action verifies the downloaded asset against `SHA256SUMS.txt` but performs no cosign verification (trust-on-first-use). See [issue #41](https://github.com/KalarisLabs/Skill-Doctor/issues/41).
 
-CLI:
-
+### Raw CLI in CI
 ```bash
 skill-doctor scan-all . \
   --output sarif \
@@ -84,93 +170,169 @@ skill-doctor scan-all . \
   --fail-under-coverage 0.8 \
   --deterministic \
   --offline
-# exit 0 clean & coverage ok | 2 findings >= --fail-on | 3 coverage below threshold
 ```
 
-## Build from source
+## Verify what you downloaded
 
-Requires Rust 1.93.0+ (MSRV):
-
+### Verify checksum signature with Cosign
 ```bash
-rustup toolchain install stable             # requires Rust 1.93.0+ (MSRV)
-git clone https://github.com/KalarisLabs/Skill-Doctor && cd Skill-Doctor
-cargo build --release --locked --features mcp # produces target/release/skill-doctor
-SD_L3_REQUIRE_INTERPRETER=1 cargo test --workspace --all-features --locked # unit + corpus + integration tests (matches CI)
-cargo run -p skill-doctor --locked --features mcp -- scan ./examples/hello-skill
-```
-
-Static musl build (fully static binary):
-
-```bash
-rustup target add x86_64-unknown-linux-musl
-cargo build --release --target x86_64-unknown-linux-musl
-```
-
-## Release artifact verification
-
-Skill Doctor release assets are signed using Sigstore Cosign (OIDC keyless) and accompanied by CycloneDX SBOMs.
-
-To verify a downloaded release asset against official release attestations:
-
-```bash
-# 1. Verify SHA256SUMS.txt with Cosign (Keyless GitHub Actions OIDC)
 cosign verify-blob \
   --bundle SHA256SUMS.txt.bundle \
   --certificate-identity-regexp '^https://github\.com/KalarisLabs/Skill-Doctor/\.github/workflows/release\.yml@refs/tags/v.*$' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   SHA256SUMS.txt
+```
 
-# 2. Verify binary digest
+### Verify binary digest
+```bash
 sha256sum -c SHA256SUMS.txt --ignore-missing
 ```
 
-Each release publishes `skill-doctor.cdx.json` (CycloneDX JSON). Inspect dependencies and licenses with `jq` or `cyclonedx`:
+### Inspect CycloneDX SBOM
 ```bash
 jq -r '.components[] | "\(.name) \(.version) (\(.licenses[0].license.id // "unknown"))"' skill-doctor.cdx.json
 ```
 
-### Binary signing & OS security posture
-- **Cosign OIDC Provenance**: All checksum manifests are signed keylessly via Sigstore Cosign on GitHub Actions.
-- **macOS**: Binaries are **not Apple-notarized**; archives downloaded directly via a web browser will be quarantined by macOS Gatekeeper (`xattr -d com.apple.quarantine skill-doctor`). CLI installations via `npx`, `npm -g`, or `curl` do not set quarantine bits and run directly.
-- **Windows**: Binaries are **unsigned** with Authenticode; browser downloads may show a Microsoft Defender SmartScreen warning. Installations via `npx`, npm, or `cargo install` run directly.
+## Performance
 
-## Repository layout
+| Metric | Pre-registered target | Measured (with platform + provenance) |
+|--------|---------------------|--------------------------------------|
+| Binary footprint (musl, stripped, `--features mcp`) | ~12 MB target (**MISSED**: YARA-X embeds Wasmtime/Cranelift ~14 MiB; < 20 MiB ceiling) | **16,934,512 bytes** (16.15 MiB, `x86_64-unknown-linux-musl`, CI-measured) |
+| Binary footprint (MSVC, stripped, `--features mcp`) | < 20 MiB ceiling | **17,936,896 bytes** (17.11 MiB, `x86_64-pc-windows-msvc`, not CI-verified) |
+| Peak RSS | < 40 MiB | **14.67 MiB** (local measurement, `x86_64-pc-windows-msvc`, not CI-verified) |
+| Scan throughput | ≥ 2,000 skills/min (warm cache off) | **660 skills/s** (~39,600 skills/min) (local measurement, `x86_64-pc-windows-msvc`, not CI-verified) |
+| Median cold scan latency | sub-150 ms (pre-registered target) | Not measured in CI |
 
+## Documentation
+
+- [docs/RELEASE.md](docs/RELEASE.md) — Release & publication playbook
+- [DEPENDENCIES.md](DEPENDENCIES.md) — Every package we use and why
+- [TESTING.md](TESTING.md) — Test strategy, CI gates, and branch protection
+- [docs/PAPER-RECONCILIATION.md](docs/PAPER-RECONCILIATION.md) — Whitepaper implementation mapping
+- [CHANGELOG.md](CHANGELOG.md) — Version history
+
+There is no hosted docs site at this time. All documentation is in-repo.
+
+## Community — who Skill Doctor is for
+
+Skill Doctor is for:
+- Teams shipping agent skills/plugins who need security validation before deployment
+- Registry and marketplace operators screening submissions for malicious patterns
+- Security engineers adding a CI gate to prevent skill-based attacks
+- Researchers studying skill-file attack patterns and detection techniques
+
+See [ADOPTERS.md](ADOPTERS.md) for organizations that have publicly adopted Skill Doctor.
+
+Join the conversation:
+- [GitHub Discussions](https://github.com/KalarisLabs/Skill-Doctor/discussions) — Announcements, Q&A, rule proposals, show and tell
+- [Issue tracker](https://github.com/KalarisLabs/Skill-Doctor/issues) — Bug reports and feature requests
+
+## Contributing
+
+### 10-minute dev setup
+```bash
+git clone https://github.com/KalarisLabs/Skill-Doctor && cd Skill-Doctor
+rustup toolchain install stable
+cargo build --release --features mcp
+SD_L3_REQUIRE_INTERPRETER=1 cargo test --workspace --all-features --locked
 ```
-skill-doctor/
-├─ Cargo.toml                 # workspace root
-├─ rust-toolchain.toml        # pinned toolchain
-├─ AGENTS.md                  # how coding agents should work in this repo (build/test/invariants)
-├─ CONTEXT.md                 # architecture + threat model context for humans and agents
-├─ DEPENDENCIES.md            # every crate/package we use and why
-├─ crates/
-│  ├─ skill-doctor-cli/       # binary: argument parsing, reporters (text/JSON/SARIF), TUI (opt-in)
-│  ├─ skill-doctor-core/      # L0 intake + L1 engines + L5 scoring/coverage (the product)
-│  ├─ skill-doctor-rules/     # YARA-X rule packs, compiled at build time and embedded
-│  ├─ skill-doctor-neutralize/# SD-11 neutralization protocol (isolated, auditable)
-│  ├─ skill-doctor-mcp/       # MCP server + host-delegated L2 envelope/verdict contract
-│  └─ skill-doctor-sandbox/   # L3 behavioral process harness + differential replay (feature: sandbox)
-├─ rules/                     # source YARA-X rules (compiled into skill-doctor-rules)
-├─ corpora/                   # seeded corpus generator + fixtures (real_malware/ is access-gated)
-├─ sd-bench/                  # benchmark harness (pinned competitor images, RESULTS.md)
-└─ .github/workflows/ci.yml   # build, test, self-scan gate, reproducibility check
-```
 
-## Layers (what runs, and what it needs)
+### Rule contribution contract
+Every new detection rule ships with:
+- An attack fixture demonstrating the threat
+- A benign fixture demonstrating no false positive
+- A determinism-safe snapshot
 
-| Layer | Function | Requires | Determinism |
-|------|----------|----------|-------------|
-| L0 | intake, normalize, canonical digest, cache | nothing | deterministic |
-| L1 | static analysis (YARA-X, taint, entropy, Unicode, capability differ) | nothing | **deterministic** |
-| L2 | semantic analysis | host agent / local model / key | additive-only, nondeterministic |
-| L3 | behavioral process harness + differential replay | isolated process execution (`--features sandbox`) | mostly deterministic |
-| L4 | threat intelligence | network (opt-in) | deterministic |
-| L5 | scoring, coverage, reporting | nothing | deterministic |
+### MSRV policy
+1.93.0, empirically bisected. Raising it is a breaking change.
 
-**L1 alone is a complete, shippable product.** Every higher layer is elective and degrades to a
-lower structural-coverage number instead of an error.
+### Required status checks for PRs
+- version-sync
+- check-gate
+- msrv-check
+- lint-and-unit
+- supply-chain
+- determinism
+- os-cli (Ubuntu/macOS/Windows)
+- dogfood-self-scan
+- docs-smoke
+- packaging-gate
+
+### PR checklist bans
+- No `--no-run` compile output presented as a test pass
+- No `echo`-printed measurements
+- Every number labelled target vs measurement with platform
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines. Good first issues are tagged with [`good first issue`](https://github.com/KalarisLabs/Skill-Doctor/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). See the [v0.1.1 milestone](https://github.com/KalarisLabs/Skill-Doctor/milestone/1) for planned work.
+
+## Security
+
+- Report privately via [GitHub Security Advisories](https://github.com/KalarisLabs/Skill-Doctor/security/advisories) — never in public issues.
+- Security contact: security@kalarislabs.com (see [SECURITY.md](SECURITY.md))
+
+### Supported versions
+| Version | Support status |
+|---------|----------------|
+| 0.1.x   | Supported      |
+
+### Version history note
+crates.io versions 0.2.0 / 0.2.2 / 0.2.3 are yanked pre-release prototypes that must not be used. 0.1.0 is the first supported release.
+
+See the [verification section](#verify-what-you-downloaded) and [SECURITY.md](SECURITY.md).
 
 ## License
 
-Apache-2.0. The real-malware corpus is access-controlled research material and is **not**
-in this repository. See `CONTEXT.md` § Ethics.
+Apache-2.0. Requires Rust 1.93.0+ (MSRV).
+
+## Sponsors
+
+Documentation platform: [Mintlify](https://mintlify.com)
+
+## Contributors
+
+Lead author: [Sayan Chowdhury](https://github.com/sayanchowdhury) (Kalaris Labs)
+
+## Support this project
+
+How to support this project:
+- Star the repository
+- File rule false positives/negatives as issues
+- Contribute attack and benign fixtures
+- Contribute code, documentation, or tests
+
+Organizations interested in sponsorship should contact us via [GitHub Discussions](https://github.com/KalarisLabs/Skill-Doctor/discussions). Sponsors receive a credit line in this section.
+
+## Acknowledgements
+
+Skill Doctor depends on these upstream projects:
+- [YARA-X](https://github.com/VirusTotal/yara-x) — Pattern matching engine
+- [Wasmtime/Cranelift](https://github.com/bytecodealliance/wasmtime) — WebAssembly runtime and compiler
+- [rmcp](https://github.com/ShowMeYourFlowHub/rmcp) — Model Context Protocol implementation
+- [clap](https://github.com/clap-rs/clap) — Command-line argument parsing
+- [rayon](https://github.com/rayon-rs/rayon) — Data parallelism
+
+## Download statistics
+
+- [npm downloads](https://npm-stat.com/charts.html?package=%40security.kalarislabs%2Fskill-doctor)
+- [crates.io downloads](https://crates.io/crates/skill-doctor)
+
+## Limitations & roadmap
+
+### Current limitations
+- 14 fixtures and no external-corpus evaluation
+- L2 semantic requires an LLM endpoint and is opt-in
+- L3-lite sandbox requirements and platform caveats
+- Action TOFU (trust-on-first-use)
+- No Apple notarization
+- 6 supported target triples
+- Footprint dominated by YARA-X/Wasmtime
+
+### Roadmap
+- [Expand fixture coverage across all 11 SDTM-v1 classes](https://github.com/KalarisLabs/Skill-Doctor/issues?q=is%3Aissue+is%3Aopen+label%3Acorpus)
+- [Add Cosign verification to GitHub Action](https://github.com/KalarisLabs/Skill-Doctor/issues/41)
+- [External corpus evaluation on public skill repositories](https://github.com/KalarisLabs/Skill-Doctor/issues?q=is%3Aissue+is%3Aopen+label%3Aevaluation)
+- [Reduce binary footprint via conditional compilation](https://github.com/KalarisLabs/Skill-Doctor/issues?q=is%3Aissue+is%3Aopen+label%3Aperformance)
+- [Apple notarization for macOS binaries](https://github.com/KalarisLabs/Skill-Doctor/issues?q=is%3Aissue+is%3Aopen+label%3Aplatform)
+- [Additional target triples](https://github.com/KalarisLabs/Skill-Doctor/issues?q=is%3Aissue+is%3Aopen+label%3Aplatform)
+
+See the [v0.1.1 milestone](https://github.com/KalarisLabs/Skill-Doctor/milestone/1) for detailed planning.

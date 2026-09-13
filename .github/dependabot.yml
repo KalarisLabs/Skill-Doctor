@@ -1,4 +1,5 @@
 version: 2
+# Note: Cargo.lock is committed to version control and must remain synchronized with Cargo.toml.
 updates:
   - package-ecosystem: "cargo"
     directory: "/"

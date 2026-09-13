@@ -1,0 +1,38 @@
+name: "False Positive Report"
+description: "Report a clean or benign skill incorrectly flagged by a detector"
+title: "[False Positive]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please use this form if Skill Doctor flagged a benign skill file or companion script.
+        Minimal reproduction files help us tune detectors and add hard-negative test fixtures.
+  - type: input
+    id: rule_id
+    attributes:
+      label: "Rule ID or Threat Class"
+      description: "Rule ID (e.g. SD-02-cmd-injection-pattern) or SDTM-v1 threat class (e.g. SD-02)"
+      placeholder: "e.g. SD-02"
+    validations:
+      required: true
+  - type: textarea
+    id: reproducing_skill
+    attributes:
+      label: "Minimal Reproducing SKILL.md or Companion File"
+      description: "Paste the minimal SKILL.md or script snippet that triggers the false positive"
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: "Why is this skill benign?"
+      description: "Explain why this syntax or behavior is legitimate and why the detector should not flag it"
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: "Skill Doctor Output"
+      description: "Paste the scan finding output or JSON finding"

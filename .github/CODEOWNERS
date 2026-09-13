@@ -7,6 +7,9 @@
 /crates/skill-doctor-rules/ @KalarisLabs @saynchowdhury
 /crates/skill-doctor-neutralize/ @KalarisLabs @saynchowdhury
 
-# CI and Security
+# CI, Supply Chain & Workflows
 /.github/workflows/ @KalarisLabs @saynchowdhury
 /deny.toml @KalarisLabs @saynchowdhury
+
+# Documentation & Specifications
+/docs/ @KalarisLabs @saynchowdhury

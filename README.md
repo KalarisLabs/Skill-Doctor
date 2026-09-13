@@ -442,6 +442,8 @@ Skill Doctor builds upon these exceptional open source projects:
 
 ## Documentation Index
 
+- [paper/skill-doctor-whitepaper.pdf](paper/skill-doctor-whitepaper.pdf) — Academic whitepaper (PDF preprint)
+- [paper/skill-doctor-whitepaper.tex](paper/skill-doctor-whitepaper.tex) — LaTeX manuscript source
 - [docs/RELEASE.md](docs/RELEASE.md) — Release & publication playbook
 - [DEPENDENCIES.md](DEPENDENCIES.md) — Complete crate dependency rationale
 - [TESTING.md](TESTING.md) — Test strategy and CI gating architecture

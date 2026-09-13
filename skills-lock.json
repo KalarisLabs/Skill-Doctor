@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "paper-writing": {
+      "source": "evoscientist/evoskills",
+      "sourceType": "github",
+      "skillPath": "skills/paper-writing/SKILL.md",
+      "computedHash": "577436c798b486579d1ee5b5decbd627bd2e888d03570b801e5a97cbd8ca44ab"
+    },
+    "research-survey": {
+      "source": "evoscientist/evoskills",
+      "sourceType": "github",
+      "skillPath": "skills/research-survey/SKILL.md",
+      "computedHash": "4a21e1a0f5266b8d4320108a0c5c0285de7d0adb0c0f8edfe0345d29d0f1eb49"
+    }
+  }
+}

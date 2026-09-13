@@ -112,33 +112,47 @@ With the GitHub release live and assets publicly accessible:
 npm publish --access public
 ```
 
-### Step 7: Publish Crates to crates.io (Topological Dependency Order x6)
-Crates must be published sequentially in strict topological dependency order:
+### Step 7: Publish Crates to crates.io (Dependency Order x6)
+Crates must be published sequentially in strict topological dependency order so downstream crates can resolve workspace dependencies on the registry:
 
 ```bash
 # 1. skill-doctor-neutralize (leaf crate, zero internal workspace dependencies)
 cargo publish -p skill-doctor-neutralize
 sleep 30 # wait for crates.io index update
 
-# 2. skill-doctor-rules (leaf crate, embeds YARA-X rules)
+# 2. skill-doctor-rules (leaf crate, embeds YARA-X rules, zero internal workspace dependencies)
 cargo publish -p skill-doctor-rules
 sleep 30
 
-# 3. skill-doctor-core (depends on neutralize, rules)
-cargo publish -p skill-doctor-core
-sleep 30
-
-# 4. skill-doctor-sandbox (depends on core types, self-contained process runner)
+# 3. skill-doctor-sandbox (leaf crate, self-contained process runner, zero internal workspace dependencies)
 cargo publish -p skill-doctor-sandbox
 sleep 30
 
-# 5. skill-doctor-mcp (depends on core, neutralize)
+# 4. skill-doctor-core (engine, depends on neutralize, rules)
+cargo publish -p skill-doctor-core
+sleep 30
+
+# 5. skill-doctor-mcp (server, depends on core, neutralize)
 cargo publish -p skill-doctor-mcp
 sleep 30
 
-# 6. skill-doctor (CLI binary, depends on all workspace crates)
+# 6. skill-doctor (CLI binary, depends on core, neutralize, rules, and optionally mcp, sandbox)
 cargo publish -p skill-doctor
 ```
+
+#### Packaging Dry-Run Architecture in CI (`release.yml`)
+The pre-release CI packaging verification (`packaging-dry-run` job) runs on a clean checkout in parallel with binary builds and handles the 6 crates in two tiers:
+
+1. **Tier 1 (Hard Gate — Leaf Crates)**:
+   `skill-doctor-neutralize`, `skill-doctor-rules`, and `skill-doctor-sandbox` declare zero internal workspace dependencies. They must pass `cargo publish --dry-run` unconditionally without `--allow-dirty`. A failure in any Tier 1 crate halts the release immediately.
+
+2. **Downstream Crates (Tolerant Advisory Loop)**:
+   `skill-doctor-core`, `skill-doctor-mcp`, and `skill-doctor` declare path+version dependencies on workspace members. Prior to publishing a new tag (e.g. `v0.1.1`), the new version of those dependencies does not yet exist on crates.io, causing `cargo publish --dry-run` to output:
+   ```
+   error: no matching package found
+   searched package name `skill-doctor-rules`
+   ```
+   The CI loop executes `cargo publish --dry-run` on each downstream crate and specifically checks for this condition. If `no matching package` is encountered, it logs a workflow warning (`::warning::$c dry-run deferred: workspace dep not yet on crates.io for this version`). If any other packaging error occurs (syntax errors, missing files, dirty tree), it exits with code 1.
 
 ### Step 8: Post-Release Installation Verification (`install-verify.yml`)
 Trigger `.github/workflows/install-verify.yml` via GitHub Actions `workflow_dispatch` or wait for the release event:

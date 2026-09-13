@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use Skill Doctor in your research, please cite it as below."
+title: "Skill Doctor"
+version: 0.1.0
+date-released: 2026-09-12
+url: "https://github.com/KalarisLabs/Skill-Doctor"
+doi: 
+license: Apache-2.0
+authors:
+  - family-names: Kalaris Labs
+    given-names: 
+    role: 
+    affiliation: Kalaris Labs
+keywords:
+  - "AI agents"
+  - "security"
+  - "static analysis"
+  - "skill files"
+  - "MCP"
+  - "prompt injection"
+  - "threat detection"
+  - "SDTM-v1"
+  
+preferred-citation:
+  type: article
+  title: "Skill Doctor: Deterministic Multi-Layer Security Analysis for AI Agent Skill Files"
+  authors:
+    - family-names: Kalaris Labs
+      given-names: 
+  year: 2026
+  
+bibtex: |
+  @software{skill_doctor_2026,
+    title = {Skill Doctor: Deterministic Multi-Layer Security Analysis for AI Agent Skill Files},
+    author = {{Kalaris Labs}},
+    year = {2026},
+    version = {0.1.0},
+    url = {https://github.com/KalarisLabs/Skill-Doctor},
+    license = {Apache-2.0}
+  }

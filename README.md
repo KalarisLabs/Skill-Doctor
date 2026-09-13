@@ -192,7 +192,7 @@ All performance figures are reported with explicit provenance:
 
 - **Fixture count**: The current suite contains 14 curated skill fixtures; 6 threat classes remain rule-only.
 - **No external corpus evaluation**: No evaluation on external, third-party public skill repositories has been completed.
-- **L3 sandbox requirements**: The elective L3 behavioral sandbox is a process execution harness with temporary mock home directories and OS process group/Job Object termination; it is not a microVM or hypervisor jail.
+- **L3 sandbox requirements**: The elective L3 behavioral sandbox is a process execution harness with temporary mock home directories and OS process group/Job Object termination; it does not use virtual machine or hypervisor isolation.
 - **No OS code signing**: Release binaries are not Apple-notarized or Authenticode-signed.
 - **Action TOFU**: `action.yml` verifies SHA-256 digests but does not yet verify Cosign signatures on downloaded binaries.
 - **Prebuilt platform matrix**: Standalone release binaries are compiled for 6 platform targets (`x86_64-unknown-linux-musl`, `aarch64-unknown-linux-musl`, `x86_64-apple-darwin`, `aarch64-apple-darwin`, `x86_64-pc-windows-msvc`, `aarch64-pc-windows-msvc`).

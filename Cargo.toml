@@ -50,7 +50,7 @@ unicode-security = "0.1"
 serde_yaml = "0.9"
 
 # archives & intake — milestone 2
-zip = { version = "8", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 tar = "0.4"
 flate2 = "1"
 

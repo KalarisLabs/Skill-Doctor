@@ -50,7 +50,7 @@ unicode-security = "0.1"
 serde_yaml = "0.9"
 
 # archives & intake — milestone 2
-zip = { version = "8", default-features = false, features = ["deflate"] }
+zip = { version = "9", default-features = false, features = ["deflate"] }
 tar = "0.4"
 flate2 = "1"
 
@@ -59,7 +59,7 @@ anstream = "1.0"
 anstyle = "1.0"
 is-terminal = "0.4"
 indicatif = "0.18"
-notify = "8.2"
+notify = "9.0"
 
 # opt-in tui (feature gated)
 ratatui = { version = "0.30", default-features = false, features = ["crossterm"] }
